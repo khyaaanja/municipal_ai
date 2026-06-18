@@ -1,0 +1,45 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Attractions — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Attractions</h1>
+  <a href="{% url 'adminpanel:cms_attraction_add' %}" class="btn btn-primary">+ Add Attraction</a>
+</div>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Entry Fee</th>
+        <th>Status</th>
+        <th>Featured</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td style="font-weight:600;">{{ item.name }}</td>
+        <td>{{ item.category.name|default:"—" }}</td>
+        <td>{% if item.is_free %}Free{% elif item.entry_fee %}NPR {{ item.entry_fee }}{% else %}—{% endif %}</td>
+        <td><span class="cms-pill {% if item.is_active %}pill-active{% else %}pill-inactive{% endif %}">{% if item.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+        <td>{% if item.is_featured %}<span class="cms-pill pill-yes">Yes</span>{% else %}—{% endif %}</td>
+        <td>
+          <div class="cms-actions">
+            <a href="{% url 'adminpanel:cms_attraction_edit' item.pk %}" class="btn-edit">Edit</a>
+            <form method="post" action="{% url 'adminpanel:cms_attraction_delete' item.pk %}" onsubmit="return confirm('Delete {{ item.name }}?')">
+              {% csrf_token %}
+              <button type="submit" class="btn-del">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--stone);padding:32px;">No attractions yet. <a href="{% url 'adminpanel:cms_attraction_add' %}" style="color:var(--red);">Add one</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

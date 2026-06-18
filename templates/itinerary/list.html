@@ -1,0 +1,239 @@
+{% extends 'base/base.html' %}
+{% block title %}My Itineraries — {{ CITY_NAME }}{% endblock %}
+
+{% block content %}
+<style>
+.itin-wrap { max-width:1100px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+.itin-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; flex-wrap:wrap; gap:1rem; }
+.itin-title { font-family:var(--font-head); font-size:2rem; font-weight:800; border-left:4px solid var(--red); padding-left:1rem; }
+.btn-new { display:inline-flex; align-items:center; gap:.5rem; background:var(--ink); color:var(--paper); font-family:var(--font-head); font-size:.85rem; font-weight:700; text-transform:uppercase; padding:.75rem 1.5rem; text-decoration:none; border:none; cursor:pointer; letter-spacing:.05em; transition:background .2s; }
+.btn-new:hover { background:var(--red); }
+/* Generator Modal */
+.gen-modal { display:none; position:fixed; inset:0; background:rgba(13,13,13,.85); z-index:2000; align-items:center; justify-content:center; padding:1.5rem; }
+.gen-modal.open { display:flex; }
+.gen-box { background:var(--paper); border:3px solid var(--ink); width:100%; max-width:540px; max-height:90vh; overflow-y:auto; }
+.gen-head { background:var(--ink); color:var(--paper); padding:1.5rem 2rem; display:flex; align-items:center; justify-content:space-between; }
+.gen-head-title { font-family:var(--font-head); font-size:1.2rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.gen-close { background:none; border:none; color:var(--paper); font-size:1.5rem; cursor:pointer; opacity:.7; }
+.gen-close:hover { opacity:1; }
+.gen-body { padding:2rem; }
+.gen-field { margin-bottom:1.25rem; }
+.gen-label { display:block; font-weight:700; font-size:.85rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem; }
+.gen-input, .gen-select { width:100%; padding:.75rem 1rem; border:2px solid var(--stone-light); background:var(--white); font-family:var(--font-body); font-size:.95rem; box-sizing:border-box; outline:none; transition:border-color .2s; }
+.gen-input:focus, .gen-select:focus { border-color:var(--ink); }
+.interests-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+.interest-pill { display:flex; align-items:center; gap:.5rem; cursor:pointer; padding:.5rem .75rem; border:2px solid var(--stone-light); font-size:.85rem; transition:all .2s; user-select:none; }
+.interest-pill input { accent-color:var(--ink); }
+.interest-pill:has(input:checked) { border-color:var(--ink); background:var(--cream); font-weight:700; }
+.gen-btn { width:100%; padding:1rem; background:var(--red); color:var(--white); border:none; font-family:var(--font-head); font-size:1rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; cursor:pointer; margin-top:.5rem; transition:background .2s; }
+.gen-btn:hover { background:#9e2e1e; }
+.gen-btn:disabled { background:var(--stone); cursor:not-allowed; }
+/* AI generating state */
+.gen-loading { text-align:center; padding:2rem; display:none; }
+.gen-spinner { width:2.5rem; height:2.5rem; border:3px solid var(--cream); border-top-color:var(--ink); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 1rem; }
+@keyframes spin { to { transform:rotate(360deg); } }
+/* Itinerary cards */
+.itin-grid { display:grid; gap:1.5rem; }
+.itin-card { border:2px solid var(--ink); background:var(--paper); }
+.itin-card-head { background:var(--ink); color:var(--paper); padding:1.25rem 1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+.itin-card-title { font-family:var(--font-head); font-size:1.1rem; font-weight:800; }
+.itin-card-meta { font-size:.8rem; opacity:.6; margin-top:.2rem; }
+.itin-badges { display:flex; gap:.5rem; flex-wrap:wrap; }
+.itin-badge { background:rgba(255,255,255,.15); font-size:.75rem; font-family:var(--font-head); font-weight:700; padding:.2rem .6rem; letter-spacing:.04em; }
+.itin-card-body { padding:1.5rem; }
+/* Day breakdown */
+.day-list { display:flex; flex-direction:column; gap:1rem; }
+.day-block { border-left:3px solid var(--gold); padding-left:1rem; }
+.day-label { font-family:var(--font-head); font-size:.8rem; font-weight:800; text-transform:uppercase; color:var(--gold); letter-spacing:.08em; margin-bottom:.4rem; }
+.day-stops { font-size:.9rem; color:var(--stone); line-height:1.6; }
+.day-stops strong { color:var(--ink); }
+.itin-card-footer { padding:1rem 1.5rem; border-top:2px solid var(--cream); display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.btn-view-itin { background:var(--ink); color:var(--paper); font-family:var(--font-head); font-size:.8rem; font-weight:700; text-transform:uppercase; padding:.5rem 1.2rem; text-decoration:none; letter-spacing:.04em; transition:background .2s; }
+.btn-view-itin:hover { background:var(--red); }
+.btn-del-itin { background:none; border:none; color:var(--stone-light); font-size:.85rem; cursor:pointer; transition:color .2s; }
+.btn-del-itin:hover { color:var(--red); }
+/* Empty state */
+.itin-empty { text-align:center; padding:4rem 2rem; border:2px dashed var(--stone-light); background:var(--cream); }
+.itin-empty-icon { font-size:4rem; display:block; margin-bottom:1rem; }
+.itin-empty-title { font-family:var(--font-head); font-size:1.3rem; font-weight:800; margin-bottom:.5rem; }
+.itin-empty-msg { color:var(--stone); margin-bottom:1.5rem; }
+</style>
+
+<div class="itin-wrap">
+  <div class="itin-header">
+    <h1 class="itin-title">My Itineraries</h1>
+    <button class="btn-new" onclick="openGenerator()">+ Generate New Itinerary</button>
+  </div>
+
+  {% if itineraries %}
+  <div class="itin-grid">
+    {% for itin in itineraries %}
+    <div class="itin-card" id="itin-{{ itin.id }}">
+      <div class="itin-card-head">
+        <div>
+          <div class="itin-card-title">{{ itin.title|default:"Bhaktapur Itinerary" }}</div>
+          <div class="itin-card-meta">Created {{ itin.created_at|date:"M d, Y" }}</div>
+        </div>
+        <div class="itin-badges">
+          <span class="itin-badge">{{ itin.days }} day{{ itin.days|pluralize }}</span>
+          {% if itin.budget %}<span class="itin-badge">₨{{ itin.budget|floatformat:0 }}</span>{% endif %}
+          {% if itin.group_type %}<span class="itin-badge">{{ itin.group_type }}</span>{% endif %}
+        </div>
+      </div>
+
+      {% if itin.generated_plan %}
+      <div class="itin-card-body">
+        <div class="day-list">
+          {% for day in itin.generated_plan|slice:":3" %}
+          <div class="day-block">
+            <div class="day-label">Day {{ day.day }}</div>
+            <div class="day-stops">
+              {% for stop in day.stops|slice:":3" %}
+              <strong>{{ stop.time|default:"" }}</strong> {{ stop.activity }}<br>
+              {% endfor %}
+              {% if day.stops|length > 3 %}<em style="font-size:.8rem;">+{{ day.stops|length|add:"-3" }} more stops</em>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+          {% if itin.generated_plan|length > 3 %}
+          <div style="font-size:.85rem; color:var(--stone); padding-left:1.25rem;">+ {{ itin.generated_plan|length|add:"-3" }} more days</div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="itin-card-body" style="color:var(--stone);font-size:.9rem;">Plan details not available.</div>
+      {% endif %}
+
+      <div class="itin-card-footer">
+        <a href="/itineraries/{{ itin.id }}/" class="btn-view-itin">View Full Plan →</a>
+        <button class="btn-del-itin" onclick="deleteItin({{ itin.id }}, this)">Delete</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="itin-empty">
+    <span class="itin-empty-icon">🗺️</span>
+    <div class="itin-empty-title">No itineraries yet</div>
+    <p class="itin-empty-msg">Let AI plan your perfect {{ CITY_NAME }} trip — just tell it your days, budget, and interests.</p>
+    <button class="btn-new" onclick="openGenerator()">Generate Your First Itinerary</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- AI Generator Modal -->
+<div class="gen-modal" id="genModal">
+  <div class="gen-box">
+    <div class="gen-head">
+      <span class="gen-head-title">🗺️ AI Itinerary Generator</span>
+      <button class="gen-close" onclick="closeGenerator()">✕</button>
+    </div>
+    <div class="gen-body" id="genForm">
+      <div class="gen-field">
+        <label class="gen-label">Number of Days</label>
+        <select class="gen-select" id="gen-days">
+          <option value="1">1 Day</option>
+          <option value="2">2 Days</option>
+          <option value="3" selected>3 Days</option>
+          <option value="5">5 Days</option>
+          <option value="7">1 Week</option>
+        </select>
+      </div>
+      <div class="gen-field">
+        <label class="gen-label">Budget (NPR)</label>
+        <input type="number" class="gen-input" id="gen-budget" placeholder="e.g. 5000" min="0">
+      </div>
+      <div class="gen-field">
+        <label class="gen-label">Group Type</label>
+        <select class="gen-select" id="gen-group">
+          <option value="solo">Solo</option>
+          <option value="couple">Couple</option>
+          <option value="family">Family</option>
+          <option value="friends">Friends Group</option>
+        </select>
+      </div>
+      <div class="gen-field">
+        <label class="gen-label">Interests</label>
+        <div class="interests-grid">
+          <label class="interest-pill"><input type="checkbox" value="history" checked> 🏛️ History</label>
+          <label class="interest-pill"><input type="checkbox" value="food"> 🍛 Food</label>
+          <label class="interest-pill"><input type="checkbox" value="art"> 🎨 Art & Crafts</label>
+          <label class="interest-pill"><input type="checkbox" value="temples"> 🛕 Temples</label>
+          <label class="interest-pill"><input type="checkbox" value="shopping"> 🛍️ Shopping</label>
+          <label class="interest-pill"><input type="checkbox" value="photography"> 📸 Photography</label>
+          <label class="interest-pill"><input type="checkbox" value="festivals"> 🎉 Festivals</label>
+          <label class="interest-pill"><input type="checkbox" value="nature"> 🌿 Nature</label>
+        </div>
+      </div>
+      <button class="gen-btn" onclick="generateItinerary()">Generate with AI</button>
+    </div>
+    <div class="gen-loading" id="genLoading">
+      <div class="gen-spinner"></div>
+      <p style="font-family:var(--font-head);font-weight:700;">AI is crafting your itinerary…</p>
+      <p style="color:var(--stone);font-size:.85rem;margin-top:.5rem;">Analyzing {{ CITY_NAME }}'s best spots for you</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function openGenerator() { document.getElementById('genModal').classList.add('open'); }
+function closeGenerator() { document.getElementById('genModal').classList.remove('open'); }
+
+document.getElementById('genModal').addEventListener('click', function(e) {
+  if (e.target === this) closeGenerator();
+});
+
+function generateItinerary() {
+  const days = document.getElementById('gen-days').value;
+  const budget = document.getElementById('gen-budget').value;
+  const group = document.getElementById('gen-group').value;
+  const interests = [...document.querySelectorAll('.interests-grid input:checked')].map(i => i.value);
+
+  document.getElementById('genForm').style.display = 'none';
+  document.getElementById('genLoading').style.display = 'block';
+
+  fetch('/itineraries/generate/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ days, budget, group_type: group, interests })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      window.location.href = '/itineraries/' + data.itinerary_id + '/';
+    } else {
+      alert(data.error || 'Generation failed. Please try again.');
+      document.getElementById('genForm').style.display = 'block';
+      document.getElementById('genLoading').style.display = 'none';
+    }
+  })
+  .catch(() => {
+    alert('Network error. Please try again.');
+    document.getElementById('genForm').style.display = 'block';
+    document.getElementById('genLoading').style.display = 'none';
+  });
+}
+
+function deleteItin(id, btn) {
+  if (!confirm('Delete this itinerary?')) return;
+  fetch('/itineraries/' + id + '/delete/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      const card = document.getElementById('itin-' + id);
+      card.style.opacity = '0'; card.style.transform = 'scale(.95)'; card.style.transition = 'all .3s';
+      setTimeout(() => card.remove(), 300);
+    }
+  });
+}
+
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => { c = c.trim(); if (c.startsWith(name+'=')) v = decodeURIComponent(c.slice(name.length+1)); });
+  return v;
+}
+</script>
+{% endblock %}

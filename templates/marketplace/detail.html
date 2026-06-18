@@ -1,0 +1,200 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ product.name }} — {{ CITY_NAME }} Marketplace{% endblock %}
+
+{% block content %}
+<style>
+.pd-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+.pd-back { display:inline-flex; align-items:center; gap:.5rem; color:var(--stone); font-size:.85rem; text-decoration:none; margin-bottom:1.5rem; }
+.pd-back:hover { color:var(--red); }
+.pd-grid { display:grid; grid-template-columns:1fr 1fr; gap:3rem; }
+@media(max-width:768px){ .pd-grid { grid-template-columns:1fr; gap:2rem; } }
+.pd-gallery { position:relative; }
+.pd-main-img { width:100%; aspect-ratio:1; object-fit:cover; border:3px solid var(--ink); display:block; }
+.pd-main-placeholder { width:100%; aspect-ratio:1; background:var(--cream); border:3px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:5rem; }
+.pd-info {}
+.pd-vendor { font-size:.8rem; color:var(--stone); text-transform:uppercase; letter-spacing:.1em; margin-bottom:.5rem; }
+.pd-vendor a { color:var(--red); text-decoration:none; }
+.pd-name { font-family:var(--font-head); font-size:2rem; font-weight:800; line-height:1.1; margin:0 0 .75rem; }
+.pd-cat { display:inline-block; background:var(--gold); color:var(--ink); font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; padding:.25rem .75rem; margin-bottom:1rem; }
+.pd-price-row { display:flex; align-items:baseline; gap:1rem; margin-bottom:1.5rem; }
+.pd-price { font-family:var(--font-head); font-size:2.2rem; font-weight:800; color:var(--red); }
+.pd-stock { font-size:.85rem; color:var(--stone); }
+.pd-stock.in { color:#2e7d32; font-weight:600; }
+.pd-stock.out { color:var(--red); font-weight:600; }
+.pd-divider { border:none; border-top:2px solid var(--cream); margin:1.5rem 0; }
+.pd-desc { color:var(--stone); line-height:1.7; margin-bottom:1.5rem; }
+.pd-qty-row { display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
+.pd-qty-label { font-weight:600; font-size:.9rem; }
+.qty-ctrl { display:flex; align-items:center; border:2px solid var(--ink); }
+.qty-ctrl button { width:2.2rem; height:2.2rem; background:none; border:none; cursor:pointer; font-size:1.1rem; font-weight:700; transition:background .15s; }
+.qty-ctrl button:hover { background:var(--ink); color:var(--paper); }
+.qty-ctrl input { width:3rem; height:2.2rem; border:none; border-left:2px solid var(--ink); border-right:2px solid var(--ink); text-align:center; font-family:var(--font-head); font-size:1rem; font-weight:700; background:var(--paper); outline:none; }
+.pd-btn-row { display:flex; gap:1rem; flex-wrap:wrap; }
+.btn-cart { flex:1; min-width:160px; padding:.9rem 1.5rem; background:var(--ink); color:var(--paper); border:2px solid var(--ink); font-family:var(--font-head); font-size:.95rem; font-weight:700; cursor:pointer; text-transform:uppercase; letter-spacing:.05em; transition:all .2s; }
+.btn-cart:hover { background:var(--red); border-color:var(--red); }
+.btn-wish { padding:.9rem 1.2rem; background:transparent; border:2px solid var(--ink); cursor:pointer; font-size:1.1rem; transition:all .2s; }
+.btn-wish:hover { background:var(--gold-light); }
+.pd-meta { margin-top:1.5rem; }
+.pd-meta-row { display:flex; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid var(--cream); font-size:.85rem; }
+.pd-meta-row span:first-child { color:var(--stone); }
+.pd-meta-row span:last-child { font-weight:600; }
+.toast { position:fixed; bottom:2rem; right:2rem; background:var(--ink); color:var(--paper); padding:1rem 1.5rem; font-family:var(--font-head); font-weight:700; font-size:.9rem; opacity:0; transform:translateY(1rem); transition:all .3s; z-index:1000; pointer-events:none; }
+.toast.show { opacity:1; transform:translateY(0); }
+/* Related */
+.related-section { max-width:1100px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+.section-head { font-family:var(--font-head); font-size:1.4rem; font-weight:800; border-left:4px solid var(--red); padding-left:1rem; margin-bottom:1.5rem; }
+.related-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1.5rem; }
+.rel-card { border:2px solid var(--ink); background:var(--paper); text-decoration:none; color:var(--ink); display:block; transition:transform .2s; }
+.rel-card:hover { transform:translateY(-4px); }
+.rel-img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--cream); font-size:2.5rem; display:flex; align-items:center; justify-content:center; }
+.rel-info { padding:.75rem 1rem; }
+.rel-name { font-family:var(--font-head); font-weight:700; font-size:.9rem; margin-bottom:.25rem; }
+.rel-price { color:var(--red); font-weight:800; font-size:.95rem; }
+</style>
+
+<div class="pd-wrap">
+  <a href="{% url 'marketplace:list' %}" class="pd-back">← Back to Marketplace</a>
+
+  <div class="pd-grid">
+    <!-- Gallery -->
+    <div class="pd-gallery">
+      {% if product.images.first %}
+        <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}" class="pd-main-img" loading="lazy">
+      {% else %}
+        <div class="pd-main-placeholder">🛍️</div>
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="pd-info">
+      <div class="pd-vendor">
+        Sold by <a href="#">{{ product.vendor.shop_name|default:"Local Vendor" }}</a>
+      </div>
+      <h1 class="pd-name">{{ product.name }}</h1>
+      {% if product.category %}
+        <span class="pd-cat">{{ product.category.name }}</span>
+      {% endif %}
+
+      <div class="pd-price-row">
+        <span class="pd-price">₨{{ product.price|floatformat:0 }}</span>
+        {% if product.stock > 0 %}
+          <span class="pd-stock in">✓ In Stock ({{ product.stock }} left)</span>
+        {% else %}
+          <span class="pd-stock out">✗ Out of Stock</span>
+        {% endif %}
+      </div>
+
+      <hr class="pd-divider">
+
+      <p class="pd-desc">{{ product.description }}</p>
+
+      {% if product.stock > 0 %}
+      <div class="pd-qty-row">
+        <span class="pd-qty-label">Quantity:</span>
+        <div class="qty-ctrl">
+          <button onclick="changeQty(-1)">−</button>
+          <input type="number" id="qty" value="1" min="1" max="{{ product.stock }}">
+          <button onclick="changeQty(1)">+</button>
+        </div>
+      </div>
+
+      <div class="pd-btn-row">
+        <button class="btn-cart" onclick="addToCart({{ product.id }})">Add to Cart</button>
+        <button class="btn-wish" title="Save to Favorites" onclick="toggleFav(this)">♡</button>
+      </div>
+      {% else %}
+        <p style="color:var(--red);font-weight:700;font-size:1rem;">Currently unavailable.</p>
+      {% endif %}
+
+      <div class="pd-meta" style="margin-top:2rem;">
+        <div class="pd-meta-row"><span>Category</span><span>{{ product.category.name|default:"—" }}</span></div>
+        <div class="pd-meta-row"><span>Origin</span><span>{{ CITY_NAME }}, Nepal</span></div>
+        <div class="pd-meta-row"><span>Product ID</span><span>#{{ product.id }}</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if related %}
+<div class="related-section">
+  <div class="section-head">More from this category</div>
+  <div class="related-grid">
+    {% for p in related %}
+    <a href="{% url 'marketplace:detail' p.id %}" class="rel-card">
+      <div class="rel-img">🛍️</div>
+      <div class="rel-info">
+        <div class="rel-name">{{ p.name }}</div>
+        <div class="rel-price">₨{{ p.price|floatformat:0 }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="toast" id="toast"></div>
+
+<script>
+function changeQty(delta) {
+  const input = document.getElementById('qty');
+  const max = parseInt(input.max);
+  let val = parseInt(input.value) + delta;
+  if (val < 1) val = 1;
+  if (val > max) val = max;
+  input.value = val;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function addToCart(productId) {
+  const qty = parseInt(document.getElementById('qty').value);
+  fetch('/marketplace/api/cart/add/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ product_id: productId, quantity: qty })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Added to cart!');
+      const badge = document.querySelector('.cart-badge');
+      if (badge && data.cart_count) badge.textContent = data.cart_count;
+    } else {
+      showToast(data.error || 'Error adding to cart');
+    }
+  });
+}
+
+function toggleFav(btn) {
+  fetch('/favorites/toggle/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ content_type: 'product', object_id: {{ product.id }} })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      const saved = data.action === 'added';
+      btn.textContent = saved ? '♥' : '♡';
+      showToast(saved ? 'Saved to favorites!' : 'Removed from favorites');
+    } else {
+      window.location.href = '/login/';
+    }
+  });
+}
+
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => {
+    c = c.trim();
+    if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+  });
+  return v;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Vendors — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Vendors</h1>
+  <span style="font-size:.85rem;color:var(--stone);">Users register as vendors through the site. Approve them here.</span>
+</div>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>Shop Name</th>
+        <th>Owner</th>
+        <th>Phone</th>
+        <th>Address</th>
+        <th>Joined</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td style="font-weight:600;">{{ item.shop_name }}</td>
+        <td>
+          <div style="font-size:.88rem;">{{ item.user.get_full_name|default:item.user.email }}</div>
+          <div style="font-size:.75rem;color:var(--stone);">{{ item.user.email }}</div>
+        </td>
+        <td>{{ item.phone|default:"—" }}</td>
+        <td style="font-size:.82rem;color:var(--stone);">{{ item.address|default:"—"|truncatechars:30 }}</td>
+        <td style="white-space:nowrap;font-size:.82rem;">{{ item.created_at|date:"M d, Y" }}</td>
+        <td>
+          {% if item.is_approved %}
+            <span class="cms-pill pill-active">Approved</span>
+          {% else %}
+            <span class="cms-pill pill-inactive">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" action="{% url 'adminpanel:cms_vendor_toggle' item.pk %}">
+            {% csrf_token %}
+            {% if item.is_approved %}
+              <button type="submit" class="btn-del" style="white-space:nowrap;" onclick="return confirm('Suspend {{ item.shop_name }}?')">Suspend</button>
+            {% else %}
+              <button type="submit" class="btn-edit" style="background:#166534;white-space:nowrap;">Approve</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:var(--stone);padding:32px;">No vendors registered yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

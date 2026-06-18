@@ -1,0 +1,68 @@
+{% extends "base/base.html" %}
+{% block title %}My Orders — {{ CITY_NAME }}{% endblock %}
+
+{% block content %}
+<style>
+.orders-wrap { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+.orders-title { font-family: var(--font-head); font-size: 1.8rem; font-weight: 800; margin-bottom: 28px; border-left: 4px solid var(--red); padding-left: 14px; }
+.order-card { background: var(--white); border: var(--border); border-radius: 6px; margin-bottom: 16px; overflow: hidden; }
+.order-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--cream); flex-wrap: wrap; gap: 8px; }
+.order-id { font-family: var(--font-head); font-weight: 700; font-size: 0.9rem; }
+.order-date { font-size: 0.8rem; color: var(--stone); }
+.order-status { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 20px; }
+.status-pending    { background: rgba(201,162,39,0.15); color: #8B6E10; }
+.status-processing { background: rgba(59,130,246,0.12); color: #1e4e8c; }
+.status-shipped    { background: rgba(139,92,246,0.12); color: #5b21b6; }
+.status-completed  { background: rgba(34,197,94,0.12); color: #166534; }
+.status-cancelled  { background: rgba(193,59,42,0.08); color: var(--red-dark); }
+.order-items { padding: 16px 20px; }
+.order-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--cream); font-size: 0.88rem; }
+.order-item:last-child { border-bottom: none; }
+.order-item-name { font-weight: 600; }
+.order-item-qty { color: var(--stone); font-size: 0.82rem; }
+.order-footer { display: flex; justify-content: flex-end; padding: 12px 20px; border-top: var(--border); font-family: var(--font-head); font-weight: 700; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--stone); }
+.empty-state .icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+@media(max-width:600px) {
+  .orders-wrap { padding: 20px 12px; }
+  .orders-title { font-size: 1.4rem; }
+  .order-header { flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 14px; }
+  .order-items { padding: 12px 14px; }
+  .order-item { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .order-footer { padding: 10px 14px; }
+}
+</style>
+
+<div class="orders-wrap">
+  <h1 class="orders-title">My Orders</h1>
+
+  {% if orders %}
+    {% for order in orders %}
+    <div class="order-card">
+      <div class="order-header">
+        <div>
+          <div class="order-id">Order #{{ order.pk }}</div>
+          <div class="order-date">{{ order.created_at|date:"M d, Y · g:i A" }}</div>
+        </div>
+        <span class="order-status status-{{ order.status }}">{{ order.get_status_display }}</span>
+      </div>
+      <div class="order-items">
+        {% for item in order.items.all %}
+        <div class="order-item">
+          <span class="order-item-name">{{ item.product.name|default:"(Deleted product)" }}</span>
+          <span class="order-item-qty">× {{ item.quantity }} — NPR {{ item.price }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="order-footer">Total: NPR {{ order.total_amount }}</div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <span class="icon">📦</span>
+      <p>You haven't placed any orders yet.</p>
+      <a href="/marketplace/" class="btn btn-primary" style="margin-top:16px;">Browse Marketplace</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

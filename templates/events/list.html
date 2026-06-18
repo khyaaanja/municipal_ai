@@ -1,0 +1,124 @@
+{% extends "base/base.html" %}
+{% block title %}Events — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.page-header{background:var(--ink);color:#fff;padding:50px 20px 40px;}
+.page-header-inner{max-width:1100px;margin:0 auto;}
+.page-header h1{font-size:2.2rem;margin:0 0 8px;}
+.page-header p{color:rgba(255,255,255,.65);margin:0;font-size:.95rem;}
+.events-layout{max-width:1100px;margin:0 auto;padding:32px 20px;display:grid;grid-template-columns:240px 1fr;gap:32px;}
+@media(max-width:768px){.events-layout{grid-template-columns:1fr;}}
+.filter-sidebar{position:sticky;top:80px;height:fit-content;}
+.filter-box{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:20px;}
+.filter-box h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 14px;color:var(--ink-light);}
+.filter-option{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.88rem;cursor:pointer;}
+.filter-option input{accent-color:var(--accent);}
+.filter-sep{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.btn-apply{width:100%;background:var(--accent);color:#fff;border:none;padding:10px;border-radius:6px;font-weight:700;font-size:.85rem;text-transform:uppercase;cursor:pointer;letter-spacing:.05em;}
+.events-main{}
+.events-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.events-toolbar .count{font-size:.88rem;color:var(--ink-light);}
+.sort-select{border:1.5px solid var(--border);background:var(--paper);padding:8px 12px;border-radius:6px;font-size:.85rem;}
+.event-card{display:grid;grid-template-columns:120px 1fr;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--paper);margin-bottom:16px;transition:box-shadow .2s;}
+.event-card:hover{box-shadow:4px 4px 0 var(--ink);}
+.event-date-block{background:var(--ink);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;}
+.event-date-block .month{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;opacity:.7;}
+.event-date-block .day{font-size:2.4rem;font-weight:900;line-height:1;}
+.event-date-block .year{font-size:.75rem;opacity:.7;}
+.event-body{padding:18px 20px;}
+.event-body h3{margin:0 0 6px;font-size:1.1rem;}
+.event-body h3 a{color:var(--ink);text-decoration:none;}
+.event-body h3 a:hover{color:var(--accent);}
+.event-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:.82rem;color:var(--ink-light);margin-bottom:8px;}
+.event-meta span{display:flex;align-items:center;gap:4px;}
+.event-desc{font-size:.88rem;color:var(--ink-light);line-height:1.6;margin-bottom:12px;}
+.event-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.tag{padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;border:1.5px solid var(--border);text-transform:uppercase;letter-spacing:.04em;}
+.tag-featured{border-color:var(--accent);color:var(--accent);}
+.tag-free{border-color:#22c55e;color:#22c55e;}
+.no-results{text-align:center;padding:60px 20px;color:var(--ink-light);}
+.no-results .emoji{font-size:3rem;margin-bottom:12px;}
+</style>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <h1>Events & Festivals</h1>
+    <p>Discover what's happening in {{ CITY_NAME }}</p>
+  </div>
+</div>
+
+<div class="events-layout">
+  <aside class="filter-sidebar">
+    <form method="get">
+      <div class="filter-box">
+        <h3>Category</h3>
+        {% for cat in categories %}
+        <label class="filter-option">
+          <input type="radio" name="category" value="{{ cat.0 }}" {% if active_category == cat.0 %}checked{% endif %}> {{ cat.1 }}
+        </label>
+        {% endfor %}
+        <label class="filter-option">
+          <input type="radio" name="category" value="" {% if not active_category %}checked{% endif %}> All Categories
+        </label>
+
+        <hr class="filter-sep">
+        <h3>Timing</h3>
+        <label class="filter-option">
+          <input type="radio" name="when" value="upcoming" {% if when == 'upcoming' %}checked{% endif %}> Upcoming
+        </label>
+        <label class="filter-option">
+          <input type="radio" name="when" value="today" {% if when == 'today' %}checked{% endif %}> Today
+        </label>
+        <label class="filter-option">
+          <input type="radio" name="when" value="this_week" {% if when == 'this_week' %}checked{% endif %}> This Week
+        </label>
+        <label class="filter-option">
+          <input type="radio" name="when" value="past" {% if when == 'past' %}checked{% endif %}> Past Events
+        </label>
+
+        <hr class="filter-sep">
+        <button type="submit" class="btn-apply">Apply Filters</button>
+      </div>
+    </form>
+  </aside>
+
+  <main class="events-main">
+    <div class="events-toolbar">
+      <span class="count">{{ events.count }} event{{ events.count|pluralize }} found</span>
+      <select class="sort-select" onchange="window.location.search='?sort='+this.value">
+        <option value="date">Sort by Date</option>
+        <option value="popular">Most Popular</option>
+      </select>
+    </div>
+
+    {% for event in events %}
+    <div class="event-card">
+      <div class="event-date-block">
+        <span class="month">{{ event.start_date|date:"M" }}</span>
+        <span class="day">{{ event.start_date|date:"d" }}</span>
+        <span class="year">{{ event.start_date|date:"Y" }}</span>
+      </div>
+      <div class="event-body">
+        <h3><a href="/events/{{ event.pk }}/">{{ event.name }}</a></h3>
+        <div class="event-meta">
+          <span>📍 {{ event.venue|default:"TBA" }}</span>
+          <span>🕐 {{ event.start_date|date:"g:i A" }}</span>
+          {% if event.registration_count %}<span>👥 {{ event.registration_count }} attending</span>{% endif %}
+        </div>
+        <p class="event-desc">{{ event.description|truncatewords:25 }}</p>
+        <div class="event-tags">
+          {% if event.is_featured %}<span class="tag tag-featured">Featured</span>{% endif %}
+          {% if event.is_free %}<span class="tag tag-free">Free</span>{% endif %}
+          {% if event.category %}<span class="tag">{{ event.get_category_display }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="no-results">
+      <div class="emoji">🎪</div>
+      <p>No events found. Check back soon!</p>
+    </div>
+    {% endfor %}
+  </main>
+</div>
+{% endblock %}

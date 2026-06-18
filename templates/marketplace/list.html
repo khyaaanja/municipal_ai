@@ -1,0 +1,177 @@
+{% extends "base/base.html" %}
+{% block title %}Marketplace — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.page-header{background:var(--ink);color:#fff;padding:50px 20px 40px;}
+.page-header-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
+.page-header h1{font-size:2.2rem;margin:0 0 6px;}
+.page-header p{color:rgba(255,255,255,.65);margin:0;}
+.cart-btn{display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:700;font-size:.88rem;}
+.cart-count{background:#fff;color:var(--accent);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;}
+.market-layout{max-width:1100px;margin:0 auto;padding:32px 20px;display:grid;grid-template-columns:220px 1fr;gap:32px;}
+.filter-toggle{display:none;width:100%;padding:10px 16px;background:var(--ink);color:var(--paper);border:none;border-radius:6px;font-weight:700;font-size:.88rem;cursor:pointer;margin-bottom:12px;text-align:left;gap:8px;align-items:center;}
+@media(max-width:768px){
+  .market-layout{grid-template-columns:1fr;padding:20px 14px;gap:16px;}
+  .filter-sidebar{position:static;}
+  .filter-toggle{display:flex;}
+  .filter-boxes{display:none;}
+  .filter-boxes.open{display:block;}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+  .product-img{height:160px;}
+  .page-header{padding:32px 14px 28px;}
+  .page-header h1{font-size:1.6rem;}
+}
+@media(max-width:480px){
+  .product-grid{grid-template-columns:repeat(2,1fr);}
+  .product-img{height:140px;}
+}
+.filter-sidebar{position:sticky;top:80px;height:fit-content;}
+.filter-box{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;}
+.filter-box h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;color:var(--ink-light);}
+.filter-option{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.86rem;cursor:pointer;}
+.filter-option input{accent-color:var(--accent);}
+.price-range{display:flex;gap:8px;}
+.price-range input{flex:1;border:1.5px solid var(--border);background:var(--paper);padding:6px 10px;border-radius:4px;font-size:.82rem;width:0;}
+.btn-apply{width:100%;background:var(--accent);color:#fff;border:none;padding:9px;border-radius:6px;font-weight:700;font-size:.82rem;text-transform:uppercase;cursor:pointer;margin-top:10px;}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;}
+.product-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;overflow:hidden;transition:box-shadow .2s;display:flex;flex-direction:column;}
+.product-card:hover{box-shadow:4px 4px 0 var(--ink);}
+.product-img{height:200px;background:#e8e4dc;overflow:hidden;position:relative;}
+.product-img img{width:100%;height:100%;object-fit:cover;transition:transform .3s;}
+.product-card:hover .product-img img{transform:scale(1.04);}
+.product-img .no-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#f0ebe0,#e0d8cc);}
+.product-body{padding:14px;flex:1;display:flex;flex-direction:column;}
+.product-body h3{margin:0 0 4px;font-size:.95rem;font-weight:700;}
+.product-body h3 a{color:var(--ink);text-decoration:none;}
+.product-body h3 a:hover{color:var(--accent);}
+.product-vendor{font-size:.76rem;color:var(--ink-light);margin-bottom:8px;}
+.product-price{font-size:1.1rem;font-weight:900;color:var(--accent);margin-bottom:12px;margin-top:auto;}
+.btn-add-cart{width:100%;background:var(--ink);color:#fff;border:none;padding:9px;border-radius:5px;font-size:.82rem;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.04em;}
+.btn-add-cart:hover{background:var(--accent);}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.count{font-size:.86rem;color:var(--ink-light);}
+.sort-select{border:1.5px solid var(--border);background:var(--paper);padding:7px 12px;border-radius:6px;font-size:.83rem;}
+.added-msg{position:fixed;bottom:20px;right:20px;background:var(--ink);color:#fff;padding:12px 20px;border-radius:8px;font-size:.88rem;font-weight:600;display:none;z-index:999;}
+</style>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div>
+      <h1>Marketplace</h1>
+      <p>Authentic local products from {{ CITY_NAME }} vendors</p>
+    </div>
+    <a href="/marketplace/cart/" class="cart-btn">
+      🛒 Cart <span class="cart-count">{{ cart_count|default:0 }}</span>
+    </a>
+  </div>
+</div>
+
+<div class="market-layout">
+  <aside class="filter-sidebar">
+    <form method="get">
+      <button type="button" class="filter-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.ft-arrow').textContent=this.nextElementSibling.classList.contains('open')?'▲':'▼'">
+        🔍 Filters &amp; Categories <span class="ft-arrow">▼</span>
+      </button>
+      <div class="filter-boxes">
+      <div class="filter-box">
+        <h3>Category</h3>
+        <label class="filter-option"><input type="radio" name="category" value="" {% if not active_category %}checked{% endif %}> All</label>
+        {% for cat in categories %}
+        <label class="filter-option"><input type="radio" name="category" value="{{ cat.slug }}" {% if active_category == cat.slug %}checked{% endif %}> {{ cat.name }}</label>
+        {% endfor %}
+      </div>
+      <div class="filter-box">
+        <h3>Price Range (NPR)</h3>
+        <div class="price-range">
+          <input type="number" name="min_price" placeholder="Min" value="{{ min_price|default:'' }}">
+          <input type="number" name="max_price" placeholder="Max" value="{{ max_price|default:'' }}">
+        </div>
+        <button type="submit" class="btn-apply">Apply</button>
+      </div>
+      </div><!-- /filter-boxes -->
+    </form>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <span class="count">{{ products.count }} product{{ products.count|pluralize }}</span>
+      <select class="sort-select" onchange="let url=new URL(window.location);url.searchParams.set('sort',this.value);window.location=url;">
+        <option value="newest">Newest</option>
+        <option value="price_low">Price: Low to High</option>
+        <option value="price_high">Price: High to Low</option>
+      </select>
+    </div>
+
+    <div class="product-grid">
+      {% for product in products %}
+      <div class="product-card">
+        <div class="product-img">
+          {% if product.images.first %}
+            <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}" loading="lazy">
+          {% else %}
+            <div class="no-img">
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="72" height="72" opacity="0.55">
+                <rect x="20" y="45" width="60" height="40" rx="3" fill="#C13B2A"/>
+                <rect x="15" y="40" width="70" height="8" rx="2" fill="#9E2E1E"/>
+                <path d="M50 15 C50 15 30 30 30 40 H70 C70 30 50 15 50 15Z" fill="#C9A227"/>
+                <rect x="40" y="65" width="20" height="20" rx="2" fill="#9E2E1E"/>
+                <line x1="50" y1="40" x2="50" y2="15" stroke="#C9A227" stroke-width="2"/>
+                <line x1="15" y1="44" x2="85" y2="44" stroke="#C9A227" stroke-width="2"/>
+              </svg>
+            </div>
+          {% endif %}
+        </div>
+        <div class="product-body">
+          <h3><a href="/marketplace/{{ product.pk }}/">{{ product.name }}</a></h3>
+          <p class="product-vendor">by {{ product.vendor.shop_name|default:"Local Vendor" }}</p>
+          <p class="product-price">NPR {{ product.price }}</p>
+          <button class="btn-add-cart" onclick="addToCart({{ product.pk }}, this)">Add to Cart</button>
+        </div>
+      </div>
+      {% empty %}
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink-light);">
+        <div style="font-size:3rem;margin-bottom:12px;">🏪</div>
+        <p>No products found.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </main>
+</div>
+
+<div class="added-msg" id="addedMsg">✓ Added to cart!</div>
+
+<script>
+async function addToCart(productId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Adding...';
+  try {
+    const res = await fetch('/marketplace/api/cart/add/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify({product_id: productId, quantity: 1})
+    });
+    const data = await res.json();
+    if (data.success) {
+      btn.textContent = '✓ Added';
+      btn.style.background = '#22c55e';
+      const msg = document.getElementById('addedMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2000);
+      const cc = document.querySelector('.cart-count');
+      if (cc) cc.textContent = data.cart_count;
+    } else {
+      btn.textContent = 'Login to buy';
+      btn.style.background = 'var(--accent)';
+      setTimeout(() => { window.location.href = '/login/'; }, 800);
+    }
+  } catch(e) {
+    btn.textContent = 'Add to Cart';
+    btn.disabled = false;
+  }
+}
+function getCookie(name) {
+  let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+</script>
+{% endblock %}

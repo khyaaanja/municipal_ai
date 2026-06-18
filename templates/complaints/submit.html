@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report to the City — Bhaktapur Municipal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#060810;--gold:#c9a84c;--red:#C1440E;--surface:#111009;--card:#1A1710;
+      --border:rgba(201,168,76,0.18);--text:#E8DFC8;--muted:#7A7060;
+      --success:#4A8A5A;--warning:#FF6B35;--font-h:'Cinzel',serif;--font-b:'Inter',sans-serif;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;}
+
+    /* Hero */
+    .hero{position:relative;padding:5rem 1.5rem 3rem;text-align:center;background:radial-gradient(ellipse at 50% 0%,#0D0A07 0%,var(--bg) 70%);overflow:hidden;}
+    #particles-js{position:absolute;inset:0;z-index:0;}
+    .hero-inner{position:relative;z-index:1;}
+    .hero h1{font-family:var(--font-h);font-size:clamp(2rem,5vw,3rem);color:var(--gold);letter-spacing:0.04em;will-change:transform;}
+    .hero p{color:var(--muted);font-size:1rem;margin-top:0.75rem;will-change:transform;}
+
+    /* Nav */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0.75rem 1.5rem;display:flex;justify-content:space-between;align-items:center;background:rgba(6,8,16,0.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);}
+    .nav-logo{font-family:var(--font-h);font-size:1rem;color:var(--gold);text-decoration:none;}
+    .nav-links{display:flex;gap:1.25rem;align-items:center;}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color 0.2s;}
+    .nav-links a:hover{color:var(--gold);}
+
+    /* Category grid */
+    .section{max-width:760px;margin:0 auto;padding:2rem 1.5rem;}
+    .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.75rem;margin-bottom:2rem;}
+    .cat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 0.75rem;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;will-change:transform;}
+    .cat-card:hover{border-color:var(--gold);}
+    .cat-card.selected{border-color:var(--gold);background:rgba(201,168,76,0.08);}
+    .cat-icon{font-size:1.6rem;display:block;margin-bottom:0.4rem;}
+    .cat-label{font-size:0.78rem;color:var(--text);}
+
+    /* Form */
+    .form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:2rem;}
+    .form-group{position:relative;margin-bottom:1.4rem;}
+    .form-group input,.form-group textarea{
+      width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+      padding:1rem 1rem 0.5rem;font-size:1rem;color:var(--text);font-family:var(--font-b);
+      outline:none;transition:border-color 0.3s,box-shadow 0.3s;min-height:44px;}
+    .form-group textarea{padding-top:1.3rem;resize:vertical;min-height:110px;}
+    .form-group input:focus,.form-group textarea:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,0.2);}
+    .form-group label{position:absolute;left:1rem;top:50%;transform:translateY(-50%);font-size:0.9rem;color:var(--muted);pointer-events:none;transition:top 0.2s,font-size 0.2s,color 0.2s;}
+    .form-group textarea ~ label{top:1.1rem;transform:none;}
+    .form-group input:focus ~ label,.form-group input:not(:placeholder-shown) ~ label{top:0.45rem;font-size:0.72rem;color:var(--gold);}
+    .form-group textarea:focus ~ label,.form-group textarea:not(:placeholder-shown) ~ label{top:0.3rem;font-size:0.72rem;color:var(--gold);}
+    .char-counter{position:absolute;right:0.75rem;bottom:0.5rem;font-size:0.72rem;color:var(--muted);}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    @media(max-width:480px){.form-row{grid-template-columns:1fr;}.cat-grid{grid-template-columns:repeat(2,1fr);}}
+
+    .error-box{background:rgba(193,68,14,0.12);border:1px solid rgba(193,68,14,0.4);border-radius:6px;padding:0.75rem 1rem;margin-bottom:1.2rem;font-size:0.875rem;color:#ff8a65;}
+
+    /* Submit button */
+    .btn-submit{
+      width:100%;padding:1rem;background:linear-gradient(135deg,#c9a84c,#a07830);
+      color:#060810;font-family:var(--font-h);font-size:1rem;font-weight:700;
+      border:none;border-radius:6px;cursor:pointer;position:relative;overflow:hidden;
+      transition:opacity 0.2s;min-height:44px;will-change:transform;}
+    .btn-submit::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent);
+      transition:left 0.6s linear;}
+    .btn-submit:not(:disabled):hover::after{left:150%;}
+    .btn-submit:disabled{opacity:0.6;cursor:not-allowed;}
+
+    /* Success overlay */
+    .success-overlay{
+      position:fixed;inset:0;z-index:9999;background:rgba(6,8,16,0.97);
+      display:flex;align-items:center;justify-content:center;padding:1.5rem;
+      will-change:transform,opacity;}
+    .success-card{text-align:center;max-width:440px;width:100%;}
+    .success-card h2{font-family:var(--font-h);font-size:1.6rem;color:var(--gold);margin-bottom:0.75rem;}
+    .success-id{font-family:var(--font-h);font-size:3rem;color:var(--gold);margin:1rem 0;letter-spacing:0.06em;}
+    .success-card p{color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;}
+    .success-actions{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;}
+    .btn-copy{
+      padding:0.65rem 1.25rem;background:rgba(201,168,76,0.1);border:1px solid var(--border);
+      color:var(--gold);border-radius:6px;cursor:pointer;font-size:0.875rem;transition:background 0.2s;}
+    .btn-copy:hover{background:rgba(201,168,76,0.2);}
+    .btn-gold-sm{
+      padding:0.65rem 1.25rem;background:linear-gradient(135deg,#c9a84c,#a07830);
+      color:#060810;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.875rem;text-decoration:none;}
+    .divider-line{width:60px;height:1px;background:var(--border);margin:1rem auto;}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">Municipal AI</a>
+  <div class="nav-links">
+    <a href="{% url 'complaints:complaint_track' %}">Track Complaint</a>
+    {% if user.is_authenticated %}
+    <a href="{% url 'complaints:my_complaints' %}">My Complaints</a>
+    <a href="{% url 'accounts:profile' %}">Profile</a>
+    {% else %}
+    <a href="{% url 'accounts:login' %}">Sign In</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Success overlay -->
+{% if success_id %}
+<div class="success-overlay" id="success-overlay">
+  <div class="success-card">
+    <div style="font-size:3rem;margin-bottom:1rem;">✅</div>
+    <h2>Complaint Received</h2>
+    <div class="divider-line"></div>
+    <p>Your complaint has been submitted to the municipality.<br>Use your ID to track progress.</p>
+    <div class="success-id" id="success-id-text">{{ success_id }}</div>
+    <div class="success-actions">
+      <button class="btn-copy" id="copy-btn" onclick="copyId()">Copy ID</button>
+      <a class="btn-gold-sm" href="{% url 'complaints:complaint_track' %}">Track Your Complaint</a>
+      <button class="btn-gold-sm" onclick="document.getElementById('success-overlay').style.display='none'">Submit Another</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Hero -->
+<div class="hero" style="padding-top:6rem;">
+  <div id="particles-js"></div>
+  <div class="hero-inner">
+    <h1 id="hero-h">Report to the City</h1>
+    <p id="hero-p">Your voice builds a better Bhaktapur</p>
+  </div>
+</div>
+
+<div class="section">
+  {% if errors %}
+  <div class="error-box">{% for e in errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div>
+  {% endif %}
+  {% if error %}
+  <div class="error-box">{{ error }}</div>
+  {% endif %}
+
+  <!-- Category selector -->
+  <h3 style="font-family:var(--font-h);color:var(--gold);font-size:1rem;margin-bottom:1rem;letter-spacing:0.06em;">SELECT CATEGORY *</h3>
+  <div class="cat-grid" id="cat-grid">
+    {% for val, label in complaint.CATEGORY_CHOICES|default:'' %}{% endfor %}
+    <div class="cat-card" data-val="INFRASTRUCTURE" onclick="selectCat(this)"><span class="cat-icon">🏗</span><span class="cat-label">Infrastructure</span></div>
+    <div class="cat-card" data-val="SANITATION"     onclick="selectCat(this)"><span class="cat-icon">🗑</span><span class="cat-label">Sanitation</span></div>
+    <div class="cat-card" data-val="WATER"          onclick="selectCat(this)"><span class="cat-icon">💧</span><span class="cat-label">Water Supply</span></div>
+    <div class="cat-card" data-val="ELECTRICITY"    onclick="selectCat(this)"><span class="cat-icon">⚡</span><span class="cat-label">Electricity</span></div>
+    <div class="cat-card" data-val="ROAD"           onclick="selectCat(this)"><span class="cat-icon">🛣</span><span class="cat-label">Road & Transport</span></div>
+    <div class="cat-card" data-val="NOISE"          onclick="selectCat(this)"><span class="cat-icon">🔊</span><span class="cat-label">Noise & Pollution</span></div>
+    <div class="cat-card" data-val="OTHER"          onclick="selectCat(this)"><span class="cat-icon">📋</span><span class="cat-label">Other</span></div>
+  </div>
+
+  <form method="post" id="complaint-form">
+    {% csrf_token %}
+    <input type="hidden" name="category" id="category-input" value="{{ post.category|default:'' }}">
+
+    <div class="form-card">
+      <div class="form-group">
+        <input type="text" name="title" id="title" placeholder=" " maxlength="200" required value="{{ post.title|default:'' }}">
+        <label for="title">Complaint title *</label>
+      </div>
+
+      <div class="form-group">
+        <textarea name="description" id="description" placeholder=" " maxlength="1000" required>{{ post.description|default:'' }}</textarea>
+        <label for="description">Describe the issue *</label>
+        <span class="char-counter" id="char-count">0 / 1000</span>
+      </div>
+
+      <div class="form-group">
+        <input type="text" name="location" id="location" placeholder=" " maxlength="300" required value="{{ post.location|default:'' }}">
+        <label for="location">Location (e.g. Taumadhi, Dattatreya…) *</label>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <input type="text" name="name" id="name" placeholder=" " required value="{{ post.name|default:prefill_name }}">
+          <label for="name">Your name *</label>
+        </div>
+        <div class="form-group">
+          <input type="tel" name="phone" id="phone" placeholder=" " value="{{ post.phone|default:'' }}">
+          <label for="phone">Phone (optional)</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input type="email" name="email" id="cemail" placeholder=" " value="{{ post.email|default:prefill_email }}">
+        <label for="cemail">Email (optional)</label>
+      </div>
+
+      <button type="submit" class="btn-submit" id="submit-btn">Submit to Municipality</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+<script>
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Particles (desktop only)
+  if (window.innerWidth >= 768 && typeof particlesJS !== 'undefined') {
+    particlesJS('particles-js', {
+      particles: {
+        number:{value:30},color:{value:'#c9a84c'},opacity:{value:0.12,random:true},
+        size:{value:2,random:true},move:{enable:true,speed:0.5,out_mode:'out'},
+        line_linked:{enable:true,distance:110,color:'#c9a84c',opacity:0.06,width:1}
+      },
+      interactivity:{events:{onhover:{enable:false}}},retina_detect:true
+    });
+  }
+
+  // Hero animation
+  if (!prefersReducedMotion) {
+    gsap.fromTo(['#hero-h','#hero-p'],
+      {y:40,opacity:0},{y:0,opacity:1,duration:0.8,stagger:0.2,ease:'power2.out'});
+  }
+
+  // Category selector
+  let selectedCat = '{{ post.category|default:"" }}';
+  if (selectedCat) {
+    const pre = document.querySelector(`[data-val="${selectedCat}"]`);
+    if (pre) pre.classList.add('selected');
+  }
+
+  function selectCat(el) {
+    document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedCat = el.dataset.val;
+    document.getElementById('category-input').value = selectedCat;
+    if (!prefersReducedMotion) {
+      gsap.fromTo(el, {scale:1},{scale:1.05,duration:0.15,yoyo:true,repeat:1,ease:'power1.inOut'});
+    }
+  }
+
+  // Block submit without category
+  document.getElementById('complaint-form').addEventListener('submit', function(e) {
+    if (!selectedCat) {
+      e.preventDefault();
+      alert('Please select a category.');
+      return;
+    }
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-block;animation:spin 1s linear infinite">⟳</span> Submitting…';
+  });
+
+  // Char counter
+  const desc = document.getElementById('description');
+  const counter = document.getElementById('char-count');
+  function updateCounter() {
+    const len = desc.value.length;
+    counter.textContent = len + ' / 1000';
+    counter.style.color = len >= 950 ? 'var(--red)' : len >= 800 ? 'var(--gold)' : 'var(--muted)';
+  }
+  desc.addEventListener('input', updateCounter);
+  updateCounter();
+
+  // Success overlay animation
+  const overlay = document.getElementById('success-overlay');
+  if (overlay && !prefersReducedMotion) {
+    gsap.fromTo(overlay.querySelector('.success-card'),
+      {scale:0.85,opacity:0},{scale:1,opacity:1,duration:0.5,ease:'back.out(1.4)'});
+  }
+
+  function copyId() {
+    const id = document.getElementById('success-id-text').textContent.trim();
+    navigator.clipboard.writeText(id).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => btn.textContent = 'Copy ID', 2000);
+    });
+  }
+
+  // Style spin
+  const style = document.createElement('style');
+  style.textContent = '@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}';
+  document.head.appendChild(style);
+</script>
+</body>
+</html>

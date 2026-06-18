@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access Restricted — Bhaktapur Municipal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #060810;
+      --gold:    #c9a84c;
+      --red:     #C1440E;
+      --surface: #111009;
+      --card:    #1A1710;
+      --border:  rgba(201,168,76,0.18);
+      --text:    #E8DFC8;
+      --muted:   #7A7060;
+      --font-h:  'Cinzel', serif;
+      --font-b:  'Inter', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 480px;
+      opacity: 0;
+      will-change: transform;
+    }
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      display: block;
+    }
+    h1 {
+      font-family: var(--font-h);
+      font-size: 2.2rem;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+    p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    .actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.75rem 1.75rem;
+      border-radius: 6px;
+      font-family: var(--font-b);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-gold {
+      background: linear-gradient(135deg, #c9a84c, #a07830);
+      color: #060810;
+      font-weight: 600;
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--gold);
+      border: 1px solid var(--border);
+    }
+    .divider {
+      width: 60px;
+      height: 2px;
+      background: var(--border);
+      margin: 1.5rem auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="card">
+    <span class="icon">🔒</span>
+    <h1>Access Restricted</h1>
+    <div class="divider"></div>
+    <p>You don't have permission to view this page.<br>Contact your administrator if you believe this is an error.</p>
+    <div class="actions">
+      <button class="btn btn-outline" onclick="history.back()">Go Back</button>
+      <a class="btn btn-gold" href="/">Go Home</a>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script>
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReducedMotion) {
+      gsap.to('#card', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out',
+        from: { opacity: 0, y: 30 } });
+      gsap.fromTo('#card', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' });
+    } else {
+      document.getElementById('card').style.opacity = '1';
+    }
+  </script>
+</body>
+</html>

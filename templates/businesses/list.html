@@ -1,0 +1,94 @@
+{% extends "base/base.html" %}
+{% block title %}Business Directory — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.page-header{background:var(--ink);color:#fff;padding:50px 20px 40px;}
+.page-header-inner{max-width:1100px;margin:0 auto;}
+.page-header h1{font-size:2.2rem;margin:0 0 8px;}
+.page-header p{color:rgba(255,255,255,.65);margin:0;}
+.biz-layout{max-width:1100px;margin:0 auto;padding:32px 20px;}
+.biz-filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px;}
+.filter-pill{padding:8px 18px;border-radius:30px;border:1.5px solid var(--border);background:var(--paper);font-size:.83rem;font-weight:600;text-decoration:none;color:var(--ink);cursor:pointer;transition:all .15s;}
+.filter-pill:hover,.filter-pill.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.search-row{display:flex;gap:12px;margin-bottom:24px;}
+.search-row input{flex:1;border:1.5px solid var(--border);background:var(--paper);padding:10px 16px;border-radius:6px;font-size:.9rem;}
+.search-row button{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;cursor:pointer;}
+.biz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;}
+.biz-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;overflow:hidden;transition:box-shadow .2s;text-decoration:none;color:var(--ink);display:block;}
+.biz-card:hover{box-shadow:4px 4px 0 var(--ink);}
+.biz-card-img{height:160px;background:linear-gradient(135deg,#2a2a2a,#1a1a1a);position:relative;overflow:hidden;}
+.biz-card-img img{width:100%;height:100%;object-fit:cover;}
+.biz-cat-badge{position:absolute;bottom:10px;left:10px;background:var(--accent);color:#fff;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;}
+.biz-card-body{padding:16px;}
+.biz-card-body h3{margin:0 0 6px;font-size:1rem;}
+.biz-rating{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.biz-stars{color:#f59e0b;font-size:.9rem;}
+.biz-rating-count{font-size:.78rem;color:var(--ink-light);}
+.biz-info{display:flex;flex-wrap:wrap;gap:10px;font-size:.8rem;color:var(--ink-light);}
+.biz-info span{display:flex;align-items:center;gap:4px;}
+.open-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:4px;}
+.closed-dot{background:#ef4444;}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.count{font-size:.88rem;color:var(--ink-light);}
+</style>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <h1>Business Directory</h1>
+    <p>Restaurants, hotels, shops, services and more in {{ CITY_NAME }}</p>
+  </div>
+</div>
+
+<div class="biz-layout">
+  <form method="get" class="search-row">
+    <input type="text" name="q" placeholder="Search businesses..." value="{{ query|default:'' }}">
+    <button type="submit">Search</button>
+  </form>
+
+  <div class="biz-filters">
+    <a href="/businesses/" class="filter-pill {% if not active_category %}active{% endif %}">All</a>
+    {% for cat in categories %}
+    <a href="/businesses/?category={{ cat.0 }}" class="filter-pill {% if active_category == cat.0 %}active{% endif %}">{{ cat.1 }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="toolbar">
+    <span class="count">{{ businesses.count }} business{{ businesses.count|pluralize:"es" }}</span>
+  </div>
+
+  <div class="biz-grid">
+    {% for biz in businesses %}
+    <a href="/businesses/{{ biz.pk }}/" class="biz-card">
+      <div class="biz-card-img">
+        {% if biz.cover_image %}
+          <img src="{{ biz.cover_image.url }}" alt="{{ biz.name }}" loading="lazy">
+        {% endif %}
+        <span class="biz-cat-badge">{{ biz.get_category_display }}</span>
+      </div>
+      <div class="biz-card-body">
+        <h3>{{ biz.name }}</h3>
+        {% if biz.avg_rating %}
+        <div class="biz-rating">
+          <span class="biz-stars">
+            {% for i in "12345" %}{% if forloop.counter <= biz.avg_rating %}★{% else %}☆{% endif %}{% endfor %}
+          </span>
+          <span class="biz-rating-count">{{ biz.avg_rating|floatformat:1 }} ({{ biz.review_count }})</span>
+        </div>
+        {% endif %}
+        <div class="biz-info">
+          {% if biz.address %}<span>📍 {{ biz.address|truncatechars:30 }}</span>{% endif %}
+          {% if biz.phone %}<span>📞 {{ biz.phone }}</span>{% endif %}
+          {% if biz.is_open %}<span><span class="open-dot"></span>Open Now</span>
+          {% else %}<span><span class="open-dot closed-dot"></span>Closed</span>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--ink-light);">
+      <div style="font-size:3rem;margin-bottom:12px;">🏪</div>
+      <p>No businesses found.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

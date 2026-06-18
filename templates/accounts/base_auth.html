@@ -1,0 +1,598 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Bhaktapur Municipal{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Same design tokens as the main platform ── */
+    :root {
+      --ink:        #0D0D0D;
+      --paper:      #F5F0E8;
+      --cream:      #EDE8DC;
+      --red:        #C13B2A;
+      --red-dark:   #9E2E1E;
+      --gold:       #C9A227;
+      --gold-light: #F0D06A;
+      --stone:      #8A7F72;
+      --stone-light:#C4BCB0;
+      --success:    #2d6a2d;
+      --success-bg: rgba(34,106,34,0.12);
+      --warning:    #e07b00;
+      --font-head:  'Syne', sans-serif;
+      --font-body:  'DM Sans', sans-serif;
+      --radius:     4px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--ink); color: var(--paper); font-family: var(--font-body); }
+
+    /* ─────────────────────────────── LAYOUT ─────────────────────────────── */
+    .auth-layout { display: flex; min-height: 100vh; }
+
+    /* ─────────────────────────────── LEFT PANEL ─────────────────────────── */
+    .auth-left {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 3.5rem;
+    }
+
+    /* ── Photo layer — full bleed, cinematic crop ── */
+    .auth-photo {
+      position: absolute; inset: 0;
+      background: url("{% static 'images/durbar-square.jpg' %}") center center / cover no-repeat;
+      /* AI-style edits: warm grade + slight contrast lift */
+      filter: saturate(1.18) contrast(1.08) brightness(0.78) sepia(0.12);
+      transform: scale(1.04);   /* tiny zoom-in so edges are never bare */
+      transition: transform 8s ease-out;
+    }
+    .auth-photo:hover { transform: scale(1.0); }  /* slow Ken Burns on hover */
+
+    /* Cinematic warm-tint overlay */
+    .auth-photo-tint {
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        160deg,
+        rgba(201,162,39,0.08) 0%,
+        rgba(193,59,42,0.06) 40%,
+        transparent 70%
+      );
+      mix-blend-mode: screen;
+    }
+
+    /* Gradient scrim — ensures text legibility */
+    .auth-photo-scrim {
+      position: absolute; inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(0,0,0,0.82) 0%,
+        rgba(0,0,0,0.35) 45%,
+        rgba(0,0,0,0.08) 100%
+      );
+    }
+
+    /* Vignette */
+    .auth-photo-vignette {
+      position: absolute; inset: 0;
+      box-shadow: inset 0 0 120px rgba(0,0,0,0.55);
+    }
+
+    /* Subtle grid texture on top of photo */
+    .auth-left-grid {
+      position: absolute; inset: 0; z-index: 1;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(255,255,255,0.018) 79px, rgba(255,255,255,0.018) 80px),
+        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(255,255,255,0.012) 79px, rgba(255,255,255,0.012) 80px);
+    }
+
+    /* City info block */
+    .city-info { position: relative; z-index: 3; }
+
+    .city-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(193,59,42,0.15);
+      border: 1px solid rgba(193,59,42,0.3);
+      border-radius: 50px;
+      padding: 5px 14px;
+      margin-bottom: 18px;
+    }
+    .city-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--red);
+      animation: badgePulse 2s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(0.75); }
+    }
+    .city-badge-text {
+      font-family: var(--font-head);
+      font-size: 0.7rem; font-weight: 700;
+      color: rgba(245,240,232,0.7);
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+
+    .city-name-big {
+      font-family: var(--font-head);
+      font-size: clamp(2.4rem, 4vw, 3.4rem);
+      font-weight: 800;
+      color: var(--paper);
+      line-height: 1;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .city-tagline {
+      font-size: 0.9rem;
+      color: var(--stone-light);
+      margin-bottom: 2.25rem;
+    }
+
+    .city-stats { display: flex; gap: 32px; }
+    .city-stat-num {
+      display: block;
+      font-family: var(--font-head);
+      font-size: 1.5rem; font-weight: 800;
+      color: var(--paper); line-height: 1;
+    }
+    .city-stat-lbl {
+      display: block;
+      font-size: 0.7rem; color: var(--stone-light);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    /* Nav bar strip at top — mirrors main nav */
+    .auth-nav {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px; background: var(--red);
+    }
+
+    /* ─────────────────────────────── RIGHT PANEL ─────────────────────────── */
+    .auth-right {
+      width: 520px;
+      min-height: 100vh;
+      background: #111111;
+      border-left: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 3rem;
+      overflow-y: auto;
+    }
+
+    /* ─────────────────────────────── CARD ───────────────────────────────── */
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: #1a1a1a;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-top: 3px solid var(--red);   /* platform signature */
+      border-radius: 6px;
+      padding: 2.5rem 2.25rem 2.25rem;
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    .auth-card > * { opacity: 0; transform: translateY(10px); }
+
+    /* Brand block inside card */
+    .auth-brand {
+      display: flex; align-items: center;
+      gap: 10px; margin-bottom: 2.25rem;
+    }
+    .auth-brand-icon {
+      width: 34px; height: 34px;
+      background: var(--red);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head); font-weight: 800;
+      font-size: 0.95rem; color: #fff; flex-shrink: 0;
+    }
+    .auth-brand-name {
+      font-family: var(--font-head);
+      font-weight: 800; font-size: 1rem;
+      color: var(--paper); letter-spacing: -0.01em;
+    }
+    .auth-brand-name span { color: var(--red); }
+
+    /* Headings (written in child templates) */
+    .auth-heading {
+      font-family: var(--font-head);
+      font-size: 1.9rem; font-weight: 800;
+      color: var(--paper); line-height: 1.1;
+      margin-bottom: 6px; letter-spacing: -0.02em;
+    }
+    .auth-sub {
+      font-size: 0.875rem;
+      color: var(--stone-light);
+      margin-bottom: 1.75rem;
+      line-height: 1.5;
+    }
+
+    /* ─────────────────────────────── FORM INPUTS ─────────────────────────── */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-family: var(--font-head);
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--stone-light);
+      letter-spacing: 0.05em;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+    }
+    .input-wrap { position: relative; }
+    .form-group input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      font-size: 0.95rem; color: var(--paper);
+      font-family: var(--font-body);
+      outline: none; -webkit-appearance: none;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .form-group input::placeholder { color: rgba(196,188,176,0.3); }
+    .form-group input:hover:not(:focus) {
+      border-color: rgba(255,255,255,0.18);
+    }
+    .form-group input:focus {
+      border-color: var(--red);
+      background: rgba(193,59,42,0.05);
+      box-shadow: 0 0 0 3px rgba(193,59,42,0.12);
+    }
+
+    /* Eye toggle */
+    .eye-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--stone); padding: 4px;
+      display: flex; align-items: center;
+      border-radius: var(--radius);
+      transition: color 0.15s;
+    }
+    .eye-toggle:hover { color: var(--paper); }
+
+    /* Caps lock */
+    .caps-warning {
+      font-size: 0.76rem; color: var(--warning);
+      margin-top: 5px; display: none;
+      animation: slideDown 0.18s ease;
+    }
+
+    /* Validation icon */
+    .field-icon {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 0.82rem; pointer-events: none;
+    }
+
+    /* ─────────────────────────────── BUTTON ─────────────────────────────── */
+    .btn-submit {
+      width: 100%;
+      padding: 12px 22px;
+      background: var(--red);
+      color: #fff;
+      font-family: var(--font-head);
+      font-size: 0.9rem; font-weight: 700;
+      letter-spacing: 0.02em;
+      border: none; border-radius: var(--radius);
+      cursor: pointer; min-height: 46px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .btn-submit:not(:disabled):hover {
+      background: var(--red-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(193,59,42,0.45);
+    }
+    .btn-submit:not(:disabled):active { transform: scale(0.985); }
+    .btn-submit:disabled { opacity: 0.45; cursor: not-allowed; background: var(--stone); }
+    /* Shimmer */
+    .btn-submit::after {
+      content: ''; position: absolute;
+      top: 0; left: -100%; width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.55s ease;
+    }
+    .btn-submit:not(:disabled):hover::after { left: 160%; }
+
+    /* Spinner */
+    .spin-icon { animation: spinAnim 0.75s linear infinite; flex-shrink: 0; }
+    @keyframes spinAnim { to { transform: rotate(360deg); } }
+
+    /* ─────────────────────────────── TRUST BADGE ─────────────────────────── */
+    .trust-badge {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; margin-top: 10px;
+      font-size: 0.7rem; color: var(--stone); letter-spacing: 0.02em;
+    }
+    .trust-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: #2d8a4a; flex-shrink: 0;
+    }
+
+    /* ─────────────────────────────── ERROR BOX ──────────────────────────── */
+    .error-box {
+      background: rgba(193,59,42,0.1);
+      border: 1px solid rgba(193,59,42,0.3);
+      border-left: 3px solid var(--red);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      font-size: 0.84rem; color: #ff8a72;
+      animation: slideDown 0.2s ease;
+    }
+
+    /* ─────────────────────────────── OAUTH ──────────────────────────────── */
+    .oauth-divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 18px 0 12px;
+      color: var(--stone); font-size: 0.75rem; letter-spacing: 0.06em;
+    }
+    .oauth-divider::before, .oauth-divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08);
+    }
+    .oauth-btns { display: flex; gap: 8px; }
+    .btn-oauth {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      gap: 7px; padding: 9px 12px; border-radius: var(--radius);
+      font-size: 0.83rem; font-weight: 500; font-family: var(--font-body);
+      cursor: pointer; text-decoration: none; min-height: 42px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-google {
+      background: rgba(255,255,255,0.07);
+      color: var(--paper);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .btn-github {
+      background: rgba(255,255,255,0.05);
+      color: var(--paper);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .btn-oauth:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
+    .btn-oauth:active { transform: scale(0.97); }
+
+    /* ─────────────────────────────── AUTH LINKS ─────────────────────────── */
+    .auth-links {
+      text-align: center; margin-top: 18px;
+      font-size: 0.84rem; color: var(--stone-light);
+    }
+    .auth-links a {
+      color: var(--red); text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    .auth-links a:hover { color: var(--paper); }
+
+    /* ─────────────────────────────── CHECKBOX ───────────────────────────── */
+    .checkbox-wrap {
+      display: flex; align-items: flex-start; gap: 10px;
+      margin-bottom: 18px; cursor: pointer;
+      font-size: 0.875rem; color: var(--stone-light); line-height: 1.4;
+    }
+    .checkbox-wrap input[type="checkbox"] {
+      accent-color: var(--red); width: 15px; height: 15px;
+      cursor: pointer; flex-shrink: 0; margin-top: 2px;
+    }
+
+    /* ─────────────────────────────── STEP PROGRESS ──────────────────────── */
+    .step-progress { display: flex; align-items: center; margin-bottom: 5px; }
+    .step-node {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.12);
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; color: var(--stone);
+      font-family: var(--font-head); font-weight: 700;
+      flex-shrink: 0;
+      transition: border-color 0.25s, background 0.25s, color 0.25s;
+    }
+    .step-node.active {
+      border-color: var(--red); color: var(--red);
+      background: rgba(193,59,42,0.1);
+    }
+    .step-node.done {
+      border-color: #2d6a2d; background: rgba(34,106,34,0.12); color: #4aaa4a;
+    }
+    .step-line {
+      flex: 1; height: 1.5px; background: rgba(255,255,255,0.08);
+      position: relative; overflow: hidden;
+    }
+    .step-line::after {
+      content: ''; position: absolute; inset: 0;
+      background: #2d6a2d;
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+    .step-line.done::after { transform: scaleX(1); }
+    .step-labels {
+      display: flex; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .step-labels span {
+      font-size: 0.65rem; color: var(--stone);
+      font-family: var(--font-head); font-weight: 600;
+      letter-spacing: 0.04em; flex: 1; text-align: center;
+      transition: color 0.2s;
+    }
+    .step-labels span:first-child { text-align: left; }
+    .step-labels span:last-child  { text-align: right; }
+    .step-labels span.active-label { color: var(--paper); }
+
+    .step-back {
+      display: block; text-align: center;
+      font-size: 0.82rem; color: var(--stone);
+      margin-top: 12px; cursor: pointer; text-decoration: none;
+      transition: color 0.15s;
+    }
+    .step-back:hover { color: var(--paper); }
+
+    /* ─────────────────────────────── REQ LIST ───────────────────────────── */
+    .req-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .req-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; color: var(--stone);
+      transition: color 0.2s;
+    }
+    .req-item.met { color: #4aaa4a; }
+    .req-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); flex-shrink: 0;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .req-item.met .req-dot { background: #4aaa4a; transform: scale(1.3); }
+
+    /* ──────────────────────────── PREVIEW CARD ─────────────────────────── */
+    .preview-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .preview-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .preview-icon {
+      font-size: 1rem;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+    .preview-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+    .preview-label {
+      font-size: 0.7rem;
+      color: var(--stone);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .preview-value {
+      font-size: 0.875rem;
+      color: var(--paper);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ─────────────────────────────── MISC ───────────────────────────────── */
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .city-badge-dot { animation: none; }
+      .auth-card, .auth-card > * { transition: none; }
+    }
+
+    /* ─────────────────────────────── MOBILE ─────────────────────────────── */
+    @media (max-width: 768px) {
+      .auth-left  { display: none; }
+      .auth-right {
+        width: 100%; min-height: 100vh;
+        padding: 2rem 1.25rem; border-left: none;
+        background: var(--ink);
+      }
+      .auth-card { border-radius: var(--radius); padding: 1.75rem 1.25rem; }
+    }
+    @media (max-width: 480px) {
+      .auth-right { padding: 1.25rem 1rem; }
+      .auth-card > * { opacity: 1 !important; transform: none !important; }
+      .auth-card      { opacity: 1 !important; transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+<noscript><style>
+  .auth-card{opacity:1!important;transform:none!important}
+  .auth-card>*{opacity:1!important;transform:none!important}
+</style></noscript>
+
+<div class="auth-layout">
+
+  <!-- ── LEFT: Taumadhi Square photo hero ── -->
+  <div class="auth-left" aria-hidden="true">
+    <div class="auth-nav"></div>
+    <!-- Photo + cinematic layers -->
+    <div class="auth-photo"></div>
+    <div class="auth-photo-tint"></div>
+    <div class="auth-photo-scrim"></div>
+    <div class="auth-photo-vignette"></div>
+    <div class="auth-left-grid"></div>
+
+    <!-- City identity -->
+    <div class="city-info">
+      <div class="city-badge">
+        <span class="city-badge-dot"></span>
+        <span class="city-badge-text">AI-Powered City Platform</span>
+      </div>
+      <h2 class="city-name-big">Bhaktapur</h2>
+      <p class="city-tagline">Metropolitan City Government &mdash; Nepal</p>
+      <div class="city-stats">
+        <div>
+          <span class="city-stat-num">83K+</span>
+          <span class="city-stat-lbl">Citizens</span>
+        </div>
+        <div>
+          <span class="city-stat-num">17</span>
+          <span class="city-stat-lbl">Wards</span>
+        </div>
+        <div>
+          <span class="city-stat-num">1690</span>
+          <span class="city-stat-lbl">B.S. Est.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: auth card ── -->
+  <div class="auth-right">
+    <div class="auth-card" id="auth-card">
+      <!-- Brand matching the main nav exactly -->
+      <div class="auth-brand">
+        <div class="auth-brand-icon">B</div>
+        <span class="auth-brand-name">Bhaktapur<span>AI</span></span>
+      </div>
+      {% block form_content %}{% endblock %}
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReducedMotion) {
+    const tl = gsap.timeline();
+    tl.to('.auth-card',    { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' });
+    tl.to('#auth-card > *', { opacity: 1, y: 0, duration: 0.4, stagger: 0.07, ease: 'power2.out' }, '-=0.2');
+  } else {
+    gsap.set('.auth-card',     { opacity: 1, y: 0 });
+    gsap.set('#auth-card > *', { opacity: 1, y: 0 });
+  }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

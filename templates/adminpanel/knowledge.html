@@ -1,0 +1,48 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Knowledge Base — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">AI Knowledge Base</h1>
+  <a href="{% url 'adminpanel:cms_knowledge_add' %}" class="btn btn-primary">+ Add Entry</a>
+</div>
+<p style="color:var(--stone);font-size:.875rem;margin-bottom:20px;">
+  These entries are injected into the AI assistant's context. Keep them accurate and concise.
+</p>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Priority</th>
+        <th>Keywords</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td style="font-weight:600;">{{ item.title }}</td>
+        <td>{{ item.get_category_display }}</td>
+        <td style="text-align:center;">{{ item.priority }}</td>
+        <td style="font-size:.8rem;color:var(--stone);">{{ item.keywords|truncatechars:40|default:"—" }}</td>
+        <td><span class="cms-pill {% if item.is_active %}pill-active{% else %}pill-inactive{% endif %}">{% if item.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+        <td>
+          <div class="cms-actions">
+            <a href="{% url 'adminpanel:cms_knowledge_edit' item.pk %}" class="btn-edit">Edit</a>
+            <form method="post" action="{% url 'adminpanel:cms_knowledge_delete' item.pk %}" onsubmit="return confirm('Delete this entry?')">
+              {% csrf_token %}
+              <button type="submit" class="btn-del">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--stone);padding:32px;">No knowledge entries yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

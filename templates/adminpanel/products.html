@@ -1,0 +1,149 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Products — CMS{% endblock %}
+
+{% block cms_extra_css %}
+<style>
+/* ── RESPONSIVE TABLE → CARDS ── */
+@media (max-width: 768px) {
+
+  /* hide horizontal-scroll wrapper border on mobile */
+  .cms-table-wrap { border-radius: 0; border-left: none; border-right: none; overflow-x: visible; }
+
+  /* hide column headers */
+  .products-table thead { display: none; }
+
+  /* each row becomes a card */
+  .products-table tbody tr {
+    display: block;
+    background: var(--white);
+    border: var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(13,13,13,.06);
+  }
+  .products-table tbody tr:hover td { background: transparent; }
+
+  /* each cell becomes a label + value row */
+  .products-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--cream);
+    font-size: .88rem;
+  }
+  .products-table td:last-child { border-bottom: none; padding-top: 10px; }
+
+  /* label from data-label attribute */
+  .products-table td::before {
+    content: attr(data-label);
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--stone);
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
+  /* first cell (product name) — larger, no label */
+  .products-table td.product-name-cell {
+    border-bottom: 2px solid var(--cream);
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .products-table td.product-name-cell::before { display: none; }
+
+  /* actions cell full width */
+  .products-table td.actions-cell {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .products-table td.actions-cell::before { display: none; }
+  .products-table td.actions-cell .cms-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .products-table td.actions-cell .btn-edit,
+  .products-table td.actions-cell .btn-del {
+    display: block;
+    text-align: center;
+    padding: 9px 12px;
+    font-size: .82rem;
+  }
+  .products-table td.actions-cell form { margin: 0; }
+  .products-table td.actions-cell .btn-del { width: 100%; }
+}
+</style>
+{% endblock %}
+
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Products</h1>
+  <a href="{% url 'adminpanel:cms_product_add' %}" class="btn btn-primary">+ Add Product</a>
+</div>
+
+<div class="cms-table-wrap">
+  <table class="cms-table products-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Vendor</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Status</th>
+        <th>Featured</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="product-name-cell">{{ item.name }}</td>
+        <td data-label="Category">{{ item.category.name|default:"—" }}</td>
+        <td data-label="Vendor">{{ item.vendor.shop_name|default:"—" }}</td>
+        <td data-label="Price">NPR {{ item.price }}</td>
+        <td data-label="Stock">
+          {% if item.stock > 0 %}
+            <span style="color:#166534;font-weight:600;">{{ item.stock }} left</span>
+          {% else %}
+            <span style="color:var(--red);font-weight:600;">Out of stock</span>
+          {% endif %}
+        </td>
+        <td data-label="Status">
+          <span class="cms-pill {% if item.is_active %}pill-active{% else %}pill-inactive{% endif %}">
+            {% if item.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </td>
+        <td data-label="Featured">
+          {% if item.is_featured %}<span class="cms-pill pill-yes">Yes</span>{% else %}—{% endif %}
+        </td>
+        <td class="actions-cell">
+          <div class="cms-actions">
+            <a href="{% url 'adminpanel:cms_product_edit' item.pk %}" class="btn-edit">Edit</a>
+            <form method="post" action="{% url 'adminpanel:cms_product_delete' item.pk %}"
+                  onsubmit="return confirm('Delete {{ item.name }}?')">
+              {% csrf_token %}
+              <button type="submit" class="btn-del">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8" style="text-align:center;color:var(--stone);padding:40px 20px;">
+          <div style="font-size:2rem;margin-bottom:10px;">🛍️</div>
+          No products yet.
+          <a href="{% url 'adminpanel:cms_product_add' %}" style="color:var(--red);font-weight:600;">Add your first product</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

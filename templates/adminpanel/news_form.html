@@ -1,0 +1,61 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}{% if obj %}Edit{% else %}Add{% endif %} Article — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">{% if obj %}Edit Article{% else %}New Article{% endif %}</h1>
+  <a href="{% url 'adminpanel:cms_news' %}" class="btn btn-outline btn-sm">← Back to list</a>
+</div>
+
+<div class="cms-form-card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="cms-form-grid">
+
+      <div class="cms-section-divider">Article</div>
+
+      <div class="form-group full">
+        <label class="form-label">Title *</label>
+        <input type="text" name="title" class="form-control" value="{{ obj.title|default:'' }}" required>
+      </div>
+
+      <div class="form-group full">
+        <label class="form-label">Summary <span style="color:var(--stone);font-weight:400;">(shown in listing — max 500 chars)</span></label>
+        <textarea name="summary" class="form-control" rows="3" maxlength="500" required>{{ obj.summary|default:'' }}</textarea>
+      </div>
+
+      <div class="form-group full">
+        <label class="form-label">Full Content *</label>
+        <textarea name="content" class="form-control" rows="12" required>{{ obj.content|default:'' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select name="category" class="form-control">
+          {% for val, label in categories %}
+          <option value="{{ val }}" {% if obj.category == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="cms-section-divider">Visibility</div>
+
+      <div style="display:flex;gap:32px;grid-column:1/-1;flex-wrap:wrap;">
+        <div class="cms-check-row">
+          <input type="checkbox" name="is_active" id="is_active" {% if obj.is_active or not obj %}checked{% endif %}>
+          <label for="is_active">Published (visible on site)</label>
+        </div>
+        <div class="cms-check-row">
+          <input type="checkbox" name="is_pinned" id="is_pinned" {% if obj.is_pinned %}checked{% endif %}>
+          <label for="is_pinned">Pinned (shown at top)</label>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:28px;display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary">{% if obj %}Save Changes{% else %}Publish Article{% endif %}</button>
+      <a href="{% url 'adminpanel:cms_news' %}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

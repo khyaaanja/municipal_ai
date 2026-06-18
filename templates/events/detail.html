@@ -1,0 +1,150 @@
+{% extends "base/base.html" %}
+{% block title %}{{ event.name }} — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.event-hero{background:var(--ink);color:#fff;padding:60px 20px 40px;}
+.event-hero-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 320px;gap:40px;align-items:start;}
+@media(max-width:768px){.event-hero-inner{grid-template-columns:1fr;}}
+.event-hero .cat-badge{display:inline-block;padding:4px 14px;background:var(--accent);color:#fff;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;}
+.event-hero h1{font-size:2.3rem;margin:0 0 16px;}
+.event-hero .meta-row{display:flex;flex-wrap:wrap;gap:16px;font-size:.9rem;color:rgba(255,255,255,.75);}
+.event-hero .meta-row span{display:flex;align-items:center;gap:6px;}
+.register-box{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);border-radius:10px;padding:24px;backdrop-filter:blur(10px);}
+.register-box .price{font-size:1.8rem;font-weight:900;margin-bottom:4px;}
+.register-box .price-note{font-size:.82rem;color:rgba(255,255,255,.6);margin-bottom:20px;}
+.btn-register{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:6px;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;}
+.btn-register:hover{opacity:.9;}
+.btn-register:disabled{background:rgba(255,255,255,.2);cursor:not-allowed;}
+.spots-left{font-size:.82rem;color:rgba(255,255,255,.6);text-align:center;margin-top:10px;}
+.event-body{max-width:1100px;margin:0 auto;padding:40px 20px;display:grid;grid-template-columns:1fr 320px;gap:40px;}
+@media(max-width:768px){.event-body{grid-template-columns:1fr;}}
+.event-section{margin-bottom:36px;}
+.event-section h2{font-size:1.1rem;text-transform:uppercase;letter-spacing:.08em;border-left:4px solid var(--accent);padding-left:12px;margin-bottom:16px;}
+.event-section p{color:var(--ink-light);line-height:1.8;font-size:.95rem;}
+.info-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:22px;}
+.info-card h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 16px;color:var(--ink-light);}
+.info-item{display:flex;gap:10px;margin-bottom:14px;font-size:.88rem;}
+.info-item .icon{font-size:1rem;}
+.info-item .label{color:var(--ink-light);font-size:.78rem;display:block;}
+.info-item .val{font-weight:600;color:var(--ink);}
+.map-mini{width:100%;height:160px;background:#e8e4dc;border-radius:6px;overflow:hidden;border:1.5px solid var(--border);margin:14px 0;}
+.map-mini iframe{width:100%;height:100%;border:none;}
+.breadcrumb{max-width:1100px;margin:20px auto 0;padding:0 20px;font-size:.82rem;color:var(--ink-light);}
+.breadcrumb a{color:var(--accent);text-decoration:none;}
+.share-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;font-weight:600;color:var(--ink);text-decoration:none;cursor:pointer;background:var(--paper);}
+.share-btn:hover{border-color:var(--accent);color:var(--accent);}
+</style>
+
+<div class="breadcrumb">
+  <a href="/">Home</a> › <a href="/events/">Events</a> › {{ event.name }}
+</div>
+
+<div class="event-hero">
+  <div class="event-hero-inner">
+    <div>
+      <span class="cat-badge">{{ event.get_category_display }}</span>
+      <h1>{{ event.name }}</h1>
+      <div class="meta-row">
+        <span>📅 {{ event.start_date|date:"l, F j, Y" }}</span>
+        <span>🕐 {{ event.start_date|date:"g:i A" }}{% if event.end_date %} – {{ event.end_date|date:"g:i A" }}{% endif %}</span>
+        <span>📍 {{ event.venue|default:"Venue TBA" }}</span>
+        {% if event.registration_count %}<span>👥 {{ event.registration_count }} attending</span>{% endif %}
+      </div>
+    </div>
+    <div class="register-box">
+      {% if event.is_free %}
+        <div class="price">Free</div>
+        <div class="price-note">No ticket required</div>
+      {% else %}
+        <div class="price">NPR {{ event.entry_fee|default:"0" }}</div>
+        <div class="price-note">Per person</div>
+      {% endif %}
+      {% if request.user.is_authenticated %}
+        {% if is_registered %}
+          <button class="btn-register" disabled>✓ You're Registered</button>
+          <form method="post" action="{% url 'events:event_unregister' event.slug %}" style="margin-top:8px;">
+            {% csrf_token %}
+            <button type="submit" class="btn-register" style="background:rgba(255,255,255,0.15);font-size:.8rem;">Cancel Registration</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'events:event_register' event.slug %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-register">Register Now →</button>
+          </form>
+        {% endif %}
+      {% else %}
+        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn-register" style="display:block;text-align:center;text-decoration:none;">Login to Register</a>
+      {% endif %}
+      {% if event.max_attendees %}
+        <p class="spots-left">{{ spots_left }} spots remaining</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="event-body">
+  <div>
+    <div class="event-section">
+      <h2>About This Event</h2>
+      <p>{{ event.description }}</p>
+    </div>
+
+    {% if event.schedule %}
+    <div class="event-section">
+      <h2>Schedule</h2>
+      <p>{{ event.schedule }}</p>
+    </div>
+    {% endif %}
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="share-btn" onclick="navigator.share && navigator.share({title:'{{ event.name }}',url:window.location.href})">
+        📤 Share Event
+      </button>
+      <a href="/chat/?q=Tell me about the {{ event.name }} event" class="share-btn">
+        🤖 Ask AI
+      </a>
+    </div>
+  </div>
+
+  <aside>
+    <div class="info-card">
+      <h3>Event Details</h3>
+      <div class="info-item">
+        <span class="icon">📅</span>
+        <div>
+          <span class="label">Date</span>
+          <span class="val">{{ event.start_date|date:"F j, Y" }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <span class="icon">🕐</span>
+        <div>
+          <span class="label">Time</span>
+          <span class="val">{{ event.start_date|date:"g:i A" }}</span>
+        </div>
+      </div>
+      <div class="info-item">
+        <span class="icon">📍</span>
+        <div>
+          <span class="label">Venue</span>
+          <span class="val">{{ event.venue|default:"TBA" }}</span>
+        </div>
+      </div>
+      {% if event.organizer %}
+      <div class="info-item">
+        <span class="icon">👤</span>
+        <div>
+          <span class="label">Organizer</span>
+          <span class="val">{{ event.organizer }}</span>
+        </div>
+      </div>
+      {% endif %}
+      {% if event.latitude and event.longitude %}
+      <div class="map-mini">
+        <iframe src="https://www.openstreetmap.org/export/embed.html?bbox={{ event.longitude|add:'-0.005' }},{{ event.latitude|add:'-0.005' }},{{ event.longitude|add:'0.005' }},{{ event.latitude|add:'0.005' }}&layer=mapnik&marker={{ event.latitude }},{{ event.longitude }}" loading="lazy"></iframe>
+      </div>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Complaints — Bhaktapur Municipal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#060810;--gold:#c9a84c;--red:#C1440E;--surface:#111009;--card:#1A1710;
+      --border:rgba(201,168,76,0.18);--text:#E8DFC8;--muted:#7A7060;
+      --success:#4A8A5A;--warning:#FF6B35;--font-h:'Cinzel',serif;--font-b:'Inter',sans-serif;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;padding:2rem 1rem;}
+    .container{max-width:760px;margin:0 auto;}
+    nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;}
+    .nav-logo{font-family:var(--font-h);font-size:1rem;color:var(--gold);text-decoration:none;}
+    h1{font-family:var(--font-h);font-size:1.8rem;color:var(--gold);margin-bottom:0.4rem;letter-spacing:0.04em;}
+    .subtitle{color:var(--muted);font-size:0.875rem;margin-bottom:2rem;}
+
+    .complaint-card{
+      background:var(--card);border:1px solid var(--border);border-radius:10px;
+      padding:1.25rem;margin-bottom:0.75rem;cursor:pointer;
+      text-decoration:none;display:block;color:inherit;
+      transition:border-color 0.2s,background 0.2s;will-change:transform,opacity;}
+    .complaint-card:hover{border-color:var(--gold);background:#1e1c14;}
+    .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;flex-wrap:wrap;}
+    .card-id{font-family:var(--font-h);font-size:0.9rem;color:var(--gold);letter-spacing:0.04em;}
+    .card-title{font-size:0.95rem;color:var(--text);margin:0.4rem 0;}
+    .card-meta{display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;font-size:0.78rem;color:var(--muted);}
+
+    /* Status badges */
+    .status-badge{display:inline-block;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:600;}
+    .status-PENDING    {background:rgba(201,168,76,0.12);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
+    .status-IN_REVIEW  {background:rgba(74,122,181,0.12);color:#4A7AB5;border:1px solid rgba(74,122,181,0.3);}
+    .status-IN_PROGRESS{background:rgba(255,107,53,0.12);color:var(--warning);border:1px solid rgba(255,107,53,0.3);}
+    .status-RESOLVED   {background:rgba(74,138,90,0.12);color:#6abf80;border:1px solid rgba(74,138,90,0.3);}
+    .status-REJECTED   {background:rgba(193,68,14,0.12);color:var(--red);border:1px solid rgba(193,68,14,0.3);}
+
+    /* Empty state */
+    .empty{text-align:center;padding:4rem 1rem;}
+    .empty h2{font-family:var(--font-h);font-size:1.6rem;color:var(--gold);margin-bottom:0.75rem;}
+    .empty p{color:var(--muted);margin-bottom:1.5rem;}
+    .btn-gold{
+      padding:0.75rem 1.75rem;background:linear-gradient(135deg,#c9a84c,#a07830);
+      color:#060810;border:none;border-radius:6px;font-weight:600;font-size:0.9rem;
+      cursor:pointer;text-decoration:none;display:inline-block;}
+
+    /* Pagination */
+    .pagination{display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap;}
+    .page-btn{
+      padding:0.5rem 0.9rem;background:var(--card);border:1px solid var(--border);
+      border-radius:6px;color:var(--muted);text-decoration:none;font-size:0.85rem;
+      min-height:44px;display:flex;align-items:center;transition:border-color 0.2s;}
+    .page-btn:hover,.page-btn.current{border-color:var(--gold);color:var(--gold);}
+    @media(max-width:480px){.card-top{flex-direction:column;}.container{padding:0;}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <nav>
+    <a class="nav-logo" href="/">Municipal AI</a>
+    <div style="display:flex;gap:1rem;">
+      <a href="{% url 'complaints:complaint_submit' %}" style="color:var(--gold);text-decoration:none;font-size:0.85rem;">+ New Complaint</a>
+      <a href="{% url 'accounts:profile' %}" style="color:var(--muted);text-decoration:none;font-size:0.85rem;">Profile</a>
+    </div>
+  </nav>
+
+  <h1>My Complaints</h1>
+  <p class="subtitle">Complaints you have filed with the municipality</p>
+
+  {% if page.object_list %}
+  <div id="cards">
+    {% for c in page.object_list %}
+    <a class="complaint-card" href="{% url 'complaints:complaint_status' c.complaint_id %}">
+      <div class="card-top">
+        <span class="card-id">{{ c.complaint_id }}</span>
+        <span class="status-badge status-{{ c.status }}">{{ c.get_status_display }}</span>
+      </div>
+      <div class="card-title">{{ c.title }}</div>
+      <div class="card-meta">
+        <span>
+          {% if c.category == 'INFRASTRUCTURE' %}🏗{% elif c.category == 'SANITATION' %}🗑{% elif c.category == 'WATER' %}💧{% elif c.category == 'ELECTRICITY' %}⚡{% elif c.category == 'ROAD' %}🛣{% elif c.category == 'NOISE' %}🔊{% else %}📋{% endif %}
+          {{ c.get_category_display }}
+        </span>
+        <span>{{ c.created_at|date:"M j, Y" }}</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if page.has_other_pages %}
+  <div class="pagination">
+    {% if page.has_previous %}
+    <a class="page-btn" href="?page={{ page.previous_page_number }}">← Prev</a>
+    {% endif %}
+    {% for num in page.paginator.page_range %}
+    <a class="page-btn {% if num == page.number %}current{% endif %}" href="?page={{ num }}">{{ num }}</a>
+    {% endfor %}
+    {% if page.has_next %}
+    <a class="page-btn" href="?page={{ page.next_page_number }}">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty">
+    <div style="font-size:3rem;margin-bottom:1rem;">📋</div>
+    <h2>No complaints yet</h2>
+    <p>Be the first to make your voice heard.</p>
+    <a class="btn-gold" href="{% url 'complaints:complaint_submit' %}">Submit a Complaint</a>
+  </div>
+  {% endif %}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReducedMotion && document.getElementById('cards')) {
+    gsap.fromTo('#cards .complaint-card',
+      {opacity:0, y:20},
+      {opacity:1, y:0, duration:0.4, stagger:0.1, ease:'power2.out'});
+  }
+</script>
+</body>
+</html>

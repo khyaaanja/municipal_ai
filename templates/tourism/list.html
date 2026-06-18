@@ -1,0 +1,168 @@
+{% extends "base/base.html" %}
+{% block extra_css %}
+<style>
+.filter-bar {
+  background: var(--white);
+  border-bottom: var(--border);
+  padding: 16px 0;
+  position: sticky;
+  top: 64px;
+  z-index: 100;
+}
+.filter-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.filter-pill {
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-head);
+  border: 1.5px solid var(--stone-light);
+  background: var(--white);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  color: var(--stone);
+}
+.filter-pill:hover, .filter-pill.active {
+  background: var(--red);
+  border-color: var(--red);
+  color: white;
+}
+.filter-search {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.card-img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+.card-img-placeholder {
+  width: 100%;
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #1e1a14 0%, #2a1f10 100%);
+  position: relative;
+  overflow: hidden;
+}
+.placeholder-svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+.placeholder-label {
+  position: relative;
+  z-index: 1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(201,162,39,0.7);
+  margin-top: auto;
+  padding-bottom: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container page-hero-content">
+    <span class="page-hero-tag">Explore</span>
+    <h1>Attractions</h1>
+    <p>Discover the heritage, temples, museums, and cultural sites of {{ CITY_NAME }}.</p>
+  </div>
+</section>
+
+<div class="filter-bar">
+  <div class="filter-inner">
+    <a href="/attractions/" class="filter-pill {% if not selected_category %}active{% endif %}">All</a>
+    {% for cat in categories %}
+    <a href="/attractions/?category={{ cat.slug }}" class="filter-pill {% if selected_category == cat.slug %}active{% endif %}">
+      {{ cat.icon }} {{ cat.name }}
+    </a>
+    {% endfor %}
+    <div class="filter-search">
+      <form action="/attractions/" method="get" style="display:flex;gap:6px;">
+        {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+        <input type="text" name="q" value="{{ query }}" placeholder="Search attractions..." class="form-control" style="width:200px;padding:6px 12px;font-size:0.85rem;">
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    {% if attractions %}
+    <div class="grid-3">
+      {% for attraction in attractions %}
+      <a href="/attractions/{{ attraction.slug }}/" class="card">
+        {% if attraction.images.first %}
+        <img class="card-img" src="{{ attraction.images.first.image.url }}" alt="{{ attraction.name }}" loading="lazy">
+        {% else %}
+        <div class="card-img-placeholder">
+          <svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" class="placeholder-svg">
+            <defs>
+              <linearGradient id="pg{{ forloop.counter }}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#C9A227" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#C13B2A" stop-opacity="0.10"/>
+              </linearGradient>
+            </defs>
+            <rect width="160" height="120" fill="url(#pg{{ forloop.counter }})"/>
+            <!-- pagoda silhouette -->
+            <polygon points="80,18 84,32 76,32" fill="#C13B2A" opacity="0.5"/>
+            <rect x="74" y="32" width="12" height="8" rx="1" fill="#C13B2A" opacity="0.45"/>
+            <polygon points="80,37 90,46 70,46" fill="#C13B2A" opacity="0.45"/>
+            <rect x="68" y="46" width="24" height="9" rx="1" fill="#C13B2A" opacity="0.4"/>
+            <polygon points="80,52 95,63 65,63" fill="#C13B2A" opacity="0.4"/>
+            <rect x="63" y="63" width="34" height="10" rx="1" fill="#C13B2A" opacity="0.35"/>
+            <polygon points="80,70 102,83 58,83" fill="#C13B2A" opacity="0.35"/>
+            <rect x="56" y="83" width="48" height="11" rx="1" fill="#C13B2A" opacity="0.3"/>
+            <rect x="52" y="94" width="56" height="14" rx="1" fill="#C9A227" opacity="0.2"/>
+            <!-- ground line -->
+            <line x1="20" y1="108" x2="140" y2="108" stroke="#C13B2A" stroke-width="1" opacity="0.2"/>
+          </svg>
+          <span class="placeholder-label">{{ attraction.category.name|default:"Attraction" }}</span>
+        </div>
+        {% endif %}
+        <div class="card-body">
+          <div class="card-category">{{ attraction.category.name|default:"Attraction" }}</div>
+          <div class="card-title">{{ attraction.name }}</div>
+          <div class="card-desc">{{ attraction.short_description|default:attraction.description|truncatewords:20 }}</div>
+          <div class="card-meta">
+            <span class="stars">★★★★★</span>
+            <span>{{ attraction.avg_rating }}</span>
+            <span>·</span>
+            <span>{% if attraction.entry_fee == 0 %}Free{% else %}NPR {{ attraction.entry_fee }}{% endif %}</span>
+            <span>·</span>
+            <span>~{{ attraction.visit_duration_minutes }} min</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:80px 20px;color:var(--stone);">
+      <div style="font-size:3rem;margin-bottom:16px;">🏛️</div>
+      <h3>No attractions found</h3>
+      <p style="margin-top:8px;">Try a different search or category.</p>
+      <a href="/attractions/" class="btn btn-primary" style="margin-top:20px;">View All</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

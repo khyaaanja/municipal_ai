@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ complaint.complaint_id }} — Bhaktapur Municipal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#060810;--gold:#c9a84c;--red:#C1440E;--surface:#111009;--card:#1A1710;
+      --border:rgba(201,168,76,0.18);--text:#E8DFC8;--muted:#7A7060;
+      --success:#4A8A5A;--warning:#FF6B35;--font-h:'Cinzel',serif;--font-b:'Inter',sans-serif;}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;padding:2rem 1rem;}
+    .container{max-width:760px;margin:0 auto;}
+
+    /* Header */
+    nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;}
+    .nav-logo{font-family:var(--font-h);font-size:1rem;color:var(--gold);text-decoration:none;}
+    .id-pill{font-family:var(--font-h);font-size:1.2rem;color:var(--gold);
+      background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);
+      border-radius:20px;padding:0.35rem 1rem;letter-spacing:0.06em;}
+
+    /* Priority badge */
+    .priority-low     {color:var(--muted);border:1px solid var(--muted);background:transparent;}
+    .priority-medium  {color:var(--gold);border:1px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.08);}
+    .priority-high    {color:var(--warning);border:1px solid rgba(255,107,53,0.4);background:rgba(255,107,53,0.08);}
+    .priority-critical{color:var(--red);border:1px solid rgba(193,68,14,0.5);background:rgba(193,68,14,0.1);
+      animation:pulse-crit 1.2s ease infinite;}
+    @keyframes pulse-crit{0%,100%{box-shadow:0 0 0 0 rgba(193,68,14,0.4);}50%{box-shadow:0 0 0 6px rgba(193,68,14,0.1);}}
+    .badge{display:inline-block;padding:0.25rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:600;letter-spacing:0.04em;}
+
+    /* Timeline */
+    .timeline-wrap{margin:2rem 0;overflow-x:auto;padding-bottom:0.5rem;}
+    .timeline{display:flex;align-items:flex-start;gap:0;min-width:480px;}
+    .tl-node{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+    .tl-node:not(:last-child)::after{
+      content:'';position:absolute;top:18px;left:50%;right:-50%;height:2px;
+      background:var(--border);z-index:0;}
+    .tl-node.done:not(:last-child)::after{background:var(--gold);}
+    .tl-circle{
+      width:38px;height:38px;border-radius:50%;border:2px solid var(--border);
+      background:var(--bg);display:flex;align-items:center;justify-content:center;
+      font-size:0.8rem;position:relative;z-index:1;will-change:transform,opacity;}
+    .tl-node.done .tl-circle{background:var(--gold);border-color:var(--gold);color:#060810;font-weight:700;}
+    .tl-node.active .tl-circle{border-color:var(--gold);color:var(--gold);animation:glow-pulse 1.5s ease infinite;}
+    @keyframes glow-pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.5);}50%{box-shadow:0 0 0 6px rgba(201,168,76,0.15);}}
+    .tl-label{font-size:0.72rem;color:var(--muted);margin-top:0.5rem;text-align:center;max-width:70px;line-height:1.3;}
+    .tl-node.done .tl-label,.tl-node.active .tl-label{color:var(--text);}
+    .tl-rejected{margin-top:1rem;text-align:center;}
+    .tl-rejected .tl-circle{background:var(--red);border-color:var(--red);color:#fff;margin:0 auto;}
+
+    /* Detail card */
+    .detail-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:12px;padding:1.75rem;margin-bottom:1.5rem;}
+    .detail-card h2{font-family:var(--font-h);font-size:1.3rem;color:var(--text);margin-bottom:1rem;}
+    .detail-row{margin-bottom:0.75rem;font-size:0.9rem;line-height:1.5;}
+    .detail-row span.label{color:var(--muted);font-size:0.78rem;display:block;margin-bottom:0.15rem;}
+    .location-val::before{content:'📍 ';}
+
+    /* Municipality response */
+    .response-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;}
+    .response-card h3{font-family:var(--font-h);font-size:0.95rem;color:var(--gold);margin-bottom:0.75rem;letter-spacing:0.04em;}
+    .response-card p{font-style:italic;font-size:0.9rem;color:var(--text);line-height:1.6;}
+
+    /* Actions */
+    .action-row{display:flex;gap:0.75rem;flex-wrap:wrap;}
+    .btn-outline{
+      padding:0.65rem 1.25rem;background:transparent;color:var(--gold);
+      border:1px solid var(--border);border-radius:6px;text-decoration:none;font-size:0.875rem;cursor:pointer;
+      transition:border-color 0.2s;min-height:44px;display:inline-flex;align-items:center;}
+    .btn-outline:hover{border-color:var(--gold);}
+    .btn-gold{
+      padding:0.65rem 1.25rem;background:linear-gradient(135deg,#c9a84c,#a07830);
+      color:#060810;border:none;border-radius:6px;font-weight:600;font-size:0.875rem;
+      cursor:pointer;text-decoration:none;min-height:44px;display:inline-flex;align-items:center;}
+    @media(max-width:480px){.id-pill{font-size:1rem;}.detail-card{padding:1.25rem;}}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <nav>
+    <a class="nav-logo" href="/">Municipal AI</a>
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+      <span class="id-pill">{{ complaint.complaint_id }}</span>
+      <span class="badge priority-{{ complaint.priority|lower }}">{{ complaint.priority }}</span>
+    </div>
+  </nav>
+
+  <!-- Status timeline -->
+  <div class="timeline-wrap">
+    {% with s=complaint.status %}
+    <div class="timeline" id="timeline">
+      {% for node_val, node_label, node_icon in nodes|default:'' %}{% endfor %}
+      {% comment %}Nodes: Submitted, In Review, In Progress, Resolved{% endcomment %}
+      {% if s == 'REJECTED' %}
+        <div class="tl-node done"  data-i="0"><div class="tl-circle">✓</div><div class="tl-label">Submitted</div></div>
+        <div class="tl-node"       data-i="1"><div class="tl-circle">—</div><div class="tl-label">In Review</div></div>
+        <div class="tl-node"       data-i="2"><div class="tl-circle">—</div><div class="tl-label">In Progress</div></div>
+        <div class="tl-node"       data-i="3"><div class="tl-circle">—</div><div class="tl-label">Resolved</div></div>
+      {% elif s == 'PENDING' %}
+        <div class="tl-node active" data-i="0"><div class="tl-circle">●</div><div class="tl-label">Submitted</div></div>
+        <div class="tl-node"        data-i="1"><div class="tl-circle">—</div><div class="tl-label">In Review</div></div>
+        <div class="tl-node"        data-i="2"><div class="tl-circle">—</div><div class="tl-label">In Progress</div></div>
+        <div class="tl-node"        data-i="3"><div class="tl-circle">—</div><div class="tl-label">Resolved</div></div>
+      {% elif s == 'IN_REVIEW' %}
+        <div class="tl-node done"   data-i="0"><div class="tl-circle">✓</div><div class="tl-label">Submitted</div></div>
+        <div class="tl-node active" data-i="1"><div class="tl-circle">●</div><div class="tl-label">In Review</div></div>
+        <div class="tl-node"        data-i="2"><div class="tl-circle">—</div><div class="tl-label">In Progress</div></div>
+        <div class="tl-node"        data-i="3"><div class="tl-circle">—</div><div class="tl-label">Resolved</div></div>
+      {% elif s == 'IN_PROGRESS' %}
+        <div class="tl-node done"   data-i="0"><div class="tl-circle">✓</div><div class="tl-label">Submitted</div></div>
+        <div class="tl-node done"   data-i="1"><div class="tl-circle">✓</div><div class="tl-label">In Review</div></div>
+        <div class="tl-node active" data-i="2"><div class="tl-circle">●</div><div class="tl-label">In Progress</div></div>
+        <div class="tl-node"        data-i="3"><div class="tl-circle">—</div><div class="tl-label">Resolved</div></div>
+      {% elif s == 'RESOLVED' %}
+        <div class="tl-node done"   data-i="0"><div class="tl-circle">✓</div><div class="tl-label">Submitted</div></div>
+        <div class="tl-node done"   data-i="1"><div class="tl-circle">✓</div><div class="tl-label">In Review</div></div>
+        <div class="tl-node done"   data-i="2"><div class="tl-circle">✓</div><div class="tl-label">In Progress</div></div>
+        <div class="tl-node done"   data-i="3"><div class="tl-circle">✓</div><div class="tl-label">Resolved</div></div>
+      {% endif %}
+    </div>
+    {% if s == 'REJECTED' %}
+    <div class="tl-rejected" style="margin-top:1rem;">
+      <div class="tl-circle" style="background:var(--red);border-color:var(--red);color:#fff;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;font-weight:700;">✗</div>
+      <div class="tl-label" style="color:var(--red);max-width:none;margin-top:0.4rem;">Rejected</div>
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Detail -->
+  <div class="detail-card">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+      <span style="font-size:1.4rem;">
+        {% if complaint.category == 'INFRASTRUCTURE' %}🏗{% elif complaint.category == 'SANITATION' %}🗑{% elif complaint.category == 'WATER' %}💧{% elif complaint.category == 'ELECTRICITY' %}⚡{% elif complaint.category == 'ROAD' %}🛣{% elif complaint.category == 'NOISE' %}🔊{% else %}📋{% endif %}
+      </span>
+      <span style="color:var(--muted);font-size:0.85rem;">{{ complaint.get_category_display }}</span>
+    </div>
+    <h2>{{ complaint.title }}</h2>
+    <div class="detail-row"><span class="label">Description</span>{{ complaint.description }}</div>
+    <div class="detail-row"><span class="label">Location</span><span class="location-val">{{ complaint.location }}</span></div>
+    {% if show_sensitive %}
+    <div class="detail-row"><span class="label">Submitted by</span>{{ complaint.submitter_name }}</div>
+    {% if complaint.submitter_phone %}
+    <div class="detail-row"><span class="label">Phone</span>{{ complaint.submitter_phone }}</div>
+    {% endif %}
+    {% if complaint.submitter_email %}
+    <div class="detail-row"><span class="label">Email</span>{{ complaint.submitter_email }}</div>
+    {% endif %}
+    {% else %}
+    <div class="detail-row"><span class="label">Submitted by</span>{{ complaint.submitter_name|truncatechars:2 }}***</div>
+    {% endif %}
+    <div style="display:flex;gap:2rem;flex-wrap:wrap;margin-top:0.75rem;">
+      <div class="detail-row"><span class="label">Filed</span>{{ complaint.created_at|date:"F j, Y" }}</div>
+      <div class="detail-row"><span class="label">Last Updated</span>{{ complaint.updated_at|date:"F j, Y" }}</div>
+    </div>
+  </div>
+
+  <!-- Municipality response (only if resolved/rejected and has notes) -->
+  {% if show_notes %}
+  <div class="response-card">
+    <h3>Municipality Response</h3>
+    <p>{{ complaint.admin_notes }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  <div class="action-row">
+    <a class="btn-gold" href="{% url 'complaints:complaint_submit' %}">Submit New Complaint</a>
+    <button class="btn-outline" id="share-btn" onclick="shareStatus()">Share Status</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script>
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReducedMotion) {
+    gsap.fromTo('#timeline .tl-node',
+      {opacity:0, x:-20},
+      {opacity:1, x:0, duration:0.4, stagger:0.15, ease:'power2.out'});
+  }
+
+  function shareStatus() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      const btn = document.getElementById('share-btn');
+      btn.textContent = 'Link Copied ✓';
+      setTimeout(() => btn.textContent = 'Share Status', 2000);
+    });
+  }
+</script>
+</body>
+</html>

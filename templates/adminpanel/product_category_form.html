@@ -1,0 +1,26 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}{% if obj %}Edit{% else %}Add{% endif %} Product Category — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">{% if obj %}Edit Category{% else %}Add Category{% endif %}</h1>
+  <a href="{% url 'adminpanel:cms_product_categories' %}" class="btn btn-outline btn-sm">← Back to list</a>
+</div>
+
+<div class="cms-form-card" style="max-width:480px;">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label">Category Name *</label>
+      <input type="text" name="name" class="form-control" value="{{ obj.name|default:'' }}" required placeholder="e.g. Handicrafts">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon <span style="color:var(--stone);font-weight:400;">— paste an emoji</span></label>
+      <input type="text" name="icon" class="form-control" value="{{ obj.icon|default:'' }}" placeholder="🎨" maxlength="10" style="font-size:1.4rem;">
+    </div>
+    <div style="margin-top:24px;display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary">{% if obj %}Save Changes{% else %}Add Category{% endif %}</button>
+      <a href="{% url 'adminpanel:cms_product_categories' %}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

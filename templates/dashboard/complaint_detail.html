@@ -1,0 +1,129 @@
+{% extends "dashboard/base_dashboard.html" %}
+{% block title %}{{ complaint.complaint_id }}{% endblock %}
+{% block nav_complaints %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .back-link{color:var(--muted);text-decoration:none;font-size:0.85rem;display:inline-flex;align-items:center;gap:0.4rem;margin-bottom:1.25rem;}
+  .back-link:hover{color:var(--gold);}
+  .two-col{display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start;}
+  @media(max-width:900px){.two-col{grid-template-columns:1fr;}}
+  .info-card,.action-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;}
+  .id-pill{font-family:var(--font-h);font-size:1.1rem;color:var(--gold);
+    background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);
+    border-radius:20px;padding:0.3rem 0.9rem;display:inline-block;margin-bottom:0.75rem;}
+  h2{font-family:var(--font-h);font-size:1.2rem;color:var(--text);margin-bottom:1rem;}
+  .detail-row{margin-bottom:0.85rem;}
+  .detail-row .lbl{font-size:0.75rem;color:var(--muted);margin-bottom:0.2rem;}
+  .detail-row .val{font-size:0.9rem;}
+  .action-title{font-family:var(--font-h);font-size:0.95rem;color:var(--gold);margin-bottom:1.25rem;letter-spacing:0.04em;}
+  select.action-select,textarea.action-textarea{
+    width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:0.65rem 0.85rem;color:var(--text);font-family:var(--font-b);font-size:0.875rem;
+    outline:none;transition:border-color 0.3s;margin-bottom:1rem;}
+  select.action-select:focus,textarea.action-textarea:focus{border-color:var(--gold);}
+  select.action-select:disabled{opacity:0.45;cursor:not-allowed;}
+  textarea.action-textarea{resize:vertical;min-height:90px;}
+  .btn-save{
+    width:100%;padding:0.8rem;background:linear-gradient(135deg,#c9a84c,#a07830);
+    color:#060810;font-family:var(--font-h);font-size:0.875rem;font-weight:700;
+    border:none;border-radius:6px;cursor:pointer;min-height:44px;
+    position:relative;overflow:hidden;}
+  .btn-save::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent);
+    transition:left 0.6s linear;}
+  .btn-save:hover::after{left:150%;}
+
+  /* Log timeline */
+  .log-section{margin-top:1.5rem;}
+  .log-title{font-family:var(--font-h);font-size:0.9rem;color:var(--gold);letter-spacing:0.06em;margin-bottom:1rem;}
+  .log-entry{display:flex;gap:0.75rem;margin-bottom:0.9rem;will-change:opacity;}
+  .log-dot{width:10px;height:10px;border-radius:50%;background:var(--gold);margin-top:5px;flex-shrink:0;}
+  .log-body{font-size:0.82rem;color:var(--muted);}
+  .log-body strong{color:var(--text);}
+  .log-arrow{color:var(--gold);font-size:0.75rem;}
+</style>
+{% endblock %}
+
+{% block content %}
+<a class="back-link" href="{% url 'dashboard:complaints' %}">← All Complaints</a>
+
+<div class="two-col">
+  <!-- LEFT: complaint info -->
+  <div>
+    <div class="info-card">
+      <div class="id-pill">{{ complaint.complaint_id }}</div>
+      <h2>{{ complaint.title }}</h2>
+      <div class="detail-row"><div class="lbl">Category</div><div class="val">{{ complaint.get_category_display }}</div></div>
+      <div class="detail-row"><div class="lbl">Description</div><div class="val">{{ complaint.description }}</div></div>
+      <div class="detail-row"><div class="lbl">Location</div><div class="val">📍 {{ complaint.location }}</div></div>
+      <div class="detail-row"><div class="lbl">Submitter</div><div class="val">{{ complaint.submitter_name }}</div></div>
+      <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+        <div class="detail-row"><div class="lbl">Filed</div><div class="val">{{ complaint.created_at|date:"F j, Y" }}</div></div>
+        <div class="detail-row"><div class="lbl">Updated</div><div class="val">{{ complaint.updated_at|date:"F j, Y" }}</div></div>
+      </div>
+    </div>
+
+    <!-- Audit log -->
+    {% if logs %}
+    <div class="log-section">
+      <div class="log-title">STATUS HISTORY</div>
+      <div id="log-list">
+        {% for log in logs %}
+        <div class="log-entry">
+          <div class="log-dot"></div>
+          <div class="log-body">
+            <strong>{{ log.changed_by.get_full_name|default:log.changed_by.email|default:"System" }}</strong>
+            changed status
+            <span class="log-arrow">{{ log.old_status }} → {{ log.new_status }}</span>
+            {% if log.note %}<br><em>{{ log.note|truncatechars:80 }}</em>{% endif %}
+            <br><span style="font-size:0.75rem;">{{ log.changed_at|date:"M j, Y H:i" }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: action panel -->
+  <div class="action-card">
+    <div class="action-title">MANAGE COMPLAINT</div>
+    <form method="post">
+      {% csrf_token %}
+      <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.35rem;">Status</label>
+      <select class="action-select" name="status">
+        {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if val == complaint.status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+
+      <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.35rem;">Priority</label>
+      <select class="action-select" name="priority" {% if role == 'staff' %}disabled{% endif %}>
+        {% for val, label in priority_choices %}
+        <option value="{{ val }}" {% if val == complaint.priority %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% if role == 'staff' %}
+      <input type="hidden" name="priority" value="{{ complaint.priority }}">
+      {% endif %}
+
+      <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.35rem;">Municipality Notes</label>
+      <textarea class="action-textarea" name="admin_notes">{{ complaint.admin_notes|default:'' }}</textarea>
+
+      <button type="submit" class="btn-save">Save Changes</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReducedMotion && document.getElementById('log-list')) {
+    gsap.fromTo('#log-list .log-entry',
+      {opacity:0, y:10},
+      {opacity:1, y:0, duration:0.35, stagger:0.1, ease:'power2.out'});
+  }
+</script>
+{% endblock %}

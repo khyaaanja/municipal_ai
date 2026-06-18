@@ -1,0 +1,98 @@
+{% extends "base/base.html" %}
+{% block title %}{{ article.title }} — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.article-hero{background:var(--ink);color:#fff;padding:50px 20px 40px;}
+{% if article.cover_image %}
+.article-hero{background-image:url('{{ article.cover_image.url }}');background-size:cover;background-position:center;position:relative;}
+.article-hero::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.75);}
+.article-hero-inner{position:relative;}
+{% endif %}
+.article-hero-inner{max-width:800px;margin:0 auto;}
+.article-cat{display:inline-block;padding:4px 14px;border-radius:20px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
+.cat-announcement{background:#6366f1;color:#fff;}
+.cat-alert{background:#ef4444;color:#fff;}
+.cat-tourism{background:var(--accent);color:#fff;}
+.cat-general{background:#6b7280;color:#fff;}
+.cat-development{background:#0ea5e9;color:#fff;}
+.article-hero h1{font-size:2.1rem;color:#fff;margin:0 0 14px;line-height:1.3;}
+.article-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;color:rgba(255,255,255,.7);}
+.article-layout{max-width:800px;margin:0 auto;padding:40px 20px;display:grid;grid-template-columns:1fr 260px;gap:40px;}
+@media(max-width:768px){.article-layout{grid-template-columns:1fr;}}
+.article-content{font-size:.97rem;line-height:1.85;color:var(--ink-light);}
+.article-content p{margin-bottom:18px;}
+.article-content h2,.article-content h3{color:var(--ink);margin:28px 0 12px;}
+.share-row{display:flex;gap:10px;margin:30px 0;padding:20px 0;border-top:1.5px solid var(--border);border-bottom:1.5px solid var(--border);}
+.share-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;font-weight:600;color:var(--ink);cursor:pointer;background:var(--paper);text-decoration:none;}
+.share-btn:hover{border-color:var(--accent);color:var(--accent);}
+.related-section{margin-top:30px;}
+.related-section h3{font-size:.88rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;color:var(--ink-light);}
+.related-card{display:block;padding:14px;border:1.5px solid var(--border);border-radius:6px;margin-bottom:10px;text-decoration:none;color:var(--ink);transition:all .15s;}
+.related-card:hover{border-color:var(--accent);box-shadow:2px 2px 0 var(--accent);}
+.related-card .title{font-weight:600;font-size:.9rem;margin-bottom:4px;}
+.related-card .date{font-size:.76rem;color:var(--ink-light);}
+.sidebar-box{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;position:sticky;top:80px;}
+.sidebar-box h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 12px;color:var(--ink-light);}
+.breadcrumb{max-width:800px;margin:20px auto 0;padding:0 20px;font-size:.82rem;color:rgba(255,255,255,.6);}
+.breadcrumb a{color:rgba(255,255,255,.6);text-decoration:none;}
+{% if article.cover_image %}.breadcrumb{position:relative;}{% endif %}
+</style>
+
+<div class="article-hero">
+  <div class="breadcrumb">
+    <a href="/">Home</a> › <a href="/news/">News</a> › {{ article.get_category_display }}
+  </div>
+  <div class="article-hero-inner" style="margin-top:16px;">
+    <span class="article-cat cat-{{ article.category }}">{{ article.get_category_display }}</span>
+    <h1>{{ article.title }}</h1>
+    <div class="article-meta">
+      <span>📅 {{ article.published_at|date:"F j, Y" }}</span>
+      {% if article.author %}<span>✍️ {{ article.author.get_full_name|default:article.author.email }}</span>{% endif %}
+      <span>👁 {{ article.view_count }} views</span>
+    </div>
+  </div>
+</div>
+
+<div class="article-layout">
+  <main>
+    <p style="font-size:1.05rem;font-weight:600;color:var(--ink);line-height:1.6;margin-bottom:28px;padding-bottom:20px;border-bottom:1.5px solid var(--border);">{{ article.summary }}</p>
+    <div class="article-content">{{ article.content|linebreaks }}</div>
+
+    <div class="share-row">
+      <button class="share-btn" onclick="if(navigator.share)navigator.share({title:'{{ article.title }}',url:window.location.href});else navigator.clipboard.writeText(window.location.href)">
+        📤 Share
+      </button>
+      <a href="/chat/?q={{ article.title }}" class="share-btn">🤖 Ask AI</a>
+    </div>
+
+    {% if related %}
+    <div class="related-section">
+      <h3>Related Articles</h3>
+      {% for rel in related %}
+      <a href="/news/{{ rel.slug }}/" class="related-card">
+        <div class="title">{{ rel.title }}</div>
+        <div class="date">{{ rel.published_at|date:"M d, Y" }}</div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </main>
+
+  <aside>
+    <div class="sidebar-box">
+      <h3>Published</h3>
+      <p style="font-size:.88rem;color:var(--ink);">{{ article.published_at|date:"l, F j, Y" }}</p>
+      {% if article.author %}
+      <p style="font-size:.82rem;color:var(--ink-light);">By {{ article.author.get_full_name|default:"Municipal Staff" }}</p>
+      {% endif %}
+    </div>
+    <div class="sidebar-box">
+      <h3>Browse by Category</h3>
+      <a href="/news/?category=announcement" style="display:block;padding:6px 0;font-size:.84rem;text-decoration:none;color:var(--ink);border-bottom:1px solid var(--border);">📢 Announcements</a>
+      <a href="/news/?category=alert" style="display:block;padding:6px 0;font-size:.84rem;text-decoration:none;color:var(--ink);border-bottom:1px solid var(--border);">⚠️ City Alerts</a>
+      <a href="/news/?category=tourism" style="display:block;padding:6px 0;font-size:.84rem;text-decoration:none;color:var(--ink);border-bottom:1px solid var(--border);">🏛️ Tourism</a>
+      <a href="/news/?category=development" style="display:block;padding:6px 0;font-size:.84rem;text-decoration:none;color:var(--ink);">🏗️ Development</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

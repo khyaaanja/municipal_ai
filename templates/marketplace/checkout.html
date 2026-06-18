@@ -1,0 +1,236 @@
+{% extends 'base/base.html' %}
+{% block title %}Checkout — {{ CITY_NAME }} Marketplace{% endblock %}
+
+{% block content %}
+<style>
+.co-wrap { max-width:1000px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+.co-title { font-family:var(--font-head); font-size:2rem; font-weight:800; margin-bottom:2rem; border-left:4px solid var(--red); padding-left:1rem; }
+.co-grid { display:grid; grid-template-columns:1.5fr 1fr; gap:2.5rem; align-items:start; }
+@media(max-width:768px){
+  .co-grid { grid-template-columns:1fr; }
+  .co-wrap { padding:1.2rem 1rem 3rem; }
+  .co-title { font-size:1.4rem; margin-bottom:1.2rem; }
+  .co-form-section { padding:1.2rem; }
+  .co-summary { position:static; }
+  .pay-methods { grid-template-columns:1fr 1fr; }
+}
+.co-form-section { background:var(--paper); border:2px solid var(--ink); padding:2rem; }
+.co-section-title { font-family:var(--font-head); font-size:1.1rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:1.5rem; display:flex; align-items:center; gap:.75rem; }
+.co-section-title::after { content:''; flex:1; height:2px; background:var(--cream); }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+@media(max-width:500px){ .field-row { grid-template-columns:1fr; } }
+.field { margin-bottom:1rem; }
+.field label { display:block; font-weight:600; font-size:.85rem; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.4rem; }
+.field input, .field select, .field textarea {
+  width:100%; padding:.75rem 1rem; border:2px solid var(--stone-light); background:var(--white);
+  font-family:var(--font-body); font-size:.95rem; outline:none; box-sizing:border-box;
+  transition:border-color .2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color:var(--ink); }
+.field textarea { resize:vertical; min-height:80px; }
+/* Payment */
+.pay-methods { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; }
+.pay-option { border:2px solid var(--stone-light); padding:1rem; cursor:pointer; display:flex; align-items:center; gap:.75rem; transition:all .2s; }
+.pay-option:hover { border-color:var(--ink); }
+.pay-option.selected { border-color:var(--ink); background:var(--cream); }
+.pay-option input[type=radio] { accent-color:var(--ink); width:1rem; height:1rem; }
+.pay-icon { font-size:1.5rem; }
+.pay-label { font-weight:700; font-size:.9rem; }
+/* Order summary */
+.co-summary { background:var(--ink); color:var(--paper); padding:2rem; position:sticky; top:5rem; }
+.sum-title { font-family:var(--font-head); font-size:1.1rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:1.5rem; border-bottom:2px solid rgba(255,255,255,.15); padding-bottom:1rem; }
+.sum-item { display:flex; justify-content:space-between; align-items:flex-start; padding:.6rem 0; border-bottom:1px solid rgba(255,255,255,.1); font-size:.9rem; }
+.sum-item-name { flex:1; padding-right:1rem; opacity:.85; }
+.sum-item-qty { opacity:.5; font-size:.8rem; margin-left:.25rem; }
+.sum-item-price { font-weight:700; font-family:var(--font-head); white-space:nowrap; }
+.sum-row { display:flex; justify-content:space-between; padding:.5rem 0; font-size:.9rem; opacity:.8; }
+.sum-total { display:flex; justify-content:space-between; padding:1rem 0 0; font-family:var(--font-head); font-size:1.3rem; font-weight:800; border-top:2px solid rgba(255,255,255,.3); margin-top:.5rem; }
+.sum-total span:last-child { color:var(--gold); }
+.btn-place { width:100%; padding:1.1rem; background:var(--red); color:var(--white); border:none; font-family:var(--font-head); font-size:1rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; cursor:pointer; margin-top:1.5rem; transition:background .2s; }
+.btn-place:hover { background:#9e2e1e; }
+.btn-place:disabled { background:var(--stone); cursor:not-allowed; }
+.secure-note { display:flex; align-items:center; gap:.5rem; font-size:.75rem; opacity:.5; margin-top:.75rem; justify-content:center; }
+/* Success overlay */
+.success-overlay { display:none; position:fixed; inset:0; background:rgba(13,13,13,.9); z-index:2000; align-items:center; justify-content:center; }
+.success-overlay.show { display:flex; }
+.success-box { background:var(--paper); padding:3rem; text-align:center; max-width:480px; border:3px solid var(--ink); }
+.success-icon { font-size:4rem; margin-bottom:1rem; }
+.success-title { font-family:var(--font-head); font-size:1.8rem; font-weight:800; margin-bottom:.75rem; }
+.success-msg { color:var(--stone); line-height:1.6; margin-bottom:2rem; }
+.success-order { background:var(--ink); color:var(--gold); font-family:var(--font-head); font-size:1.1rem; font-weight:800; padding:.75rem 1.5rem; margin-bottom:2rem; display:inline-block; letter-spacing:.1em; }
+.success-actions { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+.btn-home, .btn-orders { padding:.75rem 1.5rem; font-family:var(--font-head); font-weight:700; text-decoration:none; font-size:.9rem; text-transform:uppercase; }
+.btn-home { background:var(--ink); color:var(--paper); }
+.btn-orders { border:2px solid var(--ink); color:var(--ink); }
+</style>
+
+<div class="co-wrap">
+  <h1 class="co-title">Checkout</h1>
+
+  <div class="co-grid">
+    <!-- Form -->
+    <div>
+      <form id="checkout-form" method="post" action="{% url 'marketplace:checkout' %}">
+        {% csrf_token %}
+
+        <!-- Delivery -->
+        <div class="co-form-section" style="margin-bottom:1.5rem;">
+          <div class="co-section-title">Delivery Details</div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>First Name</label>
+              <input type="text" name="first_name" value="{{ user.first_name }}" required>
+            </div>
+            <div class="field">
+              <label>Last Name</label>
+              <input type="text" name="last_name" value="{{ user.last_name }}" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Phone Number</label>
+            <input type="tel" name="phone" placeholder="+977-98XXXXXXXX" required>
+          </div>
+
+          <div class="field">
+            <label>Email</label>
+            <input type="email" name="email" value="{{ user.email }}" required>
+          </div>
+
+          <div class="field">
+            <label>Delivery Address</label>
+            <input type="text" name="address" placeholder="Street / Tole / Ward No." required>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>City</label>
+              <input type="text" name="city" value="{{ CITY_NAME }}" required>
+            </div>
+            <div class="field">
+              <label>District</label>
+              <input type="text" name="district" placeholder="Bhaktapur" required>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Delivery Notes (Optional)</label>
+            <textarea name="notes" placeholder="Landmark, delivery time preference..."></textarea>
+          </div>
+        </div>
+
+        <!-- Payment -->
+        <div class="co-form-section">
+          <div class="co-section-title">Payment Method</div>
+
+          <div class="pay-methods">
+            <label class="pay-option selected" onclick="selectPay(this)">
+              <input type="radio" name="payment_method" value="cod" checked>
+              <span class="pay-icon">💵</span>
+              <span class="pay-label">Cash on Delivery</span>
+            </label>
+            <label class="pay-option" onclick="selectPay(this)">
+              <input type="radio" name="payment_method" value="esewa">
+              <span class="pay-icon">📱</span>
+              <span class="pay-label">eSewa</span>
+            </label>
+            <label class="pay-option" onclick="selectPay(this)">
+              <input type="radio" name="payment_method" value="khalti">
+              <span class="pay-icon">💜</span>
+              <span class="pay-label">Khalti</span>
+            </label>
+            <label class="pay-option" onclick="selectPay(this)">
+              <input type="radio" name="payment_method" value="bank">
+              <span class="pay-icon">🏦</span>
+              <span class="pay-label">Bank Transfer</span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Summary -->
+    <div class="co-summary">
+      <div class="sum-title">Order Summary</div>
+
+      {% for item in cart_items %}
+      <div class="sum-item">
+        <span class="sum-item-name">
+          {{ item.product.name }}
+          <span class="sum-item-qty">×{{ item.quantity }}</span>
+        </span>
+        <span class="sum-item-price">₨{{ item.subtotal|floatformat:0 }}</span>
+      </div>
+      {% endfor %}
+
+      <div style="margin-top:.75rem;">
+        <div class="sum-row"><span>Subtotal</span><span>₨{{ subtotal|floatformat:0 }}</span></div>
+        <div class="sum-row"><span>Delivery</span><span>₨{{ delivery_fee|default:"Free" }}</span></div>
+        {% if discount %}<div class="sum-row" style="color:var(--gold-light);"><span>Discount</span><span>−₨{{ discount|floatformat:0 }}</span></div>{% endif %}
+        <div class="sum-total"><span>Total</span><span>₨{{ total|floatformat:0 }}</span></div>
+      </div>
+
+      <button class="btn-place" onclick="placeOrder()" id="placeBtn">Place Order</button>
+      <div class="secure-note">🔒 Secured by {{ CITY_NAME }} Municipal Platform</div>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-box">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Order Placed!</div>
+    <p class="success-msg">Your order has been received. You'll get a confirmation shortly.</p>
+    <div class="success-order" id="orderRef">ORDER #—</div>
+    <div class="success-actions">
+      <a href="/" class="btn-home">Back to Home</a>
+      <a href="/orders/" class="btn-orders">View Orders</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectPay(label) {
+  document.querySelectorAll('.pay-option').forEach(l => l.classList.remove('selected'));
+  label.classList.add('selected');
+  label.querySelector('input').checked = true;
+}
+
+function placeOrder() {
+  const btn = document.getElementById('placeBtn');
+  const form = document.getElementById('checkout-form');
+  const inputs = form.querySelectorAll('[required]');
+  let valid = true;
+  inputs.forEach(i => { if (!i.value.trim()) { i.style.borderColor = 'var(--red)'; valid = false; } else { i.style.borderColor = ''; } });
+  if (!valid) { return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+
+  const formData = new FormData(form);
+  fetch(form.action, {
+    method: 'POST',
+    body: formData,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('orderRef').textContent = 'ORDER #' + data.order_id;
+      document.getElementById('successOverlay').classList.add('show');
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Place Order';
+      alert(data.error || 'Something went wrong. Please try again.');
+    }
+  })
+  .catch(() => {
+    btn.disabled = false;
+    btn.textContent = 'Place Order';
+    alert('Network error. Please try again.');
+  });
+}
+</script>
+{% endblock %}

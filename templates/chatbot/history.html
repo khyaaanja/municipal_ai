@@ -1,0 +1,164 @@
+{% extends 'base/base.html' %}
+{% block title %}Chat History — {{ CITY_NAME }} AI{% endblock %}
+
+{% block content %}
+<style>
+.ch-wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+.ch-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2rem; flex-wrap:wrap; gap:1rem; }
+.ch-title { font-family:var(--font-head); font-size:2rem; font-weight:800; border-left:4px solid var(--red); padding-left:1rem; }
+.btn-new-chat { display:inline-flex; align-items:center; gap:.5rem; background:var(--ink); color:var(--paper); font-family:var(--font-head); font-size:.85rem; font-weight:700; text-transform:uppercase; padding:.75rem 1.5rem; text-decoration:none; letter-spacing:.05em; transition:background .2s; }
+.btn-new-chat:hover { background:var(--red); }
+/* Stats row */
+.ch-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2rem; }
+.ch-stat { border:2px solid var(--ink); padding:1rem 1.25rem; text-align:center; }
+.ch-stat-num { font-family:var(--font-head); font-size:1.8rem; font-weight:800; }
+.ch-stat-label { font-size:.75rem; color:var(--stone); text-transform:uppercase; letter-spacing:.08em; margin-top:.2rem; }
+/* Search bar */
+.ch-search { position:relative; margin-bottom:2rem; }
+.ch-search input { width:100%; padding:.85rem 1rem .85rem 3rem; border:2px solid var(--ink); background:var(--paper); font-family:var(--font-body); font-size:.95rem; box-sizing:border-box; outline:none; }
+.ch-search::before { content:'🔍'; position:absolute; left:1rem; top:50%; transform:translateY(-50%); font-size:.9rem; pointer-events:none; }
+/* Conversation list */
+.ch-list { display:flex; flex-direction:column; gap:1rem; }
+.ch-item { border:2px solid var(--ink); background:var(--paper); display:flex; align-items:stretch; text-decoration:none; color:var(--ink); transition:transform .15s; }
+.ch-item:hover { transform:translateX(4px); }
+.ch-item-accent { width:4px; background:var(--gold); flex-shrink:0; }
+.ch-item-body { flex:1; padding:1.25rem 1.5rem; min-width:0; }
+.ch-item-top { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.4rem; }
+.ch-item-date { font-size:.75rem; color:var(--stone); white-space:nowrap; }
+.ch-item-preview { font-size:.9rem; color:var(--stone); line-height:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:.5rem; }
+.ch-item-first { font-family:var(--font-head); font-size:.95rem; font-weight:700; margin-bottom:.3rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ch-item-footer { display:flex; align-items:center; gap:1rem; }
+.ch-msg-count { background:var(--cream); font-size:.75rem; font-family:var(--font-head); font-weight:700; padding:.2rem .6rem; }
+.ch-ai-badge { background:var(--ink); color:var(--gold); font-size:.7rem; font-family:var(--font-head); font-weight:700; padding:.2rem .6rem; letter-spacing:.06em; }
+.ch-item-del { flex-shrink:0; padding:1.25rem 1rem; display:flex; align-items:center; border-left:1px solid var(--cream); }
+.ch-del-btn { background:none; border:none; color:var(--stone-light); cursor:pointer; font-size:1rem; padding:.25rem; transition:color .2s; }
+.ch-del-btn:hover { color:var(--red); }
+/* Empty state */
+.ch-empty { text-align:center; padding:4rem 2rem; border:2px dashed var(--stone-light); background:var(--cream); }
+.ch-empty-icon { font-size:4rem; display:block; margin-bottom:1rem; }
+.ch-empty-title { font-family:var(--font-head); font-size:1.3rem; font-weight:800; margin-bottom:.5rem; }
+.ch-empty-msg { color:var(--stone); margin-bottom:1.5rem; }
+/* Pagination */
+.ch-pag { display:flex; align-items:center; justify-content:center; gap:.5rem; margin-top:2rem; }
+.ch-pag a, .ch-pag span { padding:.5rem .9rem; border:2px solid var(--ink); font-family:var(--font-head); font-size:.85rem; font-weight:700; text-decoration:none; color:var(--ink); transition:all .2s; }
+.ch-pag a:hover { background:var(--ink); color:var(--paper); }
+.ch-pag .current { background:var(--ink); color:var(--paper); }
+@media(max-width:480px){ .ch-stats { grid-template-columns:1fr 1fr; } }
+</style>
+
+<div class="ch-wrap">
+  <div class="ch-header">
+    <h1 class="ch-title">Chat History</h1>
+    <a href="{% url 'chatbot:chat' %}" class="btn-new-chat">+ New Chat</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="ch-stats">
+    <div class="ch-stat">
+      <div class="ch-stat-num">{{ total_conversations }}</div>
+      <div class="ch-stat-label">Conversations</div>
+    </div>
+    <div class="ch-stat">
+      <div class="ch-stat-num">{{ total_messages }}</div>
+      <div class="ch-stat-label">Messages</div>
+    </div>
+    <div class="ch-stat">
+      <div class="ch-stat-num">{{ CITY_NAME|slice:":3"|upper }}</div>
+      <div class="ch-stat-label">City AI</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="ch-search">
+    <input type="text" id="searchInput" placeholder="Search conversations..." oninput="filterConvos(this.value)">
+  </div>
+
+  {% if conversations %}
+  <div class="ch-list" id="convList">
+    {% for conv in conversations %}
+    <div class="ch-item-wrap" id="conv-wrap-{{ conv.id }}">
+      <div class="ch-item" style="display:flex;">
+        <div class="ch-item-accent"></div>
+        <a href="{% url 'chatbot:conversation' conv.id %}" class="ch-item-body" style="text-decoration:none;color:inherit;">
+          <div class="ch-item-top">
+            <div class="ch-item-first">
+              {{ conv.first_message|default:"New conversation"|truncatechars:60 }}
+            </div>
+            <div class="ch-item-date">{{ conv.updated_at|timesince }} ago</div>
+          </div>
+          <div class="ch-item-preview">{{ conv.last_message|default:"…"|truncatechars:90 }}</div>
+          <div class="ch-item-footer">
+            <span class="ch-msg-count">{{ conv.message_count }} msg{{ conv.message_count|pluralize }}</span>
+            <span class="ch-ai-badge">AI</span>
+          </div>
+        </a>
+        <div class="ch-item-del">
+          <button class="ch-del-btn" onclick="deleteConvo({{ conv.id }}, this)" title="Delete conversation">🗑</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if conversations.has_other_pages %}
+  <div class="ch-pag">
+    {% if conversations.has_previous %}
+    <a href="?page={{ conversations.previous_page_number }}">←</a>
+    {% endif %}
+    {% for num in conversations.paginator.page_range %}
+      {% if conversations.number == num %}
+        <span class="current">{{ num }}</span>
+      {% elif num > conversations.number|add:'-3' and num < conversations.number|add:'3' %}
+        <a href="?page={{ num }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if conversations.has_next %}
+    <a href="?page={{ conversations.next_page_number }}">→</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="ch-empty">
+    <span class="ch-empty-icon">💬</span>
+    <div class="ch-empty-title">No conversations yet</div>
+    <p class="ch-empty-msg">Start a conversation with the {{ CITY_NAME }} AI to get local insights, recommendations, and answers.</p>
+    <a href="{% url 'chatbot:chat' %}" class="btn-new-chat">Start Chatting</a>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function filterConvos(query) {
+  const items = document.querySelectorAll('.ch-item-wrap');
+  query = query.toLowerCase();
+  items.forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query) ? '' : 'none';
+  });
+}
+
+function deleteConvo(id, btn) {
+  if (!confirm('Delete this conversation? This cannot be undone.')) return;
+  fetch('/chat/delete/' + id + '/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      const wrap = document.getElementById('conv-wrap-' + id);
+      wrap.style.opacity = '0'; wrap.style.transform = 'translateX(-1rem)'; wrap.style.transition = 'all .3s';
+      setTimeout(() => wrap.remove(), 300);
+    }
+  });
+}
+
+function getCookie(name) {
+  let v = null;
+  document.cookie.split(';').forEach(c => { c = c.trim(); if (c.startsWith(name+'=')) v = decodeURIComponent(c.slice(name.length+1)); });
+  return v;
+}
+</script>
+{% endblock %}

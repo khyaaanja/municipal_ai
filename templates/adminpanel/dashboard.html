@@ -1,0 +1,102 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Admin Dashboard — {{ CITY_NAME }} AI{% endblock %}
+{% block cms_extra_css %}
+<style>
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+@media(max-width:900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:480px) { .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+.stat-card { background: var(--white); border: var(--border); border-radius: 6px; padding: 20px; display: flex; align-items: center; gap: 16px; }
+.stat-icon { width: 46px; height: 46px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+.stat-num { font-family: var(--font-head); font-size: 1.8rem; font-weight: 900; line-height: 1; }
+.stat-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--stone); margin-top: 3px; }
+.dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+@media(max-width:900px) { .dash-row { grid-template-columns: 1fr; } }
+.dash-box { background: var(--white); border: var(--border); border-radius: 6px; padding: 22px; }
+.dash-box-title { font-family: var(--font-head); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--stone); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--cream); display: flex; justify-content: space-between; align-items: center; }
+.dash-box-title a { color: var(--red); font-weight: 600; font-size: .78rem; text-transform: none; letter-spacing: 0; }
+.order-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--cream); font-size: .84rem; }
+.order-row:last-child { border-bottom: none; }
+.order-id { font-weight: 700; min-width: 50px; }
+.order-user { flex: 1; color: var(--stone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-amount { font-weight: 700; }
+.status-badge { padding: 2px 8px; border-radius: 20px; font-size: .68rem; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+.status-pending    { background: rgba(201,162,39,0.12); color: #8B6E10; }
+.status-completed  { background: rgba(34,197,94,0.12);  color: #166534; }
+.status-cancelled  { background: rgba(193,59,42,0.08);  color: var(--red-dark); }
+.status-processing { background: rgba(59,130,246,0.1);  color: #1e4e8c; }
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media(max-width:480px) { .quick-grid { grid-template-columns: 1fr; } .dash-row { margin-bottom:12px; } }
+.quick-btn { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border: var(--border); border-radius: 4px; color: var(--ink); font-size: .84rem; font-weight: 600; transition: all .15s; }
+.quick-btn:hover { border-color: var(--red); color: var(--red); background: rgba(193,59,42,0.03); }
+</style>
+{% endblock %}
+
+{% block cms_content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
+  <h1 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;">Dashboard</h1>
+  <span style="font-size:.84rem;color:var(--stone);">{{ CITY_NAME }} Municipal AI Platform</span>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dbeafe;">👥</div>
+    <div><div class="stat-num">{{ user_count }}</div><div class="stat-label">Users</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef3c7;">🏛️</div>
+    <div><div class="stat-num">{{ attraction_count }}</div><div class="stat-label">Attractions</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dcfce7;">🎪</div>
+    <div><div class="stat-num">{{ event_count }}</div><div class="stat-label">Events</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fee2e2;">📦</div>
+    <div><div class="stat-num">{{ order_count }}</div><div class="stat-label">Orders</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#ede9fe;">🏪</div>
+    <div><div class="stat-num">{{ business_count }}</div><div class="stat-label">Businesses</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fce7f3;">🛍️</div>
+    <div><div class="stat-num">{{ product_count }}</div><div class="stat-label">Products</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#ecfdf5;">📰</div>
+    <div><div class="stat-num">{{ news_count }}</div><div class="stat-label">Articles</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef9c3;">🧠</div>
+    <div><div class="stat-num">{{ kb_count }}</div><div class="stat-label">AI Entries</div></div>
+  </div>
+</div>
+
+<div class="dash-row">
+  <div class="dash-box">
+    <div class="dash-box-title">Recent Orders <a href="/orders/">View all</a></div>
+    {% for order in recent_orders %}
+    <div class="order-row">
+      <span class="order-id">#{{ order.pk }}</span>
+      <span class="order-user">{{ order.user.email }}</span>
+      <span class="order-amount">NPR {{ order.total_amount }}</span>
+      <span class="status-badge status-{{ order.status }}">{{ order.status }}</span>
+    </div>
+    {% empty %}
+    <p style="color:var(--stone);font-size:.88rem;text-align:center;padding:20px 0;">No orders yet.</p>
+    {% endfor %}
+  </div>
+
+  <div class="dash-box">
+    <div class="dash-box-title">Quick Actions</div>
+    <div class="quick-grid">
+      <a href="{% url 'adminpanel:cms_attraction_add' %}" class="quick-btn">🏛️ Add Attraction</a>
+      <a href="{% url 'adminpanel:cms_event_add' %}" class="quick-btn">🎪 Add Event</a>
+      <a href="{% url 'adminpanel:cms_news_add' %}" class="quick-btn">📰 Publish News</a>
+      <a href="{% url 'adminpanel:cms_product_add' %}" class="quick-btn">🛍️ Add Product</a>
+      <a href="{% url 'adminpanel:cms_vendors' %}" class="quick-btn">✅ Approve Vendors</a>
+      <a href="{% url 'adminpanel:cms_orders' %}" class="quick-btn">📦 View Orders</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base/base.html" %}
+{% block title %}{{ business.name }} — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.biz-hero{height:360px;position:relative;background:#111;overflow:hidden;}
+.biz-hero img{width:100%;height:100%;object-fit:cover;opacity:.65;}
+.biz-hero-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:36px;background:linear-gradient(transparent,rgba(0,0,0,.88));}
+.biz-hero-overlay h1{color:#fff;font-size:2.2rem;margin:0 0 6px;}
+.biz-hero-overlay .sub{color:rgba(255,255,255,.7);font-size:.92rem;}
+.biz-body{max-width:1100px;margin:0 auto;padding:40px 20px;display:grid;grid-template-columns:1fr 320px;gap:40px;}
+@media(max-width:768px){.biz-body{grid-template-columns:1fr;}}
+section{margin-bottom:36px;}
+section h2{font-size:1.1rem;text-transform:uppercase;letter-spacing:.08em;border-left:4px solid var(--accent);padding-left:12px;margin-bottom:16px;}
+section p{color:var(--ink-light);line-height:1.8;font-size:.95rem;}
+.menu-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:.9rem;}
+.menu-item:last-child{border-bottom:none;}
+.menu-item .mname{font-weight:600;}
+.menu-item .mprice{color:var(--accent);font-weight:700;}
+.info-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:22px;margin-bottom:16px;}
+.info-card h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 16px;color:var(--ink-light);border-bottom:1px solid var(--border);padding-bottom:10px;}
+.info-row{display:flex;gap:10px;margin-bottom:12px;font-size:.88rem;}
+.info-row .icon{font-size:1rem;}
+.info-row .label{font-size:.78rem;color:var(--ink-light);display:block;}
+.info-row .val{font-weight:600;color:var(--ink);}
+.btn-full{display:block;text-align:center;padding:12px;border-radius:6px;font-weight:700;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;text-decoration:none;}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-ink{background:var(--ink);color:#fff;margin-top:8px;}
+.btn-full:hover{opacity:.9;}
+.hours-table{width:100%;font-size:.85rem;border-collapse:collapse;}
+.hours-table tr td{padding:5px 0;color:var(--ink-light);}
+.hours-table tr td:first-child{font-weight:600;color:var(--ink);width:90px;}
+.hours-table tr.today td{color:var(--accent)!important;font-weight:700;}
+.review-card{border:1.5px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px;background:var(--paper);}
+.review-card .reviewer{font-weight:700;font-size:.88rem;}
+.review-card .date{font-size:.76rem;color:var(--ink-light);}
+.review-card .stars{color:#f59e0b;font-size:.9rem;margin:4px 0;}
+.review-card .comment{font-size:.86rem;color:var(--ink-light);line-height:1.6;}
+.rating-big-row{display:flex;align-items:center;gap:20px;padding:16px;background:var(--paper);border:1.5px solid var(--border);border-radius:8px;margin-bottom:20px;}
+.rating-num{font-size:3rem;font-weight:900;color:var(--accent);}
+.breadcrumb{max-width:1100px;margin:20px auto 0;padding:0 20px;font-size:.82rem;color:var(--ink-light);}
+.breadcrumb a{color:var(--accent);text-decoration:none;}
+</style>
+
+<div class="breadcrumb">
+  <a href="/">Home</a> › <a href="/businesses/">Businesses</a> › {{ business.name }}
+</div>
+
+<div class="biz-hero">
+  {% if business.cover_image %}
+    <img src="{{ business.cover_image.url }}" alt="{{ business.name }}" loading="lazy">
+  {% else %}
+    <div style="width:100%;height:100%;background:linear-gradient(135deg,#1a1a1a,#2a2a2a);"></div>
+  {% endif %}
+  <div class="biz-hero-overlay">
+    <h1>{{ business.name }}</h1>
+    <p class="sub">{{ business.get_category_display }} • {{ business.address }}</p>
+  </div>
+</div>
+
+<div class="biz-body">
+  <div>
+    <section>
+      <h2>About</h2>
+      <p>{{ business.description }}</p>
+    </section>
+
+    {% if menu_items %}
+    <section>
+      <h2>Menu / Services</h2>
+      {% for item in menu_items %}
+      <div class="menu-item">
+        <span class="mname">{{ item.name }}</span>
+        {% if item.price %}<span class="mprice">NPR {{ item.price }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <section>
+      <h2>Reviews</h2>
+      {% if avg_rating %}
+      <div class="rating-big-row">
+        <div class="rating-num">{{ avg_rating|floatformat:1 }}</div>
+        <div>
+          <div style="color:#f59e0b;font-size:1.2rem;">
+            {% for i in "12345" %}{% if forloop.counter <= avg_rating %}★{% else %}☆{% endif %}{% endfor %}
+          </div>
+          <div style="font-size:.82rem;color:var(--ink-light);margin-top:4px;">{{ reviews.count }} review{{ reviews.count|pluralize }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% for review in reviews %}
+      <div class="review-card">
+        <div style="display:flex;justify-content:space-between;">
+          <span class="reviewer">{{ review.user.get_full_name|default:review.user.email }}</span>
+          <span class="date">{{ review.created_at|date:"M d, Y" }}</span>
+        </div>
+        <div class="stars">{% for i in "12345" %}{% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+        <p class="comment">{{ review.comment }}</p>
+      </div>
+      {% empty %}
+        <p style="color:var(--ink-light);font-size:.9rem;">No reviews yet.</p>
+      {% endfor %}
+    </section>
+  </div>
+
+  <aside>
+    <div class="info-card">
+      <h3>Contact & Location</h3>
+      {% if business.phone %}
+      <div class="info-row"><span class="icon">📞</span><div><span class="label">Phone</span><span class="val">{{ business.phone }}</span></div></div>
+      {% endif %}
+      {% if business.email %}
+      <div class="info-row"><span class="icon">✉️</span><div><span class="label">Email</span><span class="val">{{ business.email }}</span></div></div>
+      {% endif %}
+      {% if business.website %}
+      <div class="info-row"><span class="icon">🌐</span><div><span class="label">Website</span><a href="{{ business.website }}" target="_blank" class="val">Visit website</a></div></div>
+      {% endif %}
+      {% if business.address %}
+      <div class="info-row"><span class="icon">📍</span><div><span class="label">Address</span><span class="val">{{ business.address }}</span></div></div>
+      {% endif %}
+      {% if business.latitude and business.longitude %}
+      <a href="https://www.google.com/maps?q={{ business.latitude }},{{ business.longitude }}" target="_blank" class="btn-full btn-accent" style="margin-top:12px;">Get Directions</a>
+      {% endif %}
+    </div>
+
+    <div class="info-card">
+      <h3>Opening Hours</h3>
+      <table class="hours-table">
+        {% if business.opening_hours %}
+        <tr><td colspan="2" style="color:var(--ink-light);font-size:.85rem;">{{ business.opening_hours }}</td></tr>
+        {% else %}
+        <tr><td>Mon–Fri</td><td>9:00 AM – 6:00 PM</td></tr>
+        <tr><td>Sat</td><td>10:00 AM – 4:00 PM</td></tr>
+        <tr><td>Sun</td><td>Closed</td></tr>
+        {% endif %}
+      </table>
+    </div>
+
+    <div class="info-card">
+      <h3>Ask AI</h3>
+      <p style="font-size:.84rem;color:var(--ink-light);margin-bottom:14px;">Ask about this place, nearby options, or tips.</p>
+      <a href="/chat/?q=Tell me about {{ business.name }} in {{ CITY_NAME }}" class="btn-full btn-ink">Ask AI Assistant</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

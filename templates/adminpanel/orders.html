@@ -1,0 +1,92 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Orders — CMS{% endblock %}
+{% block cms_extra_css %}
+<style>
+.status-filter-bar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.sf-btn { padding:6px 16px; border-radius:20px; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; border:1.5px solid var(--stone-light); color:var(--stone); text-decoration:none; transition:all .15s; }
+.sf-btn:hover, .sf-btn.active { border-color:var(--red); color:var(--red); background:rgba(193,59,42,0.05); }
+.sf-btn.active { background:var(--red); color:white; border-color:var(--red); }
+.order-items-list { font-size:.8rem; color:var(--stone); }
+.order-items-list li { list-style:none; }
+.status-form { display:flex; align-items:center; gap:6px; }
+.status-select { border:1.5px solid var(--stone-light); border-radius:4px; padding:4px 8px; font-size:.78rem; background:var(--white); }
+.status-update-btn { padding:4px 10px; background:var(--ink); color:white; border:none; border-radius:4px; font-size:.78rem; font-weight:600; cursor:pointer; }
+.status-update-btn:hover { background:var(--red); }
+@media(max-width:600px) {
+  .status-filter-bar { gap:4px; }
+  .sf-btn { padding:5px 10px; font-size:.72rem; }
+}
+</style>
+{% endblock %}
+
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Orders</h1>
+  <span style="font-size:.85rem;color:var(--stone);">{{ orders.count }} order{{ orders.count|pluralize }}</span>
+</div>
+
+<div class="status-filter-bar">
+  <a href="{% url 'adminpanel:cms_orders' %}" class="sf-btn {% if not status_filter %}active{% endif %}">All</a>
+  {% for val, label in status_choices %}
+  <a href="{% url 'adminpanel:cms_orders' %}?status={{ val }}" class="sf-btn {% if status_filter == val %}active{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Customer</th>
+        <th>Items</th>
+        <th>Total</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th>Update Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td style="font-weight:700;">#{{ order.pk }}</td>
+        <td>
+          <div style="font-size:.88rem;font-weight:600;">{{ order.user.get_full_name|default:order.user.email }}</div>
+          <div style="font-size:.75rem;color:var(--stone);">{{ order.user.email }}</div>
+        </td>
+        <td>
+          <ul class="order-items-list">
+            {% for item in order.items.all %}
+            <li>{{ item.product.name|default:"(deleted)" }} ×{{ item.quantity }}</li>
+            {% empty %}<li>—</li>
+            {% endfor %}
+          </ul>
+        </td>
+        <td style="font-weight:700;white-space:nowrap;">NPR {{ order.total_amount }}</td>
+        <td style="white-space:nowrap;font-size:.82rem;">{{ order.created_at|date:"M d, Y" }}</td>
+        <td>
+          <span class="cms-pill
+            {% if order.status == 'completed' %}pill-active
+            {% elif order.status == 'cancelled' %}pill-inactive
+            {% else %}pill-yes{% endif %}">
+            {{ order.get_status_display }}
+          </span>
+        </td>
+        <td>
+          <form method="post" action="{% url 'adminpanel:cms_order_status' order.pk %}" class="status-form">
+            {% csrf_token %}
+            <select name="status" class="status-select">
+              {% for val, label in status_choices %}
+              <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="status-update-btn">Save</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:var(--stone);padding:32px;">No orders found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

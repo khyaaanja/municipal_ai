@@ -1,0 +1,60 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ itinerary.title }} — {{ CITY_NAME }}{% endblock %}
+{% block content %}
+<style>
+.id-wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+.id-back { display:inline-flex; align-items:center; gap:.5rem; color:var(--stone); font-size:.85rem; text-decoration:none; margin-bottom:1.5rem; }
+.id-back:hover { color:var(--red); }
+.id-hero { background:var(--ink); color:var(--paper); padding:2rem; margin-bottom:2rem; }
+.id-title { font-family:var(--font-head); font-size:1.8rem; font-weight:800; margin-bottom:.75rem; }
+.id-badges { display:flex; gap:.75rem; flex-wrap:wrap; }
+.id-badge { background:rgba(255,255,255,.15); font-size:.8rem; font-family:var(--font-head); font-weight:700; padding:.3rem .8rem; }
+.id-badge.gold { background:var(--gold); color:var(--ink); }
+.day-section { margin-bottom:2rem; border:2px solid var(--ink); }
+.day-head { background:var(--ink); color:var(--paper); padding:1rem 1.5rem; display:flex; align-items:center; gap:1rem; }
+.day-num { background:var(--gold); color:var(--ink); font-family:var(--font-head); font-size:.9rem; font-weight:800; padding:.2rem .8rem; }
+.day-label { font-family:var(--font-head); font-size:1rem; font-weight:700; }
+.stops-list { padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; }
+.stop-item { display:grid; grid-template-columns:90px 1fr; gap:1rem; }
+@media(max-width:480px){ .stop-item { grid-template-columns:1fr; } }
+.stop-time { font-family:var(--font-head); font-size:.85rem; font-weight:800; color:var(--red); padding-top:.15rem; }
+.stop-activity { font-weight:700; margin-bottom:.2rem; }
+.stop-meta { font-size:.82rem; color:var(--stone); display:flex; gap:1rem; flex-wrap:wrap; }
+.stop-meta span { display:flex; align-items:center; gap:.25rem; }
+</style>
+<div class="id-wrap">
+  <a href="{% url 'itinerary:list' %}" class="id-back">← Back to Itineraries</a>
+  <div class="id-hero">
+    <div class="id-title">{{ itinerary.title }}</div>
+    <div class="id-badges">
+      <span class="id-badge gold">{{ itinerary.days }} Day{{ itinerary.days|pluralize }}</span>
+      {% if itinerary.group_type %}<span class="id-badge">{{ itinerary.group_type|title }}</span>{% endif %}
+      {% if itinerary.budget %}<span class="id-badge">₨{{ itinerary.budget|floatformat:0 }}</span>{% endif %}
+      <span class="id-badge">{{ itinerary.created_at|date:"M d, Y" }}</span>
+    </div>
+  </div>
+  {% for day in itinerary.generated_plan %}
+  <div class="day-section">
+    <div class="day-head">
+      <span class="day-num">DAY {{ day.day }}</span>
+      <span class="day-label">{{ day.title|default:"Explore Bhaktapur" }}</span>
+    </div>
+    <div class="stops-list">
+      {% for stop in day.stops %}
+      <div class="stop-item">
+        <div class="stop-time">{{ stop.time|default:"—" }}</div>
+        <div>
+          <div class="stop-activity">{{ stop.activity }}</div>
+          <div class="stop-meta">
+            {% if stop.location %}<span>📍 {{ stop.location }}</span>{% endif %}
+            {% if stop.duration %}<span>⏱ {{ stop.duration }}</span>{% endif %}
+            {% if stop.cost %}<span>💰 {{ stop.cost }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base/base.html" %}
+{% block title %}Conversation — {{ CITY_NAME }} AI{% endblock %}
+
+{% block extra_css %}
+<style>
+.conv-wrap { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+.conv-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.conv-title { font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; }
+.conv-meta { font-size: 0.82rem; color: var(--stone); margin-top: 4px; }
+.message-list { display: flex; flex-direction: column; gap: 16px; }
+.msg { display: flex; gap: 12px; max-width: 85%; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg.assistant { align-self: flex-start; }
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 700; font-family: var(--font-head);
+  flex-shrink: 0; margin-top: 2px;
+}
+.msg.user .msg-avatar { background: var(--ink); color: var(--paper); }
+.msg.assistant .msg-avatar { background: var(--red); color: white; }
+.msg-bubble {
+  padding: 12px 16px; border-radius: 8px;
+  font-size: 0.9rem; line-height: 1.7; white-space: pre-wrap;
+}
+.msg.user .msg-bubble { background: var(--ink); color: var(--paper); border-bottom-right-radius: 2px; }
+.msg.assistant .msg-bubble { background: var(--white); color: var(--ink); border: var(--border); border-bottom-left-radius: 2px; }
+.msg-time { font-size: 0.7rem; color: var(--stone); margin-top: 4px; }
+.msg.user .msg-time { text-align: right; }
+.back-link { font-size: 0.85rem; color: var(--stone); font-weight: 600; }
+.back-link:hover { color: var(--red); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="conv-wrap">
+  <div class="conv-header">
+    <div>
+      <div class="conv-title">{{ conversation.title|default:"Conversation" }}</div>
+      <div class="conv-meta">{{ conversation.created_at|date:"M d, Y · g:i A" }}</div>
+    </div>
+    <a href="/chat/history/" class="back-link">← Back to History</a>
+  </div>
+
+  <div class="message-list">
+    {% for msg in messages %}
+    <div class="msg {{ msg.role }}">
+      <div class="msg-avatar">{% if msg.role == 'user' %}{{ request.user.first_name|first|upper|default:"U" }}{% else %}AI{% endif %}</div>
+      <div>
+        <div class="msg-bubble">{{ msg.content }}</div>
+        <div class="msg-time">{{ msg.created_at|date:"g:i A" }}</div>
+      </div>
+    </div>
+    {% empty %}
+    <p style="color:var(--stone);text-align:center;padding:40px 0;">No messages in this conversation.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

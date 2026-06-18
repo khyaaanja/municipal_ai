@@ -1,0 +1,698 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Map Pin Manager — CMS{% endblock %}
+
+{% block cms_extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* ── LAYOUT ── */
+.map-cms-shell {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - 64px);
+  margin: -36px -40px;   /* bleed out of cms-main padding */
+  overflow: hidden;
+}
+@media (max-width: 900px) {
+  .map-cms-shell { grid-template-columns: 1fr; height: calc(100vh - 64px); margin: -36px -16px; }
+  .map-panel { height: 45%; overflow-y: auto; transition: height .3s ease; }
+  .map-panel.mob-collapsed { height: 0; overflow: hidden; }
+  .map-area  { flex: 1; }
+  .panel-header { position: sticky; top: 0; z-index: 10; }
+}
+
+/* ── PANEL ── */
+.map-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-right: var(--border);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 16px;
+  background: var(--ink);
+  flex-shrink: 0;
+}
+.panel-title {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--paper);
+  margin-bottom: 10px;
+}
+.panel-stats {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.pstat {
+  flex: 1;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+}
+.pstat-num  { font-family: var(--font-head); font-weight: 800; font-size: 1.4rem; color: var(--paper); }
+.pstat-lbl  { font-size: 0.68rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; }
+.pstat-num.warn { color: #fbbf24; }
+
+.panel-search {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: var(--paper);
+  font-size: 0.84rem;
+  font-family: var(--font-body);
+  outline: none;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+}
+.panel-search::placeholder { color: rgba(255,255,255,0.35); }
+.panel-search:focus { border-color: var(--red); }
+
+.panel-tabs {
+  display: flex;
+  gap: 0;
+}
+.ptab {
+  flex: 1;
+  padding: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+  color: rgba(255,255,255,0.5);
+  background: transparent;
+}
+.ptab.active { background: var(--red); color: white; }
+
+/* ── LIST ── */
+.panel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+.panel-list::-webkit-scrollbar { width: 4px; }
+.panel-list::-webkit-scrollbar-thumb { background: var(--stone-light); border-radius: 2px; }
+
+.pin-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  margin-bottom: 3px;
+  transition: all 0.15s;
+}
+.pin-item:hover { background: var(--cream); border-color: var(--border); }
+.pin-item.active { background: rgba(193,59,42,0.06); border-color: var(--red); }
+
+.pin-emoji {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.pin-body { flex: 1; min-width: 0; }
+.pin-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pin-cat { font-size: 0.72rem; color: var(--stone); }
+.pin-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.pin-action-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.btn-fly    { background: var(--cream); color: var(--ink); }
+.btn-fly:hover { background: var(--ink); color: white; }
+.btn-clear  { background: rgba(193,59,42,0.08); color: var(--red); }
+.btn-clear:hover { background: var(--red); color: white; }
+.btn-place  { background: rgba(34,197,94,0.1); color: #166534; font-size: 0.7rem; width: auto; padding: 0 8px; }
+.btn-place:hover { background: #166534; color: white; }
+
+.no-items { text-align: center; padding: 24px 12px; color: var(--stone); font-size: 0.84rem; }
+
+/* ── MAP ── */
+.map-area { position: relative; }
+#cms-map { width: 100%; height: 100%; min-height: 500px; }
+@media (max-width: 900px) { #cms-map { height: 55vh; } }
+
+/* ── SAVE TOAST ── */
+.save-toast {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 6px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+.save-toast.visible { opacity: 1; pointer-events: all; }
+.save-toast-name { color: var(--gold); font-family: var(--font-head); }
+.toast-save-btn {
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: background 0.15s;
+}
+.toast-save-btn:hover { background: var(--red-dark); }
+.toast-cancel-btn {
+  background: transparent;
+  color: var(--stone-light);
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 5px 8px;
+}
+.toast-cancel-btn:hover { color: var(--paper); }
+
+/* ── MAP CTRL ── */
+.map-ctrl-bar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mc-btn {
+  width: 34px;
+  height: 34px;
+  background: white;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: all 0.15s;
+}
+.mc-btn:hover { background: var(--ink); color: white; }
+
+/* ── INSTRUCTION BAR ── */
+.instruction-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  z-index: 900;
+  pointer-events: none;
+  display: none;
+  white-space: nowrap;
+}
+.instruction-bar.visible { display: block; }
+</style>
+{% endblock %}
+
+{% block cms_content %}
+<div class="map-cms-shell">
+
+  <!-- ── SIDEBAR PANEL ── -->
+  <div class="map-panel">
+    <div class="panel-header">
+      <div class="panel-title">🗺️ Map Pin Manager</div>
+      <div class="panel-stats">
+        <div class="pstat">
+          <div class="pstat-num" id="pinnedCount">{{ pinned_count }}</div>
+          <div class="pstat-lbl">Pinned</div>
+        </div>
+        <div class="pstat">
+          <div class="pstat-num warn" id="unpinnedCount">{{ unpinned_count }}</div>
+          <div class="pstat-lbl">Need Pin</div>
+        </div>
+      </div>
+      <input type="text" class="panel-search" id="panelSearch" placeholder="Search places..." oninput="filterList(this.value)">
+      <div class="panel-tabs">
+        <button class="ptab active" onclick="switchTab(this,'all')">All</button>
+        <button class="ptab" onclick="switchTab(this,'pinned')">Pinned</button>
+        <button class="ptab" onclick="switchTab(this,'unpinned')">Unpinned</button>
+        <button class="ptab" onclick="switchTab(this,'attraction')">Attr.</button>
+        <button class="ptab" onclick="switchTab(this,'business')">Biz</button>
+        <button class="ptab" onclick="switchTab(this,'event')">Events</button>
+      </div>
+    </div>
+
+    <div class="panel-list" id="panelList"></div>
+  </div>
+
+  <!-- ── MAP ── -->
+  <div class="map-area">
+    <div id="cms-map"></div>
+
+    <div class="instruction-bar" id="instructionBar">
+      📌 Click anywhere on the map to place the pin, then drag to fine-tune
+    </div>
+
+    <div class="map-ctrl-bar">
+      <button class="mc-btn" onclick="resetView()" title="City center">🏙️</button>
+      <button class="mc-btn" onclick="cancelPlacement()" title="Cancel current placement" id="cancelBtn" style="display:none;background:#fef2f2;border-color:var(--red);" title="Cancel">✕</button>
+    </div>
+
+    <!-- Save / Cancel Toast -->
+    <div class="save-toast" id="saveToast">
+      <span>Move pin for <span class="save-toast-name" id="toastName">—</span></span>
+      <button class="toast-cancel-btn" onclick="cancelPlacement()">Cancel</button>
+      <button class="toast-save-btn" onclick="saveLocation()">Save Location</button>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const CITY_LAT  = {{ city_lat }};
+const CITY_LNG  = {{ city_lng }};
+const CITY_NAME = "{{ city_name }}";
+const ALL_ITEMS = {{ items_json|safe }};
+const CSRF      = '{{ csrf_token }}';
+
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const CFG = {
+  attraction: { color: '#dc2626', bg: '#fef2f2', emoji: '🏛️' },
+  business:   { color: '#2563eb', bg: '#eff6ff', emoji: '🏪' },
+  event:      { color: '#7c3aed', bg: '#f5f3ff', emoji: '🎪' },
+};
+
+// ── MAP ───────────────────────────────────────────────────────────────────
+const map = L.map('cms-map').setView([CITY_LAT, CITY_LNG], 15);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 19,
+}).addTo(map);
+
+function resetView() {
+  map.flyTo([CITY_LAT, CITY_LNG], 15, { animate: true, duration: 0.8 });
+}
+
+// ── MARKER FACTORY ────────────────────────────────────────────────────────
+function makeIcon(type, draggable = false) {
+  const c = CFG[type] || CFG.business;
+  return L.divIcon({
+    html: `<div style="
+      background:${c.color};color:white;
+      width:32px;height:32px;border-radius:50% 50% 50% 0;
+      transform:rotate(-45deg);
+      display:flex;align-items:center;justify-content:center;
+      border:${draggable ? '3px solid gold' : '2px solid white'};
+      box-shadow:0 3px 10px rgba(0,0,0,0.3);
+      font-size:13px;
+    "><span style="transform:rotate(45deg)">${c.emoji}</span></div>`,
+    className: '',
+    iconSize:   [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor:[0, -36],
+  });
+}
+
+// ── MARKERS STATE ─────────────────────────────────────────────────────────
+const markerMap = {};   // pk+model → L.Marker
+
+ALL_ITEMS.forEach(item => {
+  if (!item.pinned) return;
+  addFixedMarker(item);
+});
+
+function addFixedMarker(item) {
+  const key = `${item.model}-${item.pk}`;
+  if (markerMap[key]) { map.removeLayer(markerMap[key]); }
+
+  const marker = L.marker([item.lat, item.lng], {
+    icon: makeIcon(item.model),
+    draggable: true,
+  }).addTo(map);
+
+  marker.bindTooltip(item.name, { permanent: false, direction: 'top' });
+
+  marker.on('dragstart', () => {
+    activateItem(item, marker, false);
+  });
+  marker.on('dragend', () => {
+    const ll = marker.getLatLng();
+    pendingLat = ll.lat;
+    pendingLng = ll.lng;
+    showToast(item.name);
+  });
+
+  markerMap[key] = marker;
+  return marker;
+}
+
+// ── PLACEMENT STATE ────────────────────────────────────────────────────────
+let activeItem    = null;
+let activeSideEl  = null;
+let tempMarker    = null;
+let pendingLat    = null;
+let pendingLng    = null;
+
+function activateItem(item, existingMarker = null, flyTo = true) {
+  // Deactivate previous
+  if (activeSideEl) activeSideEl.classList.remove('active');
+  if (tempMarker && tempMarker !== existingMarker) {
+    map.removeLayer(tempMarker);
+    tempMarker = null;
+  }
+
+  activeItem = item;
+  activeSideEl = document.querySelector(`.pin-item[data-key="${item.model}-${item.pk}"]`);
+  if (activeSideEl) activeSideEl.classList.add('active');
+
+  if (flyTo && item.pinned) {
+    map.flyTo([item.lat, item.lng], 17, { animate: true, duration: 0.7 });
+  }
+
+  if (existingMarker) {
+    tempMarker = existingMarker;
+  }
+
+  document.getElementById('instructionBar').classList.add('visible');
+  document.getElementById('cancelBtn').style.display = 'flex';
+}
+
+function startPlacement(item) {
+  activateItem(item, null, item.pinned);
+
+  // Remove existing marker so it can be replaced
+  const key = `${item.model}-${item.pk}`;
+  if (markerMap[key]) {
+    map.removeLayer(markerMap[key]);
+    delete markerMap[key];
+  }
+
+  if (item.pinned) {
+    // Place draggable marker at current position
+    tempMarker = L.marker([item.lat, item.lng], {
+      icon: makeIcon(item.model, true),
+      draggable: true,
+    }).addTo(map);
+    pendingLat = item.lat;
+    pendingLng = item.lng;
+    showToast(item.name);
+
+    tempMarker.on('dragend', () => {
+      const ll = tempMarker.getLatLng();
+      pendingLat = ll.lat;
+      pendingLng = ll.lng;
+    });
+
+    map.flyTo([item.lat, item.lng], 17, { animate: true, duration: 0.7 });
+  } else {
+    // Tell user to click the map
+    pendingLat = null;
+    pendingLng = null;
+    document.getElementById('instructionBar').textContent = `📌 Click on the map to place the pin for "${item.name}"`;
+    hideToast();
+  }
+}
+
+// ── MAP CLICK → PLACE PIN ─────────────────────────────────────────────────
+map.on('click', (e) => {
+  if (!activeItem) return;
+
+  pendingLat = e.latlng.lat;
+  pendingLng = e.latlng.lng;
+
+  if (tempMarker) {
+    tempMarker.setLatLng(e.latlng);
+  } else {
+    tempMarker = L.marker(e.latlng, {
+      icon: makeIcon(activeItem.model, true),
+      draggable: true,
+    }).addTo(map);
+
+    tempMarker.on('dragend', () => {
+      const ll = tempMarker.getLatLng();
+      pendingLat = ll.lat;
+      pendingLng = ll.lng;
+    });
+  }
+
+  showToast(activeItem.name);
+});
+
+// ── SAVE ──────────────────────────────────────────────────────────────────
+async function saveLocation() {
+  if (!activeItem || pendingLat === null) return;
+
+  const btn = document.querySelector('.toast-save-btn');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch("{% url 'adminpanel:cms_map_update_location' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ model: activeItem.model, pk: activeItem.pk, lat: pendingLat, lng: pendingLng }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      // Update local data
+      activeItem.lat    = data.lat;
+      activeItem.lng    = data.lng;
+      activeItem.pinned = true;
+
+      // Replace temp marker with fixed marker
+      if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+      addFixedMarker(activeItem);
+
+      // Update sidebar card
+      updateSidebarCard(activeItem);
+      updateCounts();
+
+      cancelPlacement();
+      flashMsg(`✓ Location saved for ${data.name}`);
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
+    }
+  } catch (e) {
+    alert('Network error. Please try again.');
+  } finally {
+    btn.textContent = 'Save Location';
+    btn.disabled = false;
+  }
+}
+
+// ── CLEAR LOCATION ────────────────────────────────────────────────────────
+async function clearLocation(item, e) {
+  e.stopPropagation();
+  if (!confirm(`Remove pin for "${item.name}"? It will disappear from the public map.`)) return;
+
+  const res = await fetch("{% url 'adminpanel:cms_map_clear_location' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ model: item.model, pk: item.pk }),
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    item.lat    = null;
+    item.lng    = null;
+    item.pinned = false;
+    const key = `${item.model}-${item.pk}`;
+    if (markerMap[key]) { map.removeLayer(markerMap[key]); delete markerMap[key]; }
+    if (activeItem && activeItem.pk === item.pk && activeItem.model === item.model) cancelPlacement();
+    updateSidebarCard(item);
+    updateCounts();
+    flashMsg(`Pin removed for ${item.name}`);
+  }
+}
+
+// ── CANCEL ────────────────────────────────────────────────────────────────
+function cancelPlacement() {
+  if (tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+
+  // Restore original fixed marker if item was pinned
+  if (activeItem && activeItem.pinned) {
+    addFixedMarker(activeItem);
+  }
+
+  if (activeSideEl) activeSideEl.classList.remove('active');
+  activeItem   = null;
+  activeSideEl = null;
+  pendingLat   = null;
+  pendingLng   = null;
+
+  hideToast();
+  document.getElementById('instructionBar').classList.remove('visible');
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────
+const listEl = document.getElementById('panelList');
+let currentTab   = 'all';
+let searchQuery  = '';
+
+function buildSidebar() {
+  listEl.innerHTML = '';
+  const filtered = ALL_ITEMS.filter(item => {
+    const tabOK = currentTab === 'all'
+      || currentTab === item.model
+      || (currentTab === 'pinned' && item.pinned)
+      || (currentTab === 'unpinned' && !item.pinned);
+    const qOK = !searchQuery || item.name.toLowerCase().includes(searchQuery);
+    return tabOK && qOK;
+  });
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = `<div class="no-items">No places match your filter.</div>`;
+    return;
+  }
+
+  filtered.forEach(item => {
+    const c   = CFG[item.model] || CFG.business;
+    const key = `${item.model}-${item.pk}`;
+    const card = document.createElement('div');
+    card.className     = 'pin-item';
+    card.dataset.key   = key;
+    card.dataset.model = item.model;
+    card.dataset.name  = item.name.toLowerCase();
+
+    let actions = '';
+    if (item.pinned) {
+      actions += `<button class="pin-action-btn btn-fly" title="Fly to" onclick="flyToItem(event,'${key}')">🎯</button>`;
+      actions += `<button class="pin-action-btn btn-clear" title="Remove pin" onclick="clearLocation(getAllItem('${key}'), event)">✕</button>`;
+    } else {
+      actions += `<button class="pin-action-btn btn-place" onclick="startPlacementByKey('${key}')">+ Pin</button>`;
+    }
+
+    card.innerHTML = `
+      <div class="pin-emoji" style="background:${c.bg};">${c.emoji}</div>
+      <div class="pin-body">
+        <div class="pin-name">${item.name}</div>
+        <div class="pin-cat">
+          ${item.category || item.model}
+          ${item.pinned
+            ? `<span style="color:#166534;font-weight:700;"> · ✓ ${item.lat.toFixed(5)}, ${item.lng.toFixed(5)}</span>`
+            : `<span style="color:#d97706;font-weight:700;"> · No pin set</span>`}
+        </div>
+      </div>
+      <div class="pin-actions">${actions}</div>
+    `;
+
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.pin-action-btn')) return;
+      startPlacementByKey(key);
+    });
+
+    listEl.appendChild(card);
+  });
+}
+
+function getAllItem(key) {
+  return ALL_ITEMS.find(i => `${i.model}-${i.pk}` === key);
+}
+
+function startPlacementByKey(key) {
+  const item = getAllItem(key);
+  if (item) startPlacement(item);
+}
+
+function flyToItem(e, key) {
+  e.stopPropagation();
+  const item = getAllItem(key);
+  if (item && item.pinned) {
+    map.flyTo([item.lat, item.lng], 18, { animate: true, duration: 0.8 });
+    const marker = markerMap[key];
+    if (marker) setTimeout(() => marker.openTooltip(), 800);
+  }
+}
+
+function updateSidebarCard(item) {
+  buildSidebar();  // rebuild is simplest; list is small
+}
+
+function updateCounts() {
+  const pinned   = ALL_ITEMS.filter(i => i.pinned).length;
+  const unpinned = ALL_ITEMS.length - pinned;
+  document.getElementById('pinnedCount').textContent   = pinned;
+  document.getElementById('unpinnedCount').textContent = unpinned;
+}
+
+function switchTab(btn, tab) {
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = tab;
+  buildSidebar();
+}
+
+function filterList(q) {
+  searchQuery = q.toLowerCase().trim();
+  buildSidebar();
+}
+
+buildSidebar();
+
+// ── TOAST / FLASH ─────────────────────────────────────────────────────────
+function showToast(name) {
+  document.getElementById('toastName').textContent = name;
+  document.getElementById('saveToast').classList.add('visible');
+  document.getElementById('instructionBar').classList.remove('visible');
+}
+
+function hideToast() {
+  document.getElementById('saveToast').classList.remove('visible');
+}
+
+let flashTimer;
+function flashMsg(msg) {
+  clearTimeout(flashTimer);
+  const el = document.getElementById('instructionBar');
+  el.textContent = msg;
+  el.classList.add('visible');
+  flashTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+</script>
+{% endblock %}

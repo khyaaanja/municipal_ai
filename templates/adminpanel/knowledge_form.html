@@ -1,0 +1,64 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}{% if obj %}Edit{% else %}Add{% endif %} Knowledge Entry — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">{% if obj %}Edit Knowledge Entry{% else %}Add Knowledge Entry{% endif %}</h1>
+  <a href="{% url 'adminpanel:cms_knowledge' %}" class="btn btn-outline btn-sm">← Back to list</a>
+</div>
+
+<div class="cms-form-card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="cms-form-grid">
+
+      <div class="cms-section-divider">Entry</div>
+
+      <div class="form-group full">
+        <label class="form-label">Title *</label>
+        <input type="text" name="title" class="form-control" value="{{ obj.title|default:'' }}" required>
+      </div>
+
+      <div class="form-group full">
+        <label class="form-label">Content *
+          <span style="color:var(--stone);font-weight:400;">— This exact text is sent to the AI. Be accurate and factual.</span>
+        </label>
+        <textarea name="content" class="form-control" rows="10" required>{{ obj.content|default:'' }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select name="category" class="form-control">
+          {% for val, label in categories %}
+          <option value="{{ val }}" {% if obj.category == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Keywords <span style="color:var(--stone);font-weight:400;">(comma-separated, for retrieval matching)</span></label>
+        <input type="text" name="keywords" class="form-control" value="{{ obj.keywords|default:'' }}" placeholder="emergency, police, hospital, fire">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Priority <span style="color:var(--stone);font-weight:400;">(higher = retrieved first)</span></label>
+        <input type="number" name="priority" class="form-control" value="{{ obj.priority|default:0 }}" min="0" max="100">
+      </div>
+
+      <div class="cms-section-divider">Visibility</div>
+
+      <div style="grid-column:1/-1;">
+        <div class="cms-check-row">
+          <input type="checkbox" name="is_active" id="is_active" {% if obj.is_active or not obj %}checked{% endif %}>
+          <label for="is_active">Active (included in AI context)</label>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:28px;display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary">{% if obj %}Save Changes{% else %}Add Entry{% endif %}</button>
+      <a href="{% url 'adminpanel:cms_knowledge' %}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

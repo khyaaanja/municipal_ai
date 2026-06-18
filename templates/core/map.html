@@ -1,0 +1,1093 @@
+{% extends "base/base.html" %}
+{% block title %}City Map — {{ CITY_NAME }} AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── ROOT ── */
+.map-root { display:flex; height:calc(100vh - 64px); overflow:hidden; }
+
+/* ── LEFT PANEL ── */
+.map-panel {
+  width:340px; flex-shrink:0;
+  display:flex; flex-direction:column;
+  background:#fff; border-right:1px solid #e0e0e0;
+  overflow:hidden; box-shadow:2px 0 8px rgba(0,0,0,.1); z-index:10;
+}
+
+/* ── MODE TABS ── */
+.mode-tabs {
+  display:flex; border-bottom:1px solid #e0e0e0; flex-shrink:0; background:#fff;
+}
+.mtab {
+  flex:1; padding:12px 6px; border:none; background:none; cursor:pointer;
+  font-size:.8rem; font-weight:600; color:#5f6368;
+  border-bottom:3px solid transparent; transition:all .2s;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.mtab .mi { font-size:1.2rem; }
+.mtab:hover  { color:#1a73e8; }
+.mtab.active { color:#1a73e8; border-bottom-color:#1a73e8; }
+
+/* ── BROWSE PANEL ── */
+.browse-panel { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+
+.browse-search-wrap {
+  padding:10px 12px; border-bottom:1px solid #e0e0e0; flex-shrink:0;
+  position:relative;
+}
+.browse-search {
+  width:100%; padding:9px 36px 9px 36px;
+  border:none; border-radius:24px; background:#f1f3f4;
+  font-size:.88rem; font-family:inherit; outline:none; color:#202124;
+  transition:box-shadow .2s;
+}
+.browse-search:focus { background:#fff; box-shadow:0 2px 10px rgba(0,0,0,.2); }
+.browse-search-icon { position:absolute; left:22px; top:50%; transform:translateY(-50%); color:#5f6368; font-size:1rem; pointer-events:none; }
+.browse-search-clear { position:absolute; right:22px; top:50%; transform:translateY(-50%); background:none; border:none; color:#5f6368; cursor:pointer; font-size:.9rem; display:none; }
+
+.browse-filters {
+  display:flex; gap:6px; padding:8px 12px;
+  overflow-x:auto; flex-shrink:0; border-bottom:1px solid #e0e0e0;
+  scrollbar-width:none;
+}
+.browse-filters::-webkit-scrollbar { display:none; }
+.bchip {
+  display:flex; align-items:center; gap:4px; padding:5px 12px;
+  border-radius:20px; border:1px solid #dadce0; background:#fff;
+  font-size:.76rem; font-weight:500; cursor:pointer; white-space:nowrap;
+  transition:all .15s; color:#202124;
+}
+.bchip:hover  { background:#f1f3f4; }
+.bchip.active { background:#e8f0fe; border-color:#1a73e8; color:#1a73e8; font-weight:700; }
+
+.browse-list { flex:1; overflow-y:auto; }
+.browse-list::-webkit-scrollbar { width:4px; }
+.browse-list::-webkit-scrollbar-thumb { background:#dadce0; border-radius:2px; }
+.bi {
+  display:flex; align-items:center; gap:12px; padding:11px 16px;
+  cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .15s;
+}
+.bi:hover { background:#f8f9fa; }
+.bi.focused { background:#e8f0fe; }
+.bi-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.95rem; flex-shrink:0; }
+.bi-body { flex:1; min-width:0; }
+.bi-name { font-size:.87rem; font-weight:500; color:#202124; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bi-sub  { font-size:.73rem; color:#5f6368; margin-top:1px; }
+.bi-dir  { width:32px; height:32px; border:1px solid #dadce0; border-radius:50%; background:#fff; cursor:pointer; font-size:.85rem; color:#1a73e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
+.bi-dir:hover { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+
+/* ── DIRECTIONS PANEL ── */
+.dir-panel { display:none; flex-direction:column; flex:1; overflow:hidden; }
+.dir-panel.show { display:flex; }
+
+/* Travel mode */
+.travel-modes {
+  display:flex; gap:0; border-bottom:1px solid #e0e0e0;
+  background:#f8f9fa; flex-shrink:0; padding:0 8px;
+}
+.tmode {
+  flex:1; padding:10px 4px; border:none; background:none; cursor:pointer;
+  font-size:.72rem; font-weight:600; color:#5f6368; text-transform:uppercase; letter-spacing:.04em;
+  border-bottom:3px solid transparent; transition:all .2s;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+}
+.tmode .ti { font-size:1.1rem; }
+.tmode:hover  { color:#1a73e8; }
+.tmode.active { color:#1a73e8; border-bottom-color:#1a73e8; background:#fff; }
+
+/* From/To inputs */
+.dir-fields {
+  padding:12px; background:#f8f9fa; border-bottom:1px solid #e0e0e0; flex-shrink:0;
+}
+.dir-row { position:relative; margin-bottom:8px; }
+.dir-row:last-of-type { margin-bottom:0; }
+.dir-dot { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:.65rem; pointer-events:none; }
+.dir-dot.from { color:#1a73e8; }
+.dir-dot.to   { color:#ea4335; }
+.dir-input {
+  width:100%; padding:10px 70px 10px 28px;
+  border:1.5px solid #dadce0; border-radius:8px;
+  font-size:.87rem; font-family:inherit; color:#202124;
+  background:#fff; outline:none; transition:border-color .2s, box-shadow .2s;
+}
+.dir-input:focus { border-color:#1a73e8; box-shadow:0 0 0 2px rgba(26,115,232,.1); }
+.dir-input.set { background:#f0f4ff; border-color:#aac4f0; }
+.dir-btns { position:absolute; right:4px; top:50%; transform:translateY(-50%); display:flex; gap:2px; }
+.dir-loc-btn {
+  width:30px; height:30px; border:none; background:none; cursor:pointer;
+  color:#5f6368; font-size:1rem; border-radius:50%; transition:all .15s;
+  display:flex; align-items:center; justify-content:center;
+}
+.dir-loc-btn:hover { background:#f1f3f4; color:#1a73e8; }
+.dir-clr-btn {
+  width:30px; height:30px; border:none; background:none; cursor:pointer;
+  color:#bdc1c6; font-size:.85rem; border-radius:50%; transition:all .15s;
+  display:none; align-items:center; justify-content:center;
+}
+.dir-clr-btn:hover { color:#ea4335; }
+.dir-clr-btn.show { display:flex; }
+
+.swap-row { text-align:right; margin:4px 0; }
+.swap-btn {
+  width:28px; height:28px; border:1px solid #dadce0; border-radius:50%;
+  background:#fff; cursor:pointer; color:#5f6368; font-size:.85rem;
+  box-shadow:0 1px 3px rgba(0,0,0,.15); transition:all .15s;
+  display:inline-flex; align-items:center; justify-content:center;
+}
+.swap-btn:hover { background:#f1f3f4; color:#1a73e8; }
+
+.get-route-btn {
+  width:100%; margin-top:10px; padding:11px;
+  background:#1a73e8; color:#fff; border:none; border-radius:8px;
+  font-size:.9rem; font-weight:700; cursor:pointer; font-family:inherit;
+  transition:background .2s; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.get-route-btn:hover { background:#1558b0; }
+.get-route-btn:disabled { background:#bdc1c6; cursor:not-allowed; }
+
+/* Click-to-set hint */
+.map-click-hint {
+  font-size:.75rem; color:#5f6368; text-align:center;
+  padding:6px 12px 0; flex-shrink:0;
+}
+.map-click-hint span { color:#1a73e8; font-weight:600; }
+
+/* Autocomplete dropdown */
+.ac-drop {
+  position:absolute; top:calc(100% + 2px); left:0; right:0;
+  background:#fff; border-radius:0 0 8px 8px;
+  box-shadow:0 4px 16px rgba(0,0,0,.2); z-index:3000;
+  max-height:240px; overflow-y:auto; display:none; border:1px solid #e0e0e0; border-top:none;
+}
+.ac-drop.open { display:block; }
+.ac-item {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .12s;
+}
+.ac-item:hover { background:#f8f9fa; }
+.ac-icon { font-size:1rem; flex-shrink:0; color:#5f6368; width:20px; text-align:center; }
+.ac-text { flex:1; }
+.ac-name { font-size:.86rem; font-weight:500; color:#202124; }
+.ac-sub  { font-size:.74rem; color:#5f6368; }
+.ac-msg  { padding:12px 14px; color:#5f6368; font-size:.84rem; text-align:center; }
+
+/* Route summary */
+.route-summary {
+  background:#e8f0fe; border-bottom:1px solid #c5d5f5;
+  padding:12px 14px; flex-shrink:0; display:none;
+}
+.route-summary.show { display:block; }
+.rs-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.rs-dist { background:#1a73e8; color:#fff; font-weight:800; font-size:1rem; padding:4px 12px; border-radius:4px; font-family:var(--font-head); }
+.rs-time { font-size:.85rem; color:#5f6368; }
+.rs-via  { font-size:.78rem; color:#5f6368; margin-bottom:8px; }
+.rs-actions { display:flex; gap:6px; }
+.rs-btn {
+  flex:1; padding:7px; border-radius:20px; border:1px solid #dadce0;
+  background:#fff; font-size:.78rem; font-weight:600; cursor:pointer;
+  color:#1a73e8; text-align:center; transition:background .15s; font-family:inherit;
+}
+.rs-btn:hover { background:#e8f0fe; }
+.rs-btn.primary { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.rs-btn.primary:hover { background:#1558b0; }
+.rs-btn.danger { color:#ea4335; border-color:#ea4335; }
+.rs-btn.danger:hover { background:#fce8e6; }
+
+/* Steps list */
+.steps-list { flex:1; overflow-y:auto; }
+.steps-list::-webkit-scrollbar { width:4px; }
+.steps-list::-webkit-scrollbar-thumb { background:#dadce0; border-radius:2px; }
+.step-item {
+  display:flex; align-items:flex-start; gap:14px; padding:12px 16px;
+  border-bottom:1px solid #f1f3f4; transition:background .15s;
+}
+.step-item.current { background:#e8f0fe; border-left:3px solid #1a73e8; }
+.step-item.done    { opacity:.4; }
+.step-icon {
+  width:36px; height:36px; border-radius:50%; background:#f1f3f4;
+  display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0;
+}
+.step-icon.si-cur    { background:#1a73e8; color:#fff; }
+.step-icon.si-arrive { background:#ea4335; color:#fff; }
+.step-icon.si-done   { background:#34a853; color:#fff; font-size:.8rem; }
+.step-body { flex:1; }
+.step-instr { font-size:.86rem; font-weight:500; color:#202124; line-height:1.4; }
+.step-dist  { font-size:.74rem; color:#5f6368; margin-top:2px; }
+
+.dir-placeholder { padding:24px 16px; text-align:center; color:#5f6368; font-size:.87rem; }
+.dir-placeholder .dpi { font-size:2.5rem; margin-bottom:10px; display:block; }
+
+/* ── MAP ── */
+.map-area { flex:1; position:relative; overflow:hidden; }
+#map { width:100%; height:100%; }
+
+/* Right controls */
+.map-zoom-btns {
+  position:absolute; bottom:120px; right:10px; z-index:900;
+  display:flex; flex-direction:column; gap:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.3); border-radius:2px; overflow:hidden;
+}
+.mzb {
+  width:40px; height:40px; background:#fff; border:none; border-bottom:1px solid #e0e0e0;
+  cursor:pointer; font-size:1.2rem; color:#5f6368; display:flex; align-items:center; justify-content:center;
+  transition:background .15s;
+}
+.mzb:last-child { border-bottom:none; }
+.mzb:hover { background:#f8f9fa; color:#202124; }
+
+.my-loc-fab {
+  position:absolute; bottom:24px; right:10px; z-index:900;
+  width:40px; height:40px; border-radius:50%; background:#fff; border:none;
+  box-shadow:0 2px 6px rgba(0,0,0,.3); cursor:pointer; font-size:1.1rem;
+  color:#5f6368; display:flex; align-items:center; justify-content:center; transition:all .2s;
+}
+.my-loc-fab:hover { background:#f8f9fa; }
+.my-loc-fab.tracking  { color:#1a73e8; }
+.my-loc-fab.acquiring { color:#1a73e8; animation:locbounce .8s infinite; }
+@keyframes locbounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+
+/* Navigation HUD */
+.nav-hud {
+  position:absolute; bottom:0; left:0; right:0; z-index:950;
+  background:#202124; color:#fff;
+  transform:translateY(100%); transition:transform .3s ease;
+  display:flex; align-items:center;
+}
+.nav-hud.open { transform:translateY(0); }
+.nav-hud-main { flex:1; display:flex; align-items:center; gap:12px; padding:14px 16px; }
+.nav-hud-icon {
+  width:52px; height:52px; background:#1a73e8; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; font-size:1.8rem; flex-shrink:0;
+}
+.nav-hud-text { flex:1; }
+.nav-hud-dist  { font-size:1.4rem; font-weight:800; line-height:1; font-family:var(--font-head); }
+.nav-hud-instr { font-size:.82rem; color:rgba(255,255,255,.8); margin-top:3px; }
+.nav-hud-stats { padding:14px 12px; border-left:1px solid rgba(255,255,255,.12); text-align:right; }
+.nav-hud-rem   { font-size:1rem; font-weight:700; color:#8ab4f8; font-family:var(--font-head); }
+.nav-hud-eta   { font-size:.72rem; color:rgba(255,255,255,.5); margin-top:2px; }
+.nav-hud-end   { padding:14px 12px; }
+.nav-end-btn {
+  width:44px; height:44px; border-radius:50%; background:#ea4335; color:#fff;
+  border:none; cursor:pointer; font-size:1.1rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(234,67,53,.4); transition:background .15s;
+}
+.nav-end-btn:hover { background:#c62828; }
+
+/* User dot */
+.u-dot-wrap { position:relative; width:20px; height:20px; }
+.u-ring { position:absolute; inset:0; border-radius:50%; background:rgba(26,115,232,.25); animation:upulse 2s infinite; }
+.u-dot  { position:absolute; inset:3px; background:#1a73e8; border-radius:50%; border:2px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+@keyframes upulse { 0%{transform:scale(.5);opacity:1} 100%{transform:scale(2);opacity:0} }
+
+/* Popup */
+.lf-popup { min-width:220px; max-width:270px; font-family:inherit; }
+.lp-name  { font-size:.96rem; font-weight:700; color:#202124; margin-bottom:3px; }
+.lp-cat   { font-size:.74rem; color:#5f6368; margin-bottom:5px; display:flex; align-items:center; gap:5px; }
+.lp-stars { color:#f9ab00; font-size:.8rem; margin-bottom:4px; }
+.lp-row   { display:flex; align-items:flex-start; gap:5px; font-size:.77rem; color:#5f6368; margin-bottom:3px; }
+.lp-desc  { font-size:.77rem; color:#5f6368; line-height:1.5; margin:6px 0; border-top:1px solid #e0e0e0; padding-top:6px; }
+.lp-acts  { display:flex; gap:6px; margin-top:10px; padding-top:8px; border-top:1px solid #e0e0e0; }
+.lp-btn   { flex:1; padding:7px 6px; border-radius:20px; font-size:.76rem; font-weight:600; text-align:center; cursor:pointer; border:1px solid #dadce0; background:#fff; color:#1a73e8; text-decoration:none; transition:background .15s; font-family:inherit; }
+.lp-btn:hover { background:#e8f0fe; }
+.lp-btn.prim  { background:#1a73e8; color:#fff; border-color:#1a73e8; }
+.lp-btn.prim:hover { background:#1558b0; }
+
+.leaflet-popup-content-wrapper { border-radius:8px !important; padding:0 !important; box-shadow:0 2px 16px rgba(0,0,0,.2) !important; border:1px solid #e0e0e0 !important; }
+.leaflet-popup-content { margin:13px 15px !important; }
+.leaflet-popup-tip-container { display:none !important; }
+.marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background:#1a73e8 !important; color:#fff !important; font-weight:800 !important; }
+.marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background:rgba(26,115,232,.12) !important; }
+
+/* Toast */
+#gm-toast {
+  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  background:#202124; color:#fff; padding:10px 20px; border-radius:6px;
+  font-size:.85rem; font-weight:600; z-index:9999; display:none;
+  white-space:nowrap; box-shadow:0 4px 16px rgba(0,0,0,.3); pointer-events:none;
+}
+
+.spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:sp .7s linear infinite; }
+@keyframes sp { to{transform:rotate(360deg)} }
+
+.panel-toggle-fab {
+  display: none;
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  background: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #1a73e8;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  cursor: pointer;
+  white-space: nowrap;
+  gap: 6px;
+  align-items: center;
+}
+
+@media (max-width:768px) {
+  .map-root   { flex-direction:column; height:calc(100vh - 64px); }
+  .map-panel  {
+    width:100%; height:46%;
+    order:2; border-right:none; border-top:2px solid #e0e0e0;
+    transition:height .3s ease;
+  }
+  .map-panel.mob-collapsed { height:0 !important; overflow:hidden; border-top:none; }
+  .map-area   { height:54%; order:1; flex:unset; }
+  .map-area.panel-hidden { height:100%; }
+  .panel-toggle-fab { display:flex; }
+  .nav-hud-icon { width:42px; height:42px; font-size:1.4rem; }
+  .nav-hud-dist { font-size:1.1rem; }
+  .nav-hud-main { padding:10px 12px; }
+  .dir-input    { font-size:.82rem; padding:9px 66px 9px 26px; }
+  .step-item    { padding:10px 12px; gap:10px; }
+}
+@media (max-width:480px) {
+  .map-panel { height:42%; }
+  .map-area  { height:58%; }
+  .mode-tabs .mtab { font-size:.7rem; padding:9px 2px; }
+  .tmode { font-size:.68rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="map-root" id="mapRoot">
+
+  <!-- ═══ LEFT PANEL ═══════════════════════════════════ -->
+  <div class="map-panel" id="mapPanel">
+
+    <!-- Mode tabs -->
+    <div class="mode-tabs">
+      <button class="mtab active" id="tabExplore" onclick="showBrowse()">
+        <span class="mi">🗺️</span>Explore
+      </button>
+      <button class="mtab" id="tabDir" onclick="showDirections()">
+        <span class="mi">🧭</span>Directions
+      </button>
+    </div>
+
+    <!-- ── BROWSE PANEL ── -->
+    <div class="browse-panel" id="browsePanel">
+      <div class="browse-search-wrap">
+        <span class="browse-search-icon">⌕</span>
+        <input type="text" class="browse-search" id="browseSearch"
+               placeholder="Search {{ CITY_NAME }}…"
+               oninput="onBrowseSearch(this.value)" autocomplete="off">
+        <button class="browse-search-clear" id="bsClear" onclick="clearBrowseSearch()">✕</button>
+      </div>
+      <div class="browse-filters">
+        <span class="bchip active" data-type="all"        onclick="setFilter(this)">All</span>
+        <span class="bchip"        data-type="attraction" onclick="setFilter(this)">🏛️ Sites</span>
+        <span class="bchip"        data-type="food"       onclick="setFilter(this)">🍽️ Food</span>
+        <span class="bchip"        data-type="hotel"      onclick="setFilter(this)">🏨 Hotels</span>
+        <span class="bchip"        data-type="business"   onclick="setFilter(this)">🏪 Shops</span>
+        <span class="bchip"        data-type="event"      onclick="setFilter(this)">🎪 Events</span>
+      </div>
+      <div class="browse-list" id="browseList"></div>
+    </div>
+
+    <!-- ── DIRECTIONS PANEL ── -->
+    <div class="dir-panel" id="dirPanel">
+
+      <!-- Travel mode -->
+      <div class="travel-modes">
+        <button class="tmode active" data-tm="foot"    onclick="setTravelMode(this)"><span class="ti">🚶</span>Walk</button>
+        <button class="tmode"        data-tm="driving" onclick="setTravelMode(this)"><span class="ti">🚗</span>Drive</button>
+        <button class="tmode"        data-tm="bike"    onclick="setTravelMode(this)"><span class="ti">🚲</span>Cycle</button>
+      </div>
+
+      <!-- From / To -->
+      <div class="dir-fields">
+
+        <!-- FROM -->
+        <div class="dir-row" id="fromRow">
+          <span class="dir-dot from">●</span>
+          <input type="text" class="dir-input" id="fromInput"
+                 placeholder="Starting point or click map"
+                 autocomplete="off"
+                 oninput="onDirType('from',this.value)">
+          <div class="dir-btns">
+            <button class="dir-loc-btn" onclick="useMyLoc('from')" title="Use my location">◎</button>
+            <button class="dir-clr-btn" id="fromClr" onclick="clearPoint('from')">✕</button>
+          </div>
+          <div class="ac-drop" id="fromAc"></div>
+        </div>
+
+        <div class="swap-row">
+          <button class="swap-btn" onclick="swapPoints()" title="Swap">⇅</button>
+        </div>
+
+        <!-- TO -->
+        <div class="dir-row" id="toRow">
+          <span class="dir-dot to">●</span>
+          <input type="text" class="dir-input" id="toInput"
+                 placeholder="Destination"
+                 autocomplete="off"
+                 oninput="onDirType('to',this.value)">
+          <div class="dir-btns">
+            <button class="dir-loc-btn" onclick="useMyLoc('to')" title="Use my location">◎</button>
+            <button class="dir-clr-btn" id="toClr" onclick="clearPoint('to')">✕</button>
+          </div>
+          <div class="ac-drop" id="toAc"></div>
+        </div>
+
+        <p class="map-click-hint">Or <span>click the map</span> to set a point</p>
+
+        <button class="get-route-btn" id="getRouteBtn" onclick="getRoute()" disabled>
+          🧭 Get Directions
+        </button>
+      </div>
+
+      <!-- Route summary (shown after route loads) -->
+      <div class="route-summary" id="routeSummary">
+        <div class="rs-row">
+          <span class="rs-dist" id="rsDist">—</span>
+          <span class="rs-time" id="rsTime">—</span>
+        </div>
+        <div class="rs-via" id="rsVia"></div>
+        <div class="rs-actions">
+          <button class="rs-btn primary" onclick="beginNavigation()">▶ Start</button>
+          <button class="rs-btn" onclick="openInGoogleMaps()">🗺 Google Maps</button>
+          <button class="rs-btn danger" onclick="clearAll()">✕ Clear</button>
+        </div>
+      </div>
+
+      <!-- Steps -->
+      <div class="steps-list" id="stepsList">
+        <div class="dir-placeholder">
+          <span class="dpi">🗺️</span>
+          Enter a start and destination to get walking, driving or cycling directions.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /map-panel -->
+
+  <!-- ═══ MAP ══════════════════════════════════════════ -->
+  <div class="map-area" id="mapArea">
+    <div id="map"></div>
+
+    <!-- Mobile panel toggle -->
+    <button class="panel-toggle-fab" id="panelToggleFab" onclick="toggleMobilePanel()">
+      ▲ Places
+    </button>
+
+    <div class="map-zoom-btns">
+      <button class="mzb" onclick="map.zoomIn()">+</button>
+      <button class="mzb" onclick="map.zoomOut()">−</button>
+    </div>
+
+    <button class="my-loc-fab" id="myLocFab" onclick="locateMe()" title="My location">◎</button>
+
+    <!-- Turn-by-turn HUD (slides up from bottom during navigation) -->
+    <div class="nav-hud" id="navHud">
+      <div class="nav-hud-main">
+        <div class="nav-hud-icon" id="hudIcon">↑</div>
+        <div class="nav-hud-text">
+          <div class="nav-hud-dist"  id="hudDist">—</div>
+          <div class="nav-hud-instr" id="hudInstr">—</div>
+        </div>
+      </div>
+      <div class="nav-hud-stats">
+        <div class="nav-hud-rem" id="hudRemain">—</div>
+        <div class="nav-hud-eta" id="hudEta">remaining</div>
+      </div>
+      <div class="nav-hud-end">
+        <button class="nav-end-btn" onclick="endNavigation()" title="End">✕</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div id="gm-toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════ */
+const CITY_LAT  = {{ CITY_LAT|default:"27.6720" }};
+const CITY_LNG  = {{ CITY_LNG|default:"85.4298" }};
+const CITY_NAME = "{{ CITY_NAME }}";
+const RAW_DATA  = {{ map_data|safe }};
+
+const TC = {   // type config
+  attraction:{ color:'#dc2626', bg:'#fef2f2', emoji:'🏛️', label:'Attraction' },
+  food:      { color:'#d97706', bg:'#fffbeb', emoji:'🍽️', label:'Restaurant'  },
+  hotel:     { color:'#059669', bg:'#ecfdf5', emoji:'🏨', label:'Hotel'       },
+  business:  { color:'#2563eb', bg:'#eff6ff', emoji:'🏪', label:'Business'    },
+  event:     { color:'#7c3aed', bg:'#f5f3ff', emoji:'🎪', label:'Event'       },
+};
+const MI = {   // maneuver icons
+  depart:'🚶', arrive:'🏁',
+  'turn-left':'↰','turn-right':'↱',
+  'turn-slight left':'↖','turn-slight right':'↗',
+  'turn-sharp left':'↙','turn-sharp right':'↘',
+  straight:'↑','new name':'↑',continue:'↑',
+  merge:'⤵',fork:'⑂',ramp:'↪',roundabout:'🔄',rotary:'🔄',uturn:'↩',
+  'end of road':'⤴',
+};
+
+/* ═══════════════════════════════════════════════════════
+   MAP SETUP
+   ═══════════════════════════════════════════════════════ */
+const map = L.map('map', { zoomControl:false }).setView([CITY_LAT, CITY_LNG], 15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'© <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom:19
+}).addTo(map);
+
+const clusters = {};
+Object.keys(TC).forEach(t => {
+  clusters[t] = L.markerClusterGroup({
+    maxClusterRadius:50, showCoverageOnHover:false,
+    iconCreateFunction: c => L.divIcon({
+      html:`<div style="background:${TC[t].color};color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)">${c.getChildCount()}</div>`,
+      className:'', iconSize:[34,34]
+    })
+  });
+  clusters[t].addTo(map);
+});
+
+function mkIcon(type, featured=false) {
+  const c=TC[type]||TC.business, sz=featured?42:34;
+  return L.divIcon({
+    html:`<div style="background:${c.color};color:#fff;width:${sz}px;height:${sz}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:${featured?'3px solid gold':'2px solid #fff'};box-shadow:0 3px 10px rgba(0,0,0,.25);font-size:${featured?17:14}px"><span style="transform:rotate(45deg);line-height:1">${c.emoji}</span></div>`,
+    className:'', iconSize:[sz,sz], iconAnchor:[sz/2,sz], popupAnchor:[0,-(sz+4)]
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   BROWSE — markers + list
+   ═══════════════════════════════════════════════════════ */
+const allMarkers = {};
+let browseType='all', browseQ='';
+
+RAW_DATA.forEach(item => {
+  if (!item.lat||!item.lng) return;
+  const mk = L.marker([item.lat,item.lng],{icon:mkIcon(item.type,item.is_featured)});
+  mk.bindPopup(mkPopup(item),{maxWidth:290});
+  clusters[item.type].addLayer(mk);
+  allMarkers[item.id] = {mk, item};
+});
+
+function buildBrowse() {
+  const el = document.getElementById('browseList');
+  el.innerHTML = '';
+  const q = browseQ.toLowerCase();
+  const list = RAW_DATA.filter(i => {
+    if (!i.lat||!i.lng) return false;
+    return (browseType==='all'||i.type===browseType) && (!q||i.name.toLowerCase().includes(q));
+  });
+  if (!list.length) { el.innerHTML='<div class="dir-placeholder"><span class="dpi">🔍</span>No places found.</div>'; return; }
+  list.forEach(item => {
+    const c=TC[item.type];
+    const div=document.createElement('div');
+    div.className='bi'; div.dataset.id=item.id;
+    let sub=c.label;
+    if (item.rating) sub+=` · ★${item.rating.toFixed(1)}`;
+    div.innerHTML=`
+      <div class="bi-icon" style="background:${c.bg}">${c.emoji}</div>
+      <div class="bi-body">
+        <div class="bi-name">${esc(item.name)}</div>
+        <div class="bi-sub">${esc(sub)}${item.opening_hours?` · 🕐${esc(item.opening_hours)}`:''}</div>
+      </div>
+      <button class="bi-dir" onclick="event.stopPropagation();goDirections(${JSON.stringify(item)})" title="Directions">🧭</button>`;
+    div.addEventListener('click',()=>{
+      document.querySelectorAll('.bi').forEach(e=>e.classList.remove('focused'));
+      div.classList.add('focused');
+      const e=allMarkers[item.id];
+      if (e) { map.flyTo([item.lat,item.lng],17,{animate:true,duration:.8}); setTimeout(()=>clusters[item.type].zoomToShowLayer(e.mk,()=>e.mk.openPopup()),850); }
+    });
+    el.appendChild(div);
+  });
+}
+buildBrowse();
+
+function setFilter(chip) {
+  document.querySelectorAll('.bchip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  browseType=chip.dataset.type;
+  buildBrowse();
+  // show/hide map layers
+  Object.keys(TC).forEach(t => {
+    if (browseType==='all'||browseType===t) { if (!map.hasLayer(clusters[t])) clusters[t].addTo(map); }
+    else map.removeLayer(clusters[t]);
+  });
+}
+
+function onBrowseSearch(v) {
+  browseQ=v; document.getElementById('bsClear').style.display=v?'block':'none'; buildBrowse();
+}
+function clearBrowseSearch() {
+  document.getElementById('browseSearch').value='';
+  document.getElementById('bsClear').style.display='none';
+  browseQ=''; buildBrowse();
+}
+
+/* ═══════════════════════════════════════════════════════
+   POPUP
+   ═══════════════════════════════════════════════════════ */
+function mkPopup(item) {
+  const c=TC[item.type]||TC.business;
+  let h=`<div class="lf-popup">
+    <div class="lp-name">${esc(item.name)}</div>
+    <div class="lp-cat"><span style="color:${c.color}">${c.emoji}</span>${esc(item.category||c.label)}</div>`;
+  if (item.rating) { const s='★'.repeat(Math.floor(item.rating))+'☆'.repeat(5-Math.floor(item.rating)); h+=`<div class="lp-stars">${s} ${item.rating.toFixed(1)}</div>`; }
+  if (item.opening_hours) h+=`<div class="lp-row"><span>🕐</span><span>${esc(item.opening_hours)}</span></div>`;
+  if (item.entry_fee)     h+=`<div class="lp-row"><span>🎟️</span><span>${esc(item.entry_fee)}</span></div>`;
+  if (item.address)       h+=`<div class="lp-row"><span>📍</span><span>${esc(item.address)}</span></div>`;
+  if (item.phone)         h+=`<div class="lp-row"><span>📞</span><a href="tel:${esc(item.phone)}" style="color:#5f6368">${esc(item.phone)}</a></div>`;
+  if (item.desc)          h+=`<div class="lp-desc">${esc(item.desc)}…</div>`;
+  const aiQ=encodeURIComponent(`Tell me about ${item.name} in ${CITY_NAME}`);
+  h+=`<div class="lp-acts">
+    <a href="${esc(item.url)}" class="lp-btn prim">Details</a>
+    <button class="lp-btn" onclick="goDirections(${JSON.stringify(item)})">🧭 Directions</button>
+    <a href="/chat/?q=${aiQ}" class="lp-btn">✦ Ask AI</a>
+  </div></div>`;
+  return h;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PANEL SWITCHING
+   ═══════════════════════════════════════════════════════ */
+function showBrowse() {
+  document.getElementById('tabExplore').classList.add('active');
+  document.getElementById('tabDir').classList.remove('active');
+  document.getElementById('browsePanel').style.display='flex';
+  document.getElementById('dirPanel').classList.remove('show');
+  // restore all layers
+  Object.keys(TC).forEach(t=>{ if(!map.hasLayer(clusters[t])) clusters[t].addTo(map); });
+}
+
+function showDirections() {
+  document.getElementById('tabDir').classList.add('active');
+  document.getElementById('tabExplore').classList.remove('active');
+  document.getElementById('browsePanel').style.display='none';
+  document.getElementById('dirPanel').classList.add('show');
+}
+
+function goDirections(item) {
+  map.closePopup();
+  showDirections();
+  setPoint('to', item.lat, item.lng, item.name);
+  // auto-fill from if we have location
+  if (!fromPt && userLat!==null) setPoint('from', userLat, userLng, 'Your location');
+  if (fromPt && toPt) getRoute();
+}
+
+/* ═══════════════════════════════════════════════════════
+   DIRECTIONS STATE
+   ═══════════════════════════════════════════════════════ */
+let fromPt=null, toPt=null;   // { lat, lng, label }
+let travelMode='foot';
+let routeLayer=null, routeSteps=[], routeWPs=[], routeDist=0;
+let mapClickFor=null;   // 'from' | 'to' | null
+
+map.on('click', e => {
+  if (!mapClickFor) return;
+  const { lat, lng } = e.latlng;
+  setPoint(mapClickFor, lat, lng, `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+  mapClickFor = null;
+  map.getContainer().style.cursor='';
+});
+
+/* ── set a point programmatically ── */
+let fromMarker=null, toMarker=null;
+
+function setPoint(which, lat, lng, label) {
+  if (which==='from') {
+    fromPt={lat,lng,label};
+    document.getElementById('fromInput').value=label;
+    document.getElementById('fromInput').classList.add('set');
+    document.getElementById('fromClr').classList.add('show');
+    closeAc('fromAc');
+    if (fromMarker) map.removeLayer(fromMarker);
+    fromMarker=L.circleMarker([lat,lng],{radius:8,color:'#1a73e8',fillColor:'#1a73e8',fillOpacity:1,weight:2,zIndexOffset:500}).addTo(map);
+  } else {
+    toPt={lat,lng,label};
+    document.getElementById('toInput').value=label;
+    document.getElementById('toInput').classList.add('set');
+    document.getElementById('toClr').classList.add('show');
+    closeAc('toAc');
+    if (toMarker) map.removeLayer(toMarker);
+    toMarker=L.circleMarker([lat,lng],{radius:8,color:'#ea4335',fillColor:'#ea4335',fillOpacity:1,weight:2,zIndexOffset:500}).addTo(map);
+  }
+  checkBtn();
+  if (fromPt && toPt) getRoute();
+}
+
+function clearPoint(which) {
+  if (which==='from') {
+    fromPt=null;
+    document.getElementById('fromInput').value='';
+    document.getElementById('fromInput').classList.remove('set');
+    document.getElementById('fromClr').classList.remove('show');
+    if (fromMarker) { map.removeLayer(fromMarker); fromMarker=null; }
+  } else {
+    toPt=null;
+    document.getElementById('toInput').value='';
+    document.getElementById('toInput').classList.remove('set');
+    document.getElementById('toClr').classList.remove('show');
+    if (toMarker) { map.removeLayer(toMarker); toMarker=null; }
+  }
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer=null; }
+  document.getElementById('routeSummary').classList.remove('show');
+  document.getElementById('stepsList').innerHTML='<div class="dir-placeholder"><span class="dpi">🗺️</span>Enter a start and destination to get directions.</div>';
+  checkBtn();
+}
+
+function clearAll() {
+  clearPoint('from'); clearPoint('to');
+}
+
+function swapPoints() {
+  const tf=fromPt, tt=toPt;
+  const fv=document.getElementById('fromInput').value;
+  const tv=document.getElementById('toInput').value;
+  clearAll();
+  if (tt) setPoint('from',tt.lat,tt.lng,tt.label);
+  if (tf) setPoint('to',  tf.lat,tf.lng,tf.label);
+}
+
+function checkBtn() {
+  document.getElementById('getRouteBtn').disabled = !(fromPt && toPt);
+}
+
+function setTravelMode(btn) {
+  document.querySelectorAll('[data-tm]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  travelMode=btn.dataset.tm;
+  if (fromPt&&toPt) getRoute();
+}
+
+/* ── autocomplete ── */
+let acTimer=null;
+
+function onDirType(which, val) {
+  // clear the set-point if user types
+  if (which==='from') { fromPt=null; document.getElementById('fromInput').classList.remove('set'); document.getElementById('fromClr').style.display=val?'':'none'; }
+  else                { toPt=null;   document.getElementById('toInput').classList.remove('set');   document.getElementById('toClr').style.display=val?'':'none'; }
+  checkBtn();
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer=null; document.getElementById('routeSummary').classList.remove('show'); }
+  clearTimeout(acTimer);
+  if (!val.trim()) { closeAc(which+'Ac'); return; }
+  acTimer=setTimeout(()=>buildAc(which, val.trim()), 300);
+}
+
+async function buildAc(which, q) {
+  const acEl=document.getElementById(which+'Ac');
+  acEl.innerHTML='<div class="ac-msg">Searching…</div>';
+  acEl.classList.add('open');
+
+  // local results first
+  const local=RAW_DATA.filter(i=>i.lat&&i.lng&&i.name.toLowerCase().includes(q.toLowerCase())).slice(0,5);
+  const rows=local.map(i=>({ icon:(TC[i.type]||TC.business).emoji, name:i.name, sub:i.address||(TC[i.type]||TC.business).label, lat:i.lat, lng:i.lng }));
+
+  // Nominatim geocoding
+  try {
+    const geo=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' Nepal')}&format=json&limit=4&accept-language=en`,{signal:AbortSignal.timeout(4000)}).then(r=>r.json());
+    geo.forEach(g=>{
+      const name=g.display_name.split(',').slice(0,2).join(',').trim();
+      if (!rows.find(r=>r.name===name)) rows.push({icon:'📍',name,sub:'Address',lat:+g.lat,lng:+g.lon});
+    });
+  } catch {}
+
+  acEl.innerHTML='';
+  if (!rows.length) { acEl.innerHTML='<div class="ac-msg">No results found.</div>'; return; }
+
+  rows.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='ac-item';
+    div.innerHTML=`<span class="ac-icon">${r.icon}</span><div class="ac-text"><div class="ac-name">${esc(r.name)}</div><div class="ac-sub">${esc(r.sub)}</div></div>`;
+    // mousedown so it fires before input blur
+    div.addEventListener('mousedown', e=>{
+      e.preventDefault();   // prevent input losing focus
+      setPoint(which, r.lat, r.lng, r.name);
+    });
+    acEl.appendChild(div);
+  });
+}
+
+function closeAc(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close autocomplete on outside click
+document.addEventListener('click', e=>{
+  if (!e.target.closest('.dir-row')) { closeAc('fromAc'); closeAc('toAc'); }
+});
+document.getElementById('fromInput').addEventListener('blur', ()=>setTimeout(()=>closeAc('fromAc'),200));
+document.getElementById('toInput').addEventListener('blur',   ()=>setTimeout(()=>closeAc('toAc'),200));
+
+/* ── use my location ── */
+async function useMyLoc(which) {
+  if (userLat!==null) { setPoint(which,userLat,userLng,'Your location'); return; }
+  toast('Getting your location…');
+  try {
+    await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(p=>{onPos(p);res();},rej,{enableHighAccuracy:true,timeout:10000}));
+    startWatch();
+    document.getElementById('myLocFab').classList.add('tracking');
+    setPoint(which,userLat,userLng,'Your location');
+  } catch { toast('Could not get location. Please allow location access.'); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ROUTING
+   ═══════════════════════════════════════════════════════ */
+async function getRoute() {
+  if (!fromPt||!toPt) return;
+  const btn=document.getElementById('getRouteBtn');
+  btn.innerHTML=`<span class="spin"></span> Calculating…`; btn.disabled=true;
+
+  const osrmProfile = travelMode; // foot | driving | bike
+  const url=`https://router.project-osrm.org/route/v1/${osrmProfile}/${fromPt.lng},${fromPt.lat};${toPt.lng},${toPt.lat}?steps=true&geometries=geojson&overview=full`;
+
+  try {
+    const resp=await fetch(url, {signal:AbortSignal.timeout(10000)});
+    const data=await resp.json();
+
+    if (!data.routes || data.routes.length===0) throw new Error('No route');
+
+    const route=data.routes[0];
+    routeDist  =route.distance;
+    routeSteps =route.legs[0].steps;
+    routeWPs   =routeSteps.map(s=>[s.maneuver.location[1],s.maneuver.location[0]]);
+
+    // draw polyline
+    if (routeLayer) map.removeLayer(routeLayer);
+    routeLayer=L.geoJSON(route.geometry,{
+      style:{color:'#1a73e8',weight:5,opacity:.9,lineCap:'round',lineJoin:'round'}
+    }).addTo(map);
+
+    // fit bounds
+    const coords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
+    map.fitBounds(L.latLngBounds(coords),{padding:[60,60]});
+
+    // summary
+    const via=routeSteps.find(s=>s.name&&s.name.length>0)?.name||'local roads';
+    document.getElementById('rsDist').textContent=fmtDist(routeDist);
+    document.getElementById('rsTime').textContent=fmtTime(routeDist/speedMs());
+    document.getElementById('rsVia').textContent =`Via ${via}`;
+    document.getElementById('routeSummary').classList.add('show');
+
+    // steps list
+    renderSteps(-1);
+
+  } catch(err) {
+    // Fallback: straight line
+    if (routeLayer) map.removeLayer(routeLayer);
+    routeLayer=L.polyline([[fromPt.lat,fromPt.lng],[toPt.lat,toPt.lng]],{color:'#1a73e8',weight:4,opacity:.7,dashArray:'8 5'}).addTo(map);
+    map.fitBounds([[fromPt.lat,fromPt.lng],[toPt.lat,toPt.lng]],{padding:[60,60]});
+    const d=haversine(fromPt.lat,fromPt.lng,toPt.lat,toPt.lng);
+    routeDist=d; routeSteps=[]; routeWPs=[];
+    document.getElementById('rsDist').textContent=fmtDist(d)+' *';
+    document.getElementById('rsTime').textContent=fmtTime(d/speedMs())+' *';
+    document.getElementById('rsVia').textContent ='Straight-line estimate (road data unavailable)';
+    document.getElementById('routeSummary').classList.add('show');
+    document.getElementById('stepsList').innerHTML=`<div class="dir-placeholder"><span class="dpi">⚠️</span>Could not fetch road route. Showing straight line. Tap 🗺 Google Maps for turn-by-turn navigation.</div>`;
+  }
+
+  btn.innerHTML='🧭 Get Directions'; btn.disabled=!(fromPt&&toPt);
+}
+
+function renderSteps(currentIdx) {
+  if (!routeSteps.length) return;
+  const el=document.getElementById('stepsList');
+  el.innerHTML='';
+  routeSteps.forEach((step,i)=>{
+    const isLast=i===routeSteps.length-1;
+    const isCur =i===currentIdx;
+    const isDone=currentIdx>=0&&i<currentIdx;
+    const icon  =getIcon(step.maneuver,isLast);
+    const div   =document.createElement('div');
+    div.id=`step${i}`;
+    div.className=`step-item${isCur?' current':''}${isDone?' done':''}`;
+    const ic=isLast?'step-icon si-arrive':isCur?'step-icon si-cur':isDone?'step-icon si-done':'step-icon';
+    div.innerHTML=`
+      <div class="${ic}">${isDone?'✓':icon}</div>
+      <div class="step-body">
+        <div class="step-instr">${esc(fmtInstr(step.maneuver,step.name))}</div>
+        ${step.distance>0?`<div class="step-dist">Continue ${fmtDist(step.distance)}</div>`:''}
+      </div>`;
+    el.appendChild(div);
+  });
+  if (currentIdx>=0) { const cur=document.getElementById(`step${currentIdx}`); if(cur) cur.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+}
+
+function openInGoogleMaps() {
+  if (!fromPt||!toPt) return;
+  const tm=travelMode==='foot'?'walking':travelMode==='bike'?'bicycling':'driving';
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${fromPt.lat},${fromPt.lng}&destination=${toPt.lat},${toPt.lng}&travelmode=${tm}`,'_blank');
+}
+
+/* ═══════════════════════════════════════════════════════
+   TURN-BY-TURN NAVIGATION
+   ═══════════════════════════════════════════════════════ */
+let navActive=false, navIdx=0, followMode=true, voiceOn=true, ann200=false, ann50=false;
+
+function beginNavigation() {
+  if (!routeSteps.length) { toast('Get directions first.'); return; }
+
+  // If no GPS yet, request it first then start
+  if (userLat===null) {
+    toast('Getting your location…');
+    navigator.geolocation.getCurrentPosition(pos=>{
+      onPos(pos); startWatch();
+      document.getElementById('myLocFab').classList.add('tracking');
+      _startNav();
+    }, ()=>{ toast('Enable location access to use navigation.'); }, {enableHighAccuracy:true,timeout:10000});
+    return;
+  }
+  _startNav();
+}
+
+function _startNav() {
+  navActive=true; navIdx=0; followMode=true; ann200=false; ann50=false;
+  startWatch();
+  document.getElementById('navHud').classList.add('open');
+  refreshHud();
+  map.flyTo([userLat,userLng],17,{animate:true,duration:1});
+  speak(`Navigation started. ${fmtInstr(routeSteps[0].maneuver,routeSteps[0].name)}`);
+  renderSteps(0);
+}
+
+function refreshHud() {
+  if (!routeSteps[navIdx]) return;
+  const step=routeSteps[navIdx], isLast=navIdx===routeSteps.length-1;
+  const d2wp=userLat&&routeWPs[navIdx]?haversine(userLat,userLng,...routeWPs[navIdx]):step.distance;
+  document.getElementById('hudIcon').textContent =getIcon(step.maneuver,isLast);
+  document.getElementById('hudDist').textContent =isLast?'Arriving':fmtDist(d2wp);
+  document.getElementById('hudInstr').textContent=fmtInstr(step.maneuver,step.name);
+  if (toPt&&userLat) {
+    const rem=haversine(userLat,userLng,toPt.lat,toPt.lng);
+    document.getElementById('hudRemain').textContent=fmtDist(rem);
+    document.getElementById('hudEta').textContent   =fmtTime(rem/speedMs())+' remaining';
+  }
+}
+
+function checkStep() {
+  if (!navActive||!routeWPs[navIdx]) return;
+  const [wLat,wLng]=routeWPs[navIdx];
+  const d=haversine(userLat,userLng,wLat,wLng);
+  const isLast=navIdx===routeSteps.length-1;
+  if (!ann200&&d<200&&d>60&&!isLast) { speak(`In ${fmtDist(d)}, ${fmtInstr(routeSteps[navIdx].maneuver,routeSteps[navIdx].name)}`); ann200=true; }
+  if (!ann50 &&d<50 &&!isLast)       { speak(fmtInstr(routeSteps[navIdx].maneuver,routeSteps[navIdx].name)); ann50=true; }
+  if (d<20) {
+    if (isLast) {
+      speak(`You have arrived at ${toPt?.label||'your destination'}`);
+      document.getElementById('hudIcon').textContent='🏁'; document.getElementById('hudDist').textContent='Arrived!';
+      document.getElementById('hudInstr').textContent=toPt?.label||'Destination';
+      navActive=false;
+    } else {
+      navIdx++; ann200=false; ann50=false;
+      renderSteps(navIdx); refreshHud();
+      speak(fmtInstr(routeSteps[navIdx].maneuver,routeSteps[navIdx].name));
+    }
+  }
+}
+
+function endNavigation() {
+  navActive=false; navIdx=0;
+  document.getElementById('navHud').classList.remove('open');
+  if (routeLayer) { const b=routeLayer.getBounds(); if(b.isValid()) map.fitBounds(b,{padding:[60,60]}); }
+}
+
+function speak(text) {
+  if (!voiceOn||!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text); u.lang='en-US'; u.rate=1;
+  window.speechSynthesis.speak(u);
+}
+
+/* ═══════════════════════════════════════════════════════
+   USER LOCATION
+   ═══════════════════════════════════════════════════════ */
+let userLat=null, userLng=null, uMk=null, uCirc=null, wid=null;
+
+const uIcon=L.divIcon({
+  html:`<div class="u-dot-wrap"><div class="u-ring"></div><div class="u-dot"></div></div>`,
+  className:'', iconSize:[20,20], iconAnchor:[10,10]
+});
+
+function locateMe() {
+  const fab=document.getElementById('myLocFab');
+  if (!navigator.geolocation) { toast('Geolocation not supported.'); return; }
+  fab.classList.add('acquiring');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    onPos(pos);
+    fab.classList.remove('acquiring'); fab.classList.add('tracking');
+    map.flyTo([userLat,userLng],17,{animate:true,duration:1});
+    startWatch();
+  }, ()=>{ fab.classList.remove('acquiring'); toast('Location access denied.'); }, {enableHighAccuracy:true,timeout:10000});
+}
+
+function startWatch() {
+  if (wid!==null) return;
+  wid=navigator.geolocation.watchPosition(onPos,null,{enableHighAccuracy:true,maximumAge:3000,timeout:10000});
+}
+
+function onPos(pos) {
+  userLat=pos.coords.latitude; userLng=pos.coords.longitude;
+  const acc=pos.coords.accuracy;
+  if (!uMk) {
+    uCirc=L.circle([userLat,userLng],{radius:acc,color:'#1a73e8',fillColor:'#1a73e8',fillOpacity:.08,weight:1}).addTo(map);
+    uMk=L.marker([userLat,userLng],{icon:uIcon,zIndexOffset:2000}).addTo(map).bindPopup('<b>📍 Your location</b>');
+  } else { uMk.setLatLng([userLat,userLng]); uCirc.setLatLng([userLat,userLng]).setRadius(acc); }
+  if (navActive) {
+    if (followMode) map.panTo([userLat,userLng],{animate:true});
+    checkStep(); refreshHud();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════ */
+function speedMs() { return travelMode==='driving'?8.33:travelMode==='bike'?4.17:1.39; }
+function fmtDist(m){ return m>=1000?(m/1000).toFixed(1)+' km':Math.round(m)+' m'; }
+function fmtTime(s){ const m=Math.round(s/60); return m>=60?`${Math.floor(m/60)}h ${m%60}min`:m+'min'; }
+function haversine(a,b,c,d) {
+  const R=6371000,dL=(c-a)*Math.PI/180,dl=(d-b)*Math.PI/180;
+  const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dl/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function getIcon(m,isLast){ if(isLast) return '🏁'; const k=`${m.type}${m.modifier?'-'+m.modifier:''}`; return MI[k]||MI[m.type]||'↑'; }
+function fmtInstr(m,street){
+  const on=street?` onto ${street}`:'';
+  const mp={ depart:`Head ${m.modifier||'forward'}${on}`, arrive:'Arrive at destination', turn:`Turn ${m.modifier||'ahead'}${on}`, 'new name':`Continue${on}`, straight:`Continue straight${on}`, continue:`Continue${on}`, merge:`Merge${on}`, fork:`Keep ${m.modifier||'right'}${on}`, ramp:`Take the ramp${on}`, roundabout:`At the roundabout${on}`, rotary:`At the rotary${on}`, uturn:'Make a U-turn', 'end of road':`Turn ${m.modifier}${on}` };
+  return mp[m.type]||`${m.type}${on}`;
+}
+function esc(s){ if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+let _tt;
+function toast(msg){ clearTimeout(_tt); const t=document.getElementById('gm-toast'); t.textContent=msg; t.style.display='block'; _tt=setTimeout(()=>t.style.display='none',3500); }
+
+// ── Mobile panel toggle ──
+let panelOpen = true;
+function toggleMobilePanel() {
+  panelOpen = !panelOpen;
+  const panel = document.getElementById('mapPanel');
+  const area  = document.getElementById('mapArea');
+  const fab   = document.getElementById('panelToggleFab');
+  panel.classList.toggle('mob-collapsed', !panelOpen);
+  area.classList.toggle('panel-hidden', !panelOpen);
+  fab.innerHTML = panelOpen ? '▼ Hide' : '▲ Places';
+  setTimeout(() => map.invalidateSize(), 320);
+}
+
+// ?q= from AI chat
+const _q=new URLSearchParams(location.search).get('q');
+if (_q) { document.getElementById('browseSearch').value=_q; onBrowseSearch(_q); }
+</script>
+{% endblock %}

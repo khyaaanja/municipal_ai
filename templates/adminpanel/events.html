@@ -1,0 +1,45 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Events — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Events</h1>
+  <a href="{% url 'adminpanel:cms_event_add' %}" class="btn btn-primary">+ Add Event</a>
+</div>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Date</th>
+        <th>Venue</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td style="font-weight:600;">{{ item.name }}</td>
+        <td>{{ item.get_category_display }}</td>
+        <td style="white-space:nowrap;">{{ item.start_date|date:"M d, Y" }}</td>
+        <td>{{ item.venue|default:"—" }}</td>
+        <td><span class="cms-pill {% if item.is_active %}pill-active{% else %}pill-inactive{% endif %}">{% if item.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+        <td>
+          <div class="cms-actions">
+            <a href="{% url 'adminpanel:cms_event_edit' item.pk %}" class="btn-edit">Edit</a>
+            <form method="post" action="{% url 'adminpanel:cms_event_delete' item.pk %}" onsubmit="return confirm('Delete {{ item.name }}?')">
+              {% csrf_token %}
+              <button type="submit" class="btn-del">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--stone);padding:32px;">No events yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

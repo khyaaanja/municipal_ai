@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile — Bhaktapur Municipal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#060810;--gold:#c9a84c;--red:#C1440E;--surface:#111009;--card:#1A1710;
+      --border:rgba(201,168,76,0.18);--text:#E8DFC8;--muted:#7A7060;
+      --success:#4A8A5A;--font-h:'Cinzel',serif;--font-b:'Inter',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;padding:2rem 1rem;}
+    .container{max-width:640px;margin:0 auto;}
+    .back-link{color:var(--muted);text-decoration:none;font-size:0.85rem;display:inline-flex;align-items:center;gap:0.4rem;margin-bottom:1.5rem;}
+    .back-link:hover{color:var(--gold);}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:2rem;margin-bottom:1.5rem;}
+    h1{font-family:var(--font-h);font-size:1.6rem;color:var(--gold);margin-bottom:0.25rem;}
+    .role-badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;margin-bottom:1.25rem;}
+    .role-citizen {background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
+    .role-staff   {background:rgba(74,122,181,0.15);color:#4A7AB5;border:1px solid rgba(74,122,181,0.3);}
+    .role-official{background:rgba(122,90,181,0.15);color:#7A5AB5;border:1px solid rgba(122,90,181,0.3);}
+    .role-admin   {background:rgba(193,68,14,0.15);color:var(--red);border:1px solid rgba(193,68,14,0.3);animation:pulse-admin 2s ease infinite;}
+    @keyframes pulse-admin{0%,100%{box-shadow:0 0 0 0 rgba(193,68,14,0.3);}50%{box-shadow:0 0 0 4px rgba(193,68,14,0.1);}}
+    .stats{display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+    .stat{text-align:center;}
+    .stat-val{font-family:var(--font-h);font-size:1.8rem;color:var(--gold);}
+    .stat-lab{font-size:0.75rem;color:var(--muted);margin-top:0.2rem;}
+    .field-row{margin-bottom:1.2rem;}
+    label.field-label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:0.35rem;}
+    .field-static{color:var(--text);font-size:0.95rem;}
+    input.field-input{
+      background:var(--surface);border:1px solid var(--border);border-radius:6px;
+      padding:0.65rem 0.9rem;font-size:1rem;color:var(--text);font-family:var(--font-b);
+      width:100%;outline:none;transition:border-color 0.3s,box-shadow 0.3s;
+    }
+    input.field-input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,0.2);}
+    .btn-save{
+      background:linear-gradient(135deg,#c9a84c,#a07830);color:#060810;font-family:var(--font-h);
+      font-size:0.875rem;font-weight:700;border:none;border-radius:6px;padding:0.7rem 1.5rem;
+      cursor:pointer;transition:opacity 0.2s;min-height:44px;
+    }
+    .btn-save:hover{opacity:0.85;}
+    .btn-outline{
+      background:transparent;color:var(--gold);border:1px solid var(--border);
+      border-radius:6px;padding:0.65rem 1.2rem;font-size:0.875rem;cursor:pointer;
+      text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;
+      min-height:44px;transition:border-color 0.2s;
+    }
+    .btn-outline:hover{border-color:var(--gold);}
+    .action-links{display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem;}
+    .oauth-badge{
+      display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.7rem;
+      border:1px solid var(--border);border-radius:20px;font-size:0.75rem;color:var(--muted);
+      margin-right:0.5rem;margin-top:0.5rem;
+    }
+    .msg-success{background:rgba(74,138,90,0.15);border:1px solid rgba(74,138,90,0.4);
+      color:#6abf80;border-radius:6px;padding:0.65rem 1rem;margin-bottom:1rem;font-size:0.875rem;}
+    .pw-error{background:rgba(193,68,14,0.12);border:1px solid rgba(193,68,14,0.4);
+      color:#ff8a65;border-radius:6px;padding:0.65rem 1rem;margin-bottom:1rem;font-size:0.875rem;}
+    @media(max-width:480px){.stats{gap:1rem;}.card{padding:1.25rem;}}
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="/">← Back to Home</a>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="msg-success">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+  {% if pw_error %}<div class="pw-error">{{ pw_error }}</div>{% endif %}
+
+  <!-- Profile card -->
+  <div class="card">
+    <h1>{{ request.user.get_full_name|default:request.user.email }}</h1>
+    <div class="role-badge role-{{ request.user.role }}">
+      {% if request.user.role == 'citizen' %}Citizen
+      {% elif request.user.role == 'staff' %}Municipality Staff
+      {% elif request.user.role == 'official' %}Municipality Official
+      {% elif request.user.role == 'admin' %}Platform Admin
+      {% else %}{{ request.user.role }}{% endif %}
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val">{{ complaint_count }}</div>
+        <div class="stat-lab">Complaints Filed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val">{{ request.user.date_joined|date:"Y" }}</div>
+        <div class="stat-lab">Member Since</div>
+      </div>
+    </div>
+
+    <!-- Edit display name -->
+    <form method="post" action="{% url 'accounts:profile' %}">
+      {% csrf_token %}
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <div class="field-row" style="flex:1;min-width:140px;">
+          <label class="field-label">First Name</label>
+          <input class="field-input" type="text" name="first_name" value="{{ request.user.first_name }}" id="fn-input">
+        </div>
+        <div class="field-row" style="flex:1;min-width:140px;">
+          <label class="field-label">Last Name</label>
+          <input class="field-input" type="text" name="last_name" value="{{ request.user.last_name }}" id="ln-input">
+        </div>
+      </div>
+      <div class="field-row">
+        <label class="field-label">Email (read-only)</label>
+        <div class="field-static">{{ request.user.email }}</div>
+      </div>
+      <button type="submit" class="btn-save">Save Name</button>
+    </form>
+
+    {% if oauth_providers %}
+    <div style="margin-top:1.25rem;">
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Connected accounts</div>
+      {% for provider in oauth_providers %}
+      <span class="oauth-badge">
+        {% if provider == 'google-oauth2' %}🔵 Google{% elif provider == 'github' %}⚫ GitHub{% else %}{{ provider }}{% endif %}
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Change password -->
+  <div class="card">
+    <h2 style="font-family:var(--font-h);font-size:1.1rem;color:var(--gold);margin-bottom:1.25rem;">Change Password</h2>
+    <form method="post" action="{% url 'accounts:change_password' %}">
+      {% csrf_token %}
+      <div class="field-row">
+        <label class="field-label">Current Password</label>
+        <input class="field-input" type="password" name="current_password" required>
+      </div>
+      <div class="field-row">
+        <label class="field-label">New Password</label>
+        <input class="field-input" type="password" name="new_password" required>
+      </div>
+      <div class="field-row">
+        <label class="field-label">Confirm New Password</label>
+        <input class="field-input" type="password" name="confirm_password" required>
+      </div>
+      <button type="submit" class="btn-save">Change Password</button>
+    </form>
+  </div>
+
+  <!-- Quick links -->
+  <div class="action-links">
+    <a class="btn-outline" href="{% url 'complaints:my_complaints' %}">📋 My Complaints</a>
+    <a class="btn-outline" href="/">🏠 Home</a>
+  </div>
+</div>
+</body>
+</html>

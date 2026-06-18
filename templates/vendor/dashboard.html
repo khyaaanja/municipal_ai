@@ -1,0 +1,143 @@
+{% extends "base/base.html" %}
+{% block title %}Vendor Dashboard — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.vendor-layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 64px);}
+@media(max-width:768px){
+  .vendor-layout{grid-template-columns:1fr;}
+  .vendor-nav{display:flex;flex-direction:row;padding:0;overflow-x:auto;border-bottom:1px solid rgba(255,255,255,.1);}
+  .vendor-nav .shop-name{display:none;}
+  .vendor-nav a{padding:12px 14px;font-size:.78rem;white-space:nowrap;border-bottom:none;}
+  .vendor-main{padding:20px 14px;}
+  .dash-header h1{font-size:1.4rem;}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr 1fr;gap:10px;}
+  .stat-card{padding:14px;}
+  .stat-card .num{font-size:1.5rem;}
+}
+.vendor-nav{background:var(--ink);padding:24px 0;}
+.vendor-nav .shop-name{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:12px;}
+.vendor-nav .shop-name h3{color:#fff;font-size:1rem;margin:0 0 3px;}
+.vendor-nav .shop-name p{color:rgba(255,255,255,.5);font-size:.78rem;margin:0;}
+.vendor-nav a{display:flex;align-items:center;gap:10px;padding:11px 20px;color:rgba(255,255,255,.7);text-decoration:none;font-size:.88rem;font-weight:600;transition:all .15s;}
+.vendor-nav a:hover,.vendor-nav a.active{color:#fff;background:rgba(255,255,255,.08);}
+.vendor-nav a .icon{font-size:1rem;}
+.vendor-main{padding:32px;background:var(--bg);}
+.dash-header{margin-bottom:28px;}
+.dash-header h1{font-size:1.8rem;margin:0 0 4px;}
+.dash-header p{color:var(--ink-light);font-size:.9rem;margin:0;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}}
+.stat-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:20px;}
+.stat-card .label{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-light);margin-bottom:8px;}
+.stat-card .num{font-size:2rem;font-weight:900;color:var(--ink);}
+.stat-card .change{font-size:.78rem;margin-top:4px;}
+.change.up{color:#22c55e;}
+.change.down{color:#ef4444;}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}
+.dash-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:22px;}
+.dash-card h2{font-size:.88rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-light);margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.dash-card h2 a{font-size:.76rem;color:var(--accent);text-decoration:none;font-weight:700;text-transform:none;letter-spacing:0;}
+.order-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.86rem;}
+.order-row:last-child{border-bottom:none;}
+.order-id{font-weight:700;min-width:70px;}
+.order-customer{flex:1;color:var(--ink-light);}
+.order-amount{font-weight:700;color:var(--accent);}
+.order-status{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;}
+.status-pending{background:#fef3c7;color:#d97706;}
+.status-processing{background:#dbeafe;color:#2563eb;}
+.status-completed{background:#dcfce7;color:#16a34a;}
+.status-cancelled{background:#fee2e2;color:#dc2626;}
+.product-mini{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.product-mini:last-child{border-bottom:none;}
+.product-mini img{width:44px;height:44px;object-fit:cover;border-radius:4px;border:1.5px solid var(--border);}
+.product-mini .no-img{width:44px;height:44px;background:#e8e4dc;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;}
+.product-mini .pname{font-size:.88rem;font-weight:600;}
+.product-mini .pprice{font-size:.82rem;color:var(--accent);}
+.product-mini .pstock{font-size:.76rem;color:var(--ink-light);}
+.btn-add{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:9px 18px;border-radius:6px;text-decoration:none;font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.04em;}
+</style>
+
+<div class="vendor-layout">
+  <nav class="vendor-nav">
+    <div class="shop-name">
+      <h3>{{ vendor.shop_name|default:"My Shop" }}</h3>
+      <p>Vendor Dashboard</p>
+    </div>
+    <a href="/vendor/dashboard/" class="active"><span class="icon">📊</span> Dashboard</a>
+    <a href="/vendor/products/"><span class="icon">📦</span> Products</a>
+    <a href="/vendor/orders/"><span class="icon">🛒</span> Orders</a>
+    <a href="/vendor/profile/"><span class="icon">⚙️</span> Shop Settings</a>
+    <a href="/"><span class="icon">🏠</span> View Site</a>
+  </nav>
+
+  <main class="vendor-main">
+    <div class="dash-header">
+      <h1>Dashboard</h1>
+      <p>Welcome back, {{ request.user.get_full_name|default:request.user.email }}</p>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="label">Total Revenue</div>
+        <div class="num">NPR {{ total_revenue|default:"0" }}</div>
+        <div class="change up">This month</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Orders</div>
+        <div class="num">{{ total_orders|default:0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Products</div>
+        <div class="num">{{ product_count|default:0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Pending</div>
+        <div class="num">{{ pending_orders|default:0 }}</div>
+        <div class="change {% if pending_orders %}down{% else %}up{% endif %}">Orders</div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dash-card">
+        <h2>Recent Orders <a href="/vendor/orders/">View All</a></h2>
+        {% for order in recent_orders %}
+        <div class="order-row">
+          <span class="order-id">#{{ order.id }}</span>
+          <span class="order-customer">{{ order.user.get_full_name|default:order.user.email }}</span>
+          <span class="order-amount">NPR {{ order.total_amount }}</span>
+          <span class="order-status status-{{ order.status }}">{{ order.status }}</span>
+        </div>
+        {% empty %}
+        <p style="color:var(--ink-light);font-size:.88rem;text-align:center;padding:20px 0;">No orders yet</p>
+        {% endfor %}
+      </div>
+
+      <div class="dash-card">
+        <h2>Your Products <a href="/vendor/products/add/">+ Add New</a></h2>
+        {% for product in products %}
+        <div class="product-mini">
+          {% if product.images.first %}
+            <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}" loading="lazy">
+          {% else %}
+            <div class="no-img">🎁</div>
+          {% endif %}
+          <div style="flex:1;">
+            <div class="pname">{{ product.name }}</div>
+            <div class="pprice">NPR {{ product.price }}</div>
+          </div>
+          <div class="pstock">Stock: {{ product.stock|default:"—" }}</div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:20px 0;">
+          <p style="color:var(--ink-light);font-size:.88rem;margin-bottom:14px;">No products listed yet</p>
+          <a href="/vendor/products/add/" class="btn-add">+ Add First Product</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

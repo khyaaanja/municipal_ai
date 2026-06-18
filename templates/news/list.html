@@ -1,0 +1,125 @@
+{% extends "base/base.html" %}
+{% block title %}News & Announcements — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<style>
+.page-header{background:var(--ink);color:#fff;padding:50px 20px 40px;}
+.page-header-inner{max-width:1100px;margin:0 auto;}
+.page-header h1{font-size:2.2rem;margin:0 0 8px;}
+.page-header p{color:rgba(255,255,255,.65);margin:0;}
+.news-layout{max-width:1100px;margin:0 auto;padding:40px 20px;display:grid;grid-template-columns:1fr 300px;gap:40px;}
+@media(max-width:768px){.news-layout{grid-template-columns:1fr;}}
+.cat-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;}
+.cat-tab{padding:6px 16px;border:1.5px solid var(--border);border-radius:20px;font-size:.8rem;font-weight:700;text-decoration:none;color:var(--ink);text-transform:uppercase;letter-spacing:.04em;}
+.cat-tab:hover,.cat-tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.cat-tab.alert-tab.active{background:#ef4444;border-color:#ef4444;}
+.cat-tab.announcement-tab.active{background:#6366f1;border-color:#6366f1;}
+.news-card{display:grid;grid-template-columns:1fr;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--paper);margin-bottom:20px;transition:box-shadow .2s;text-decoration:none;color:var(--ink);}
+.news-card.with-img{grid-template-columns:220px 1fr;}
+@media(max-width:600px){.news-card.with-img{grid-template-columns:1fr;}}
+.news-card:hover{box-shadow:4px 4px 0 var(--ink);}
+.news-card-img{height:160px;overflow:hidden;}
+.news-card.with-img .news-card-img{height:100%;}
+.news-card-img img{width:100%;height:100%;object-fit:cover;}
+.news-card-body{padding:20px;}
+.news-cat-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;}
+.badge-announcement{background:#6366f1;color:#fff;}
+.badge-alert{background:#ef4444;color:#fff;}
+.badge-tourism{background:var(--accent);color:#fff;}
+.badge-general{background:#6b7280;color:#fff;}
+.badge-development{background:#0ea5e9;color:#fff;}
+.badge-event{background:#f59e0b;color:#fff;}
+.news-card-body h2{font-size:1.1rem;margin:0 0 8px;line-height:1.4;}
+.news-card-body .summary{font-size:.87rem;color:var(--ink-light);line-height:1.6;margin-bottom:12px;}
+.news-meta{font-size:.78rem;color:var(--ink-light);display:flex;gap:14px;}
+.pinned-strip{background:#fef3c7;border:1.5px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:12px;}
+.pinned-strip .pin-icon{font-size:1.2rem;}
+.pinned-strip a{color:var(--ink);text-decoration:none;font-weight:700;}
+.pinned-strip a:hover{color:var(--accent);}
+.sidebar-box{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:20px;margin-bottom:20px;}
+.sidebar-box h3{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;margin:0 0 14px;color:var(--ink-light);}
+.sidebar-news-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:.85rem;}
+.sidebar-news-item:last-child{border-bottom:none;}
+.sidebar-news-item a{color:var(--ink);text-decoration:none;font-weight:600;display:block;margin-bottom:3px;}
+.sidebar-news-item a:hover{color:var(--accent);}
+.sidebar-news-item .date{font-size:.76rem;color:var(--ink-light);}
+.alert-box{background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:16px 20px;margin-bottom:24px;}
+.alert-box h3{color:#dc2626;font-size:.85rem;text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px;}
+.alert-box p{font-size:.88rem;color:#7f1d1d;margin:0;}
+</style>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <h1>News & Announcements</h1>
+    <p>Latest updates from {{ CITY_NAME }} Municipality</p>
+  </div>
+</div>
+
+<div class="news-layout">
+  <main>
+    <div class="cat-tabs">
+      <a href="/news/" class="cat-tab {% if not active_category %}active{% endif %}">All</a>
+      {% for cat in categories %}
+      <a href="/news/?category={{ cat.0 }}" class="cat-tab {{ cat.0 }}-tab {% if active_category == cat.0 %}active{% endif %}">{{ cat.1 }}</a>
+      {% endfor %}
+    </div>
+
+    {% for article in pinned %}
+    <div class="pinned-strip">
+      <span class="pin-icon">📌</span>
+      <div>
+        <a href="/news/{{ article.slug }}/">{{ article.title }}</a>
+        <div style="font-size:.78rem;color:#92400e;margin-top:2px;">{{ article.published_at|date:"M d, Y" }}</div>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% for article in articles %}
+    <a href="/news/{{ article.slug }}/" class="news-card {% if article.cover_image %}with-img{% endif %}">
+      {% if article.cover_image %}
+      <div class="news-card-img">
+        <img src="{{ article.cover_image.url }}" alt="{{ article.title }}" loading="lazy">
+      </div>
+      {% endif %}
+      <div class="news-card-body">
+        <span class="news-cat-badge badge-{{ article.category }}">{{ article.get_category_display }}</span>
+        <h2>{{ article.title }}</h2>
+        <p class="summary">{{ article.summary|truncatewords:30 }}</p>
+        <div class="news-meta">
+          <span>📅 {{ article.published_at|date:"M d, Y" }}</span>
+          <span>👁 {{ article.view_count }} views</span>
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div style="text-align:center;padding:60px 20px;color:var(--ink-light);">
+      <div style="font-size:3rem;margin-bottom:12px;">📰</div>
+      <p>No articles found.</p>
+    </div>
+    {% endfor %}
+  </main>
+
+  <aside>
+    <div class="sidebar-box">
+      <h3>Recent News</h3>
+      {% for art in pinned|slice:":5" %}
+      <div class="sidebar-news-item">
+        <a href="/news/{{ art.slug }}/">{{ art.title }}</a>
+        <span class="date">{{ art.published_at|date:"M d" }}</span>
+      </div>
+      {% endfor %}
+      {% for art in articles|slice:":5" %}
+      <div class="sidebar-news-item">
+        <a href="/news/{{ art.slug }}/">{{ art.title }}</a>
+        <span class="date">{{ art.published_at|date:"M d" }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="sidebar-box">
+      <h3>Ask AI</h3>
+      <p style="font-size:.84rem;color:var(--ink-light);margin-bottom:14px;">Get the latest city information from our AI assistant.</p>
+      <a href="/chat/?q=What are the latest news and announcements in {{ CITY_NAME }}?" style="display:block;text-align:center;background:var(--ink);color:#fff;padding:10px;border-radius:6px;text-decoration:none;font-size:.84rem;font-weight:700;">Ask AI Assistant</a>
+    </div>
+  </aside>
+</div>
+{% endblock %}

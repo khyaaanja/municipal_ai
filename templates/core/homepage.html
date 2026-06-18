@@ -1,0 +1,965 @@
+{% extends "base/base.html" %}
+{% block title %}{{ CITY_NAME }} — AI City Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── HERO ── */
+.hero {
+  background: var(--ink);
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 80px 0;
+}
+.hero-pattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(255,255,255,0.025) 79px, rgba(255,255,255,0.025) 80px),
+    repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(255,255,255,0.015) 79px, rgba(255,255,255,0.015) 80px);
+}
+.hero-ornament {
+  position: absolute;
+  right: -100px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(193,59,42,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-ornament-2 {
+  position: absolute;
+  left: -200px;
+  bottom: -100px;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(193,59,42,0.15);
+  border: 1px solid rgba(193,59,42,0.3);
+  border-radius: 50px;
+  padding: 6px 16px;
+  margin-bottom: 24px;
+}
+.hero-eyebrow-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+.hero-eyebrow-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(245,240,232,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.hero-title {
+  font-family: var(--font-head);
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-weight: 800;
+  color: var(--paper);
+  line-height: 1.05;
+  margin-bottom: 8px;
+}
+.hero-title .highlight {
+  color: var(--red);
+  position: relative;
+}
+.hero-subtitle {
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  color: var(--stone-light);
+  margin-bottom: 40px;
+  max-width: 560px;
+  line-height: 1.5;
+  font-weight: 300;
+}
+
+/* ── AI CHAT BAR ── */
+.ai-bar {
+  max-width: 760px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 6px 6px 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ai-bar:focus-within {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(193,59,42,0.15);
+}
+.ai-bar-icon { color: var(--red); font-size: 1.1rem; flex-shrink: 0; }
+.ai-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--paper);
+  caret-color: var(--red);
+}
+.ai-bar input::placeholder { color: rgba(138,127,114,0.7); }
+.ai-bar-btn {
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.ai-bar-btn:hover { background: var(--red-dark); }
+.ai-bar-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.ai-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 48px;
+}
+.ai-suggestion {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px;
+  padding: 7px 16px;
+  font-size: 0.82rem;
+  color: rgba(245,240,232,0.6);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ai-suggestion:hover {
+  background: rgba(193,59,42,0.15);
+  border-color: rgba(193,59,42,0.3);
+  color: var(--paper);
+}
+
+/* ── AI RESPONSE BUBBLE ── */
+.ai-response-container {
+  max-width: 760px;
+  display: none;
+  margin-bottom: 30px;
+}
+.ai-response-bubble {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-left: 3px solid var(--red);
+  border-radius: 6px;
+  padding: 20px 24px;
+  color: var(--paper);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  position: relative;
+}
+.ai-response-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ai-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: white;
+  font-weight: 700;
+  font-family: var(--font-head);
+  flex-shrink: 0;
+}
+.ai-response-name { font-size: 0.8rem; font-weight: 600; color: var(--stone-light); }
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+}
+.ai-loading span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--stone-light);
+  animation: bounce 1.2s infinite;
+}
+.ai-loading span:nth-child(2) { animation-delay: 0.2s; }
+.ai-loading span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.ai-response-text { white-space: pre-wrap; line-height: 1.75; }
+.ai-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.ai-source-tag {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  background: rgba(201,162,39,0.1);
+  color: rgba(240,208,106,0.8);
+  border: 1px solid rgba(201,162,39,0.2);
+  border-radius: 3px;
+}
+.ai-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+.ai-action-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  color: var(--stone-light);
+  font-size: 0.78rem;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ai-action-btn:hover { background: rgba(255,255,255,0.06); color: var(--paper); }
+
+/* ── HERO STATS ── */
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  padding-top: 12px;
+}
+.hero-stat-num {
+  font-family: var(--font-head);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--paper);
+  line-height: 1;
+}
+.hero-stat-label {
+  font-size: 0.75rem;
+  color: var(--stone);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+/* ── FEATURED ATTRACTIONS ── */
+.bg-cream { background: var(--cream); }
+.attraction-card { cursor: pointer; }
+.attraction-card .rating-bar {
+  height: 3px;
+  background: var(--cream);
+  border-radius: 2px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.attraction-card .rating-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+/* ── EVENTS SECTION ── */
+.event-card {
+  display: flex;
+  gap: 16px;
+  background: var(--white);
+  border-radius: 6px;
+  padding: 16px;
+  border: var(--border);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s;
+}
+.event-card:hover { transform: translateX(4px); }
+.event-date-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: var(--red);
+  border-radius: 6px;
+  flex-shrink: 0;
+  color: white;
+}
+.event-date-day {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.event-date-month {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+.event-info { flex: 1; min-width: 0; }
+.event-title {
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.event-venue { font-size: 0.8rem; color: var(--stone); }
+.event-price { font-size: 0.8rem; font-weight: 600; color: var(--red); white-space: nowrap; }
+
+/* ── MARQUEE STRIP ── */
+.marquee-strip {
+  background: var(--red);
+  color: white;
+  padding: 10px 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.marquee-inner {
+  display: inline-block;
+  animation: marquee 30s linear infinite;
+}
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-item {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-head);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 40px;
+}
+.marquee-dot {
+  display: inline-block;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  margin-right: 40px;
+  vertical-align: middle;
+}
+
+/* ── MAP CTA ── */
+.map-cta {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 8px;
+  padding: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.map-cta::before {
+  content: '🗺️';
+  position: absolute;
+  right: 160px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8rem;
+  opacity: 0.06;
+  pointer-events: none;
+}
+.map-cta-content h2 { color: var(--paper); margin-bottom: 8px; }
+.map-cta-content p { color: var(--stone-light); max-width: 500px; }
+
+/* ── PRODUCT STRIP ── */
+.product-mini {
+  background: var(--white);
+  border-radius: 6px;
+  border: var(--border);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.product-mini:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.product-mini-img {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+.product-mini-body { padding: 12px; }
+.product-mini-name {
+  font-family: var(--font-head);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.product-mini-price { font-size: 0.9rem; font-weight: 700; color: var(--red); }
+.product-mini-vendor { font-size: 0.72rem; color: var(--stone); }
+
+/* ── ANNOUNCEMENT BANNER ── */
+.announcement-bar {
+  background: #FFF8E6;
+  border-bottom: 1px solid rgba(201,162,39,0.3);
+  padding: 10px 0;
+}
+.announcement-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  font-size: 0.85rem;
+}
+.announcement-badge {
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── ANNOUNCEMENT BAR ── -->
+{% if latest_news %}
+{% with latest_news.0 as news_item %}
+{% if news_item.category == 'announcement' or news_item.category == 'alert' %}
+<div class="announcement-bar">
+  <div class="announcement-inner">
+    <span class="announcement-badge">Notice</span>
+    <span>{{ news_item.title }} — <a href="/news/{{ news_item.slug }}/" style="color:var(--gold);font-weight:600;">Read more →</a></span>
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+{% endif %}
+
+<!-- ── HERO SECTION ── -->
+<section class="hero">
+  <div class="hero-pattern"></div>
+  <div class="hero-ornament"></div>
+  <div class="hero-ornament-2"></div>
+  <div class="hero-content">
+
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-dot"></span>
+      <span class="hero-eyebrow-text">AI-Powered City Platform · {{ CITY_NAME }}, {{ CITY_COUNTRY }}</span>
+    </div>
+
+    <h1 class="hero-title">
+      Discover<br>
+      <span class="highlight">{{ CITY_NAME }}</span><br>
+      with AI.
+    </h1>
+    <p class="hero-subtitle">
+      Ask anything about the city — attractions, events, food, transport, emergency contacts, and more. Powered by real city data.
+    </p>
+
+    <!-- AI CHAT BAR -->
+    <div class="ai-bar" id="heroAiBar">
+      <span class="ai-bar-icon">✦</span>
+      <input
+        type="text"
+        id="heroQuery"
+        placeholder="What should I visit in {{ CITY_NAME }}? What events are happening today?"
+        autocomplete="off"
+      >
+      <button class="ai-bar-btn" id="heroAskBtn" onclick="askAI()">Ask AI →</button>
+    </div>
+
+    <!-- SUGGESTION PILLS -->
+    <div class="ai-suggestions">
+      <span class="ai-suggestion" onclick="fillAndAsk('Best attractions to visit in {{ CITY_NAME }}')">🏛️ Best attractions</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('What events are happening this week?')">🎪 Events this week</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('Best restaurants near {{ CITY_NAME }} Durbar Square')">🍽️ Where to eat</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('Plan a 2-day itinerary for {{ CITY_NAME }}')">📅 Plan my trip</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('Emergency contacts in {{ CITY_NAME }}')">🚨 Emergency contacts</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('How to get around {{ CITY_NAME }}?')">🚌 Transportation</span>
+    </div>
+
+    <!-- AI RESPONSE AREA -->
+    <div class="ai-response-container" id="aiResponseContainer">
+      <div class="ai-response-bubble">
+        <div class="ai-response-header">
+          <div class="ai-avatar">AI</div>
+          <span class="ai-response-name">{{ CITY_NAME }} AI Assistant</span>
+        </div>
+        <div id="aiResponseContent">
+          <div class="ai-loading" id="aiLoading">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="ai-response-text" id="aiResponseText" style="display:none;"></div>
+        </div>
+        <div class="ai-sources" id="aiSources" style="display:none;"></div>
+        <div class="ai-actions" id="aiActions" style="display:none;">
+          <button class="ai-action-btn" onclick="openFullChat()">Continue in Chat →</button>
+          <button class="ai-action-btn" onclick="clearResponse()">✕ Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HERO STATS -->
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-num">{{ featured_attractions|length }}+</div>
+        <div class="hero-stat-label">Attractions</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">{{ upcoming_events|length }}+</div>
+        <div class="hero-stat-label">Events</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">{{ popular_businesses|length }}+</div>
+        <div class="hero-stat-label">Businesses</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">{{ featured_products|length }}+</div>
+        <div class="hero-stat-label">Products</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── MARQUEE ── -->
+<div class="marquee-strip">
+  <div class="marquee-inner">
+    <span class="marquee-item">{{ CITY_NAME }} City Platform</span><span class="marquee-dot"></span>
+    <span class="marquee-item">UNESCO World Heritage City</span><span class="marquee-dot"></span>
+    <span class="marquee-item">AI-Powered Tourism</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Local Marketplace</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Business Directory</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Live City Events</span><span class="marquee-dot"></span>
+    <span class="marquee-item">{{ CITY_NAME }} City Platform</span><span class="marquee-dot"></span>
+    <span class="marquee-item">UNESCO World Heritage City</span><span class="marquee-dot"></span>
+    <span class="marquee-item">AI-Powered Tourism</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Local Marketplace</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Business Directory</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Live City Events</span><span class="marquee-dot"></span>
+  </div>
+</div>
+
+<!-- ── FEATURED ATTRACTIONS ── -->
+{% if featured_attractions %}
+<section class="section bg-cream">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-label">Places to Visit</div>
+        <h2 class="section-title">Featured Attractions</h2>
+      </div>
+      <a href="/attractions/" class="view-all">View all attractions →</a>
+    </div>
+    <div class="grid-3">
+      {% for attraction in featured_attractions %}
+      <a href="/attractions/{{ attraction.slug }}/" class="card attraction-card">
+        {% if attraction.images.first %}
+        <img class="card-img" src="{{ attraction.images.first.image.url }}" alt="{{ attraction.name }}" loading="lazy">
+        {% else %}
+        <div class="card-img-placeholder">🏛️</div>
+        {% endif %}
+        <div class="card-body">
+          <div class="card-category">{{ attraction.category.name|default:"Attraction" }}</div>
+          <div class="card-title">{{ attraction.name }}</div>
+          <div class="card-desc">{{ attraction.short_description|default:attraction.description|truncatewords:18 }}</div>
+          <div class="card-meta">
+            <span class="stars">★★★★★</span>
+            <span>{{ attraction.avg_rating }}/5</span>
+            <span>·</span>
+            <span>{{ attraction.entry_fee }} {{ attraction.entry_fee_currency }}</span>
+          </div>
+          <div class="rating-bar">
+            <div class="rating-fill" style="width:{{ attraction.avg_rating|floatformat:0 }}0%"></div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── EVENTS + BUSINESSES SPLIT ── -->
+<section class="section">
+  <div class="container">
+    <div class="grid-2" style="align-items:start; gap:48px;">
+
+      <!-- Events -->
+      <div>
+        <div class="section-header">
+          <div>
+            <div class="section-label">What's On</div>
+            <h2 class="section-title">Upcoming Events</h2>
+          </div>
+          <a href="/events/" class="view-all">All events →</a>
+        </div>
+        {% if upcoming_events %}
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          {% for event in upcoming_events %}
+          <a href="/events/{{ event.slug }}/" class="event-card">
+            <div class="event-date-block">
+              <span class="event-date-day">{{ event.start_date|date:"j" }}</span>
+              <span class="event-date-month">{{ event.start_date|date:"M" }}</span>
+            </div>
+            <div class="event-info">
+              <div class="event-title">{{ event.name }}</div>
+              <div class="event-venue">📍 {{ event.venue }}</div>
+            </div>
+            <div class="event-price">{% if event.is_free %}Free{% else %}NPR {{ event.ticket_price }}{% endif %}</div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div style="background:var(--cream);border-radius:6px;padding:32px;text-align:center;color:var(--stone);">
+          <div style="font-size:2rem;margin-bottom:8px;">🎪</div>
+          <p>No upcoming events. Check back soon!</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Popular Businesses -->
+      <div>
+        <div class="section-header">
+          <div>
+            <div class="section-label">Local Businesses</div>
+            <h2 class="section-title">Popular Spots</h2>
+          </div>
+          <a href="/businesses/" class="view-all">All businesses →</a>
+        </div>
+        {% if popular_businesses %}
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          {% for biz in popular_businesses %}
+          <a href="/businesses/{{ biz.slug }}/" style="display:flex;gap:14px;background:var(--white);border-radius:6px;padding:14px;border:var(--border);box-shadow:var(--shadow);transition:transform 0.2s;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='none'">
+            <div style="width:52px;height:52px;border-radius:6px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">
+              {% if biz.category.name == "Restaurant" %}🍽️
+              {% elif biz.category.name == "Hotel" %}🏨
+              {% elif biz.category.name == "Cafe" %}☕
+              {% else %}🏪{% endif %}
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:var(--font-head);font-weight:700;font-size:0.95rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ biz.name }}</div>
+              <div style="font-size:0.8rem;color:var(--stone);">{{ biz.category.name|default:"Business" }} · {{ biz.price_range|default:"" }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+              <span style="font-size:0.9rem;color:var(--gold);">★ {{ biz.avg_rating }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div style="background:var(--cream);border-radius:6px;padding:32px;text-align:center;color:var(--stone);">
+          <div style="font-size:2rem;margin-bottom:8px;">🏪</div>
+          <p>Business directory coming soon.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── MAP CTA ── -->
+<section class="section-sm">
+  <div class="container">
+    <div class="map-cta">
+      <div class="map-cta-content">
+        <h2>Explore {{ CITY_NAME }} on the Map</h2>
+        <p>Find attractions, restaurants, hotels, and businesses near you with our interactive city map.</p>
+        <a href="/map/" class="btn btn-gold" style="margin-top:20px;">Open City Map →</a>
+      </div>
+      <div style="display:flex;gap:16px;flex-shrink:0;flex-wrap:wrap;">
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:20px;text-align:center;min-width:100px;">
+          <div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--paper);">{{ featured_attractions|length }}</div>
+          <div style="font-size:0.75rem;color:var(--stone);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Attractions</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:20px;text-align:center;min-width:100px;">
+          <div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--paper);">{{ popular_businesses|length }}</div>
+          <div style="font-size:0.75rem;color:var(--stone);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Businesses</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MARKETPLACE STRIP ── -->
+{% if featured_products %}
+<section class="section bg-cream">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-label">Local Handicrafts & Souvenirs</div>
+        <h2 class="section-title">City Marketplace</h2>
+      </div>
+      <a href="/marketplace/" class="view-all">Shop all →</a>
+    </div>
+    <div class="grid-5">
+      {% for product in featured_products %}
+      <a href="/marketplace/{{ product.slug }}/" class="product-mini">
+        {% if product.images.first %}
+        <img style="width:100%;aspect-ratio:1;object-fit:cover;" src="{{ product.images.first.image.url }}" alt="{{ product.name }}" loading="lazy">
+        {% else %}
+        <div class="product-mini-img">🎨</div>
+        {% endif %}
+        <div class="product-mini-body">
+          <div class="product-mini-name">{{ product.name }}</div>
+          <div class="product-mini-price">NPR {{ product.get_price }}</div>
+          <div class="product-mini-vendor">by {{ product.vendor.business_name }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── NEWS ── -->
+{% if latest_news %}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-label">Municipal Updates</div>
+        <h2 class="section-title">News & Announcements</h2>
+      </div>
+      <a href="/news/" class="view-all">All news →</a>
+    </div>
+    <div class="grid-2">
+      {% for article in latest_news %}
+      <a href="/news/{{ article.slug }}/" style="display:flex;gap:16px;background:var(--white);border-radius:6px;padding:20px;border:var(--border);transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+        <div style="flex:1;min-width:0;">
+          <span class="tag tag-{% if article.category == 'alert' %}red{% elif article.category == 'announcement' %}gold{% else %}{% endif %}" style="margin-bottom:8px;">{{ article.get_category_display }}</span>
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:6px;line-height:1.3;">{{ article.title }}</div>
+          <div style="font-size:0.85rem;color:var(--stone);line-height:1.5;">{{ article.summary|truncatewords:18 }}</div>
+          <div style="font-size:0.75rem;color:var(--stone-light);margin-top:10px;">{{ article.published_at|date:"M j, Y" }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── CITIZEN SERVICES ── -->
+<section class="section" style="background:var(--ink);">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-label" style="color:rgba(201,162,39,0.8);">Municipality</div>
+        <h2 class="section-title" style="color:var(--paper);">Citizen Services</h2>
+      </div>
+    </div>
+    <div class="grid-3" style="gap:16px;">
+
+      <a href="/complaint/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
+        <span style="font-size:2rem;">📝</span>
+        <div>
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">Report an Issue</div>
+          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">Submit complaints about infrastructure, sanitation, water, roads or electricity directly to the municipality.</div>
+        </div>
+        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">Submit now →</span>
+      </a>
+
+      <a href="/complaint/track/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
+        <span style="font-size:2rem;">🔍</span>
+        <div>
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">Track Your Complaint</div>
+          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">Enter your BK-XXXXX reference number to check real-time status, priority, and municipality notes.</div>
+        </div>
+        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">Track status →</span>
+      </a>
+
+      {% if user.is_authenticated %}
+      <a href="/complaint/my/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
+        <span style="font-size:2rem;">📋</span>
+        <div>
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">My Complaints</div>
+          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">View all complaints you have submitted, their current status, and the full timeline of updates.</div>
+        </div>
+        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">View my complaints →</span>
+      </a>
+      {% else %}
+      <a href="/register/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
+        <span style="font-size:2rem;">👤</span>
+        <div>
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">Create a Citizen Account</div>
+          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">Register to track all your complaints in one place, get status updates, and connect with the municipality.</div>
+        </div>
+        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">Register free →</span>
+      </a>
+      {% endif %}
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CONVERSATION_ID_KEY = 'municipal_ai_conv_id';
+
+async function askAI() {
+  const input = document.getElementById('heroQuery');
+  const query = input.value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById('heroAskBtn');
+  const container = document.getElementById('aiResponseContainer');
+  const loading = document.getElementById('aiLoading');
+  const responseText = document.getElementById('aiResponseText');
+  const sources = document.getElementById('aiSources');
+  const actions = document.getElementById('aiActions');
+
+  // Show container, reset state
+  container.style.display = 'block';
+  loading.style.display = 'flex';
+  responseText.style.display = 'none';
+  sources.style.display = 'none';
+  actions.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Thinking...';
+
+  // Scroll to response
+  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  try {
+    const convId = sessionStorage.getItem(CONVERSATION_ID_KEY);
+    const res = await fetch('/api/chat/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ message: query, conversation_id: convId ? parseInt(convId) : null })
+    });
+
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // Store conversation ID
+    if (data.conversation_id) {
+      sessionStorage.setItem(CONVERSATION_ID_KEY, data.conversation_id);
+    }
+
+    loading.style.display = 'none';
+    responseText.style.display = 'block';
+    responseText.textContent = '';
+    actions.style.display = 'flex';
+
+    // Typewriter effect
+    typeWrite(responseText, data.response, () => {
+      // Show sources
+      if (data.sources && data.sources.length > 0) {
+        sources.style.display = 'flex';
+        sources.innerHTML = '<span style="font-size:0.72rem;color:var(--stone-light);margin-right:6px;">Sources:</span>';
+        const sourceLabels = {
+          'attractions_db': '🏛️ Attractions',
+          'events_db': '🎪 Events',
+          'businesses_db': '🍽️ Businesses',
+          'marketplace_db': '🛍️ Marketplace',
+          'knowledge_base': '📚 Knowledge Base',
+          'news_db': '📰 News',
+        };
+        data.sources.forEach(s => {
+          const tag = document.createElement('span');
+          tag.className = 'ai-source-tag';
+          tag.textContent = sourceLabels[s] || s;
+          sources.appendChild(tag);
+        });
+      }
+    });
+
+  } catch(e) {
+    loading.style.display = 'none';
+    responseText.style.display = 'block';
+    responseText.textContent = 'Sorry, I could not process your request. Please try again.';
+    actions.style.display = 'flex';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Ask AI →';
+}
+
+function typeWrite(el, text, callback) {
+  let i = 0;
+  const speed = 12;
+  el.textContent = '';
+  function step() {
+    if (i < text.length) {
+      el.textContent += text.charAt(i);
+      i++;
+      setTimeout(step, speed);
+    } else if (callback) {
+      callback();
+    }
+  }
+  step();
+}
+
+function fillAndAsk(text) {
+  document.getElementById('heroQuery').value = text;
+  askAI();
+}
+
+function openFullChat() {
+  window.location.href = '/chat/';
+}
+
+function clearResponse() {
+  document.getElementById('aiResponseContainer').style.display = 'none';
+  document.getElementById('heroQuery').value = '';
+}
+
+function getCookie(name) {
+  let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+
+// Enter key on hero input
+document.getElementById('heroQuery').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') askAI();
+});
+</script>
+{% endblock %}

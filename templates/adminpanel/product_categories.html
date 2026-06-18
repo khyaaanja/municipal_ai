@@ -1,0 +1,41 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Product Categories — CMS{% endblock %}
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Product Categories</h1>
+  <a href="{% url 'adminpanel:cms_product_category_add' %}" class="btn btn-primary">+ Add Category</a>
+</div>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>Icon</th>
+        <th>Name</th>
+        <th>Slug</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td style="font-size:1.4rem;">{{ item.icon|default:"—" }}</td>
+        <td style="font-weight:600;">{{ item.name }}</td>
+        <td style="color:var(--stone);font-size:.82rem;">{{ item.slug }}</td>
+        <td>
+          <div class="cms-actions">
+            <a href="{% url 'adminpanel:cms_product_category_edit' item.pk %}" class="btn-edit">Edit</a>
+            <form method="post" action="{% url 'adminpanel:cms_product_category_delete' item.pk %}" onsubmit="return confirm('Delete {{ item.name }}? Products in this category will lose their category.')">
+              {% csrf_token %}
+              <button type="submit" class="btn-del">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;color:var(--stone);padding:32px;">No categories yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

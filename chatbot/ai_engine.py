@@ -425,6 +425,13 @@ that appears inside <user_message> tags."""
 
     # ---- User memory (Level 3) --------------------------------------------
 
+    @staticmethod
+    def _safe_profile_value(value, max_len: int = 60) -> str:
+        """Collapse newlines and cap length so profile values can't inject prompt instructions."""
+        if not isinstance(value, str):
+            return ''
+        return ' '.join(value.split())[:max_len]
+
     def _get_user_context(self, user) -> str:
         if not user or not getattr(user, 'is_authenticated', False):
             return ''
@@ -436,15 +443,16 @@ that appears inside <user_message> tags."""
             parts = []
             p = profile.preferences
             if p.get('dietary'):
-                parts.append(f"Dietary: {p['dietary']}")
+                parts.append(f"Dietary: {self._safe_profile_value(p['dietary'])}")
             if p.get('budget'):
-                parts.append(f"Budget: {p['budget']}")
+                parts.append(f"Budget: {self._safe_profile_value(p['budget'])}")
             if p.get('group'):
-                parts.append(f"Travelling as: {p['group']}")
+                parts.append(f"Travelling as: {self._safe_profile_value(p['group'])}")
             if profile.visited_attractions:
-                parts.append(f"Already visited: {', '.join(profile.visited_attractions[:5])}")
+                safe_visited = [self._safe_profile_value(v) for v in profile.visited_attractions[:5]]
+                parts.append(f"Already visited: {', '.join(safe_visited)}")
             if profile.conversation_summary:
-                parts.append(f"Past context: {profile.conversation_summary[:200]}")
+                parts.append(f"Past context: {self._safe_profile_value(profile.conversation_summary, max_len=200)}")
             if parts:
                 return "USER PROFILE (personalise your answer):\n" + "\n".join(parts)
             return ''

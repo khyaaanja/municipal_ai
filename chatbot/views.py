@@ -1,7 +1,6 @@
 import json
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -27,7 +26,6 @@ def chat_page(request):
     return render(request, 'chatbot/chat.html', context)
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def chat_api(request):
     """API endpoint for AI chat messages."""
@@ -176,7 +174,6 @@ def delete_conversation(request, pk):
     return JsonResponse({'success': False}, status=405)
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def message_feedback(request):
     """Record thumbs up / down on an AI response. Level 4: feedback loop."""
@@ -190,8 +187,20 @@ def message_feedback(request):
 
         msg = get_object_or_404(Message, pk=message_id, role=Message.ROLE_ASSISTANT)
 
+        # Verify the caller owns the conversation containing this message.
+        conv = msg.conversation
+        if request.user.is_authenticated:
+            if conv.user != request.user:
+                return JsonResponse({'error': 'Not found'}, status=404)
+        else:
+            session_key = request.session.session_key or ''
+            if conv.session_key != session_key:
+                return JsonResponse({'error': 'Not found'}, status=404)
+
         from .models import ResponseFeedback
-        session_key = request.session.session_key or ''
+        if not request.session.session_key:
+            request.session.create()
+        session_key = request.session.session_key
         user = request.user if request.user.is_authenticated else None
 
         # One vote per message per user/session

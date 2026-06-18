@@ -327,12 +327,16 @@ that appears inside <user_message> tags."""
             return 0.0
         return dot / (mag_a * mag_b)
 
+    # Hard cap on KB entries loaded for in-Python cosine scoring.
+    # Ordered by priority so the highest-value entries are always in the scored set.
+    _SEMANTIC_SEARCH_CAP = 500
+
     def _semantic_search_kb(self, query_vec: list, top_k: int = 5) -> list:
         try:
             from chatbot.models import KnowledgeBase
             entries = KnowledgeBase.objects.filter(
                 is_active=True, embedding__isnull=False, auto_generated=False
-            ).values('title', 'content', 'embedding')
+            ).order_by('-priority').values('title', 'content', 'embedding')[:self._SEMANTIC_SEARCH_CAP]
             scored = []
             for e in entries:
                 emb = e['embedding']
@@ -665,6 +669,7 @@ that appears inside <user_message> tags."""
                 messages=[{'role': 'system', 'content': system_prompt}, *messages],
                 max_tokens=getattr(settings, 'AI_MAX_TOKENS', 600),
                 temperature=getattr(settings, 'AI_TEMPERATURE', 0.7),
+                timeout=getattr(settings, 'GROQ_TIMEOUT', 30),
             )
             return response.choices[0].message.content
         except Exception as e:

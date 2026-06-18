@@ -31,8 +31,12 @@ def chat_api(request):
     """API endpoint for AI chat messages."""
     ip = get_client_ip(request)
     rate_key = f'chat_api_{ip}'
-    cache.add(rate_key, 0, 3600)
-    if cache.incr(rate_key) > 60:
+    try:
+        count = cache.incr(rate_key)
+    except ValueError:
+        cache.set(rate_key, 1, 3600)
+        count = 1
+    if count > 60:
         return JsonResponse({'error': 'Rate limit exceeded. Try again later.'}, status=429)
 
     try:
@@ -127,24 +131,26 @@ def chat_api(request):
 def chat_history(request):
     """Chat history page."""
     from django.core.paginator import Paginator
+    from django.db.models import Prefetch
     convs = Conversation.objects.filter(
         user=request.user, is_active=True
-    ).prefetch_related('messages').order_by('-updated_at')
+    ).prefetch_related(
+        Prefetch('messages', queryset=Message.objects.order_by('created_at'), to_attr='ordered_messages')
+    ).order_by('-updated_at')
     total_messages = Message.objects.filter(conversation__user=request.user).count()
     paginator = Paginator(convs, 15)
     page = request.GET.get('page', 1)
     conversations = paginator.get_page(page)
-    # Annotate first/last message
+    # Annotate using the prefetched list — no extra queries per conversation.
     for conv in conversations:
-        msgs = conv.messages.order_by('created_at')
-        user_msgs = msgs.filter(role='user')
-        conv.first_message = user_msgs.first().content[:80] if user_msgs.exists() else ''
-        last = msgs.last()
-        conv.last_message = last.content[:90] if last else ''
-        conv.message_count = msgs.count()
+        msgs = conv.ordered_messages
+        user_msgs = [m for m in msgs if m.role == 'user']
+        conv.first_message = user_msgs[0].content[:80] if user_msgs else ''
+        conv.last_message = msgs[-1].content[:90] if msgs else ''
+        conv.message_count = len(msgs)
     return render(request, 'chatbot/history.html', {
         'conversations': conversations,
-        'total_conversations': convs.count(),
+        'total_conversations': paginator.count,
         'total_messages': total_messages,
     })
 

@@ -65,17 +65,13 @@ def _owns(request, complaint, claim_token=''):
 @tool('search_municipal_knowledge', auth=AUTH_NONE,
       rate_ip=60, rate_user=30, cacheable=True)
 def search_municipal_knowledge(request, query='', lang='en'):
-    from chatbot.models import KnowledgeChunk
+    from .retrieval import search as retrieval_search
 
     query = _clean(query, 300)
     if lang not in ('en', 'ne', 'new'):
         lang = 'en'
 
-    rows = list(
-        KnowledgeChunk.objects
-        .filter(is_active=True, content__icontains=query)
-        .values('title', 'content', 'source_type')[:5]
-    )
+    rows = retrieval_search(query, limit=5)
     return {
         'passages': [{'title': r['title'], 'text': r['content']} for r in rows],
         'sources': sorted({r['source_type'] for r in rows if r['source_type']}),
@@ -275,3 +271,43 @@ def get_my_notifications(request, unread_only=False, limit=MAX_ROWS):
         'is_read': n.is_read,
         'created_at': n.created_at.isoformat(),
     } for n in qs[:_limit(limit)]]
+
+
+@tool('find_on_map', auth=AUTH_NONE, rate_ip=120, rate_user=60, cacheable=True)
+def find_on_map(request, query='', limit=MAX_ROWS):
+    """Locate attractions and businesses that have real coordinates."""
+    from businesses.models import Business
+    from tourism.models import Attraction
+
+    term = _clean(query, 120)
+    results = []
+
+    for a in (Attraction.objects
+              .filter(is_active=True, name__icontains=term)
+              .exclude(latitude__isnull=True).exclude(longitude__isnull=True)[:limit]):
+        results.append({
+            'name': a.name, 'kind': 'attraction', 'address': a.address,
+            'latitude': float(a.latitude), 'longitude': float(a.longitude),
+        })
+
+    for b in (Business.objects
+              .filter(is_active=True, name__icontains=term)
+              .exclude(latitude__isnull=True).exclude(longitude__isnull=True)[:limit]):
+        results.append({
+            'name': b.name, 'kind': 'business', 'address': b.address,
+            'latitude': float(b.latitude), 'longitude': float(b.longitude),
+        })
+
+    # Coordinates are returned only for places the municipality publishes.
+    # No citizen location is read, stored, or exposed.
+    return results[:_limit(limit)]
+
+
+@tool('mark_notifications_read', auth=AUTH_REQUIRED, rate_user=30, cacheable=False)
+def mark_notifications_read(request):
+    from accounts.models import Notification
+
+    updated = (Notification.objects
+               .filter(user=request.user, is_read=False)
+               .update(is_read=True))
+    return {'marked_read': updated}

@@ -6,6 +6,7 @@ it, so this is also where §28 is strongest.
 """
 
 EMPTY = {
+    'find_on_map': "I couldn't find that place on the map.",
     'get_my_complaints': "You haven't filed any complaints yet. If you filed one "
                          "without an account, give me its **BK-XXXXXX** reference "
                          "and I can look it up.",
@@ -19,6 +20,12 @@ EMPTY = {
 }
 
 FOLLOWUPS = {
+    'find_on_map': ['Show nearby restaurants', 'What else is close by?'],
+    'mark_notifications_read': ['Show my complaints', 'Show my applications'],
+    'draft_service_request': ['Yes, submit it', 'Change the details'],
+    'confirm_service_request': ['Track my applications', 'Apply for another service'],
+    'draft_proposal': ['Yes, submit it', 'Reword the proposal'],
+    'confirm_proposal': ['Show my proposals', 'How are proposals reviewed?'],
     'draft_complaint': ['Yes, file it', 'Change the description'],
     'confirm_complaint': ['Track this complaint', 'File another issue'],
     'get_complaint_status': ['How do I escalate this?', 'File another complaint'],
@@ -171,6 +178,8 @@ def _confirm_complaint(d):
         '',
         f"[Track it here](/complaint/status/{d['complaint_id']}/)",
     ]
+    if d.get('photos_attached'):
+        lines.insert(3, f"**Photos attached:** {d['photos_attached']}")
     if d.get('claim_token'):
         lines += [
             '',
@@ -180,7 +189,92 @@ def _confirm_complaint(d):
     return '\n'.join(lines)
 
 
+
+def _draft_service_request(d):
+    p = d['draft']
+    return '\n'.join([
+        "Here's the application I'll submit. Please check it first:",
+        '',
+        f"**Service:** {p['service_type'].replace('_', ' ').title()}",
+        f"**Ward:** {p['ward_number']}",
+        f"**Applicant:** {p['applicant_name']}",
+        f"**Phone:** {p['applicant_phone']}",
+        f"**Address:** {p['applicant_address']}",
+        '',
+        f"**Details:** {p['details']}",
+        '',
+        '**Nothing has been submitted yet.** Reply **yes** to send it, '
+        'or tell me what to change.',
+    ])
+
+
+def _confirm_service_request(d):
+    lines = [
+        f"Submitted. Your reference is **{d['reference_number']}**.",
+        '',
+        f"**Service:** {d['service_type']}",
+        f"**Status:** {d['status']}",
+    ]
+    if d.get('fee_amount'):
+        lines.append(f"**Fee:** Rs {d['fee_amount']}")
+    lines += ['', '[View your applications](/services/my/)']
+    return '\n'.join(lines)
+
+
+def _draft_proposal(d):
+    p = d['draft']
+    lines = [
+        "Here's your proposal as I've written it up:",
+        '',
+        f"**Title:** {p['title']}",
+        f"**Category:** {p['category'].title()}",
+        f"**Ward:** {p['ward_number']}",
+        '',
+        f"**Description:** {p['description']}",
+    ]
+    if p.get('expected_benefit'):
+        lines += ['', f"**Expected benefit:** {p['expected_benefit']}"]
+    lines += [
+        '',
+        '**Nothing has been submitted yet.** Reply **yes** to send it to your '
+        'ward, or tell me what to change.',
+    ]
+    return '\n'.join(lines)
+
+
+def _confirm_proposal(d):
+    return '\n'.join([
+        f"Submitted to Ward {d['ward_number']}.",
+        '',
+        f"**{d['title']}**",
+        f"**Category:** {d['category']}",
+        f"**Status:** {d['status']}",
+    ])
+
+
+
+def _on_map(rows):
+    out = ['**Locations**', '']
+    for r in rows:
+        out.append(f"- **{r['name']}** ({r['kind']}) — {r['address'] or 'Bhaktapur'} "
+                   f"· [map](https://www.openstreetmap.org/?mlat={r['latitude']}&mlon={r['longitude']}#map=18/{r['latitude']}/{r['longitude']})")
+    return '\n'.join(out)
+
+
+def _marked_read(d):
+    n = d['marked_read']
+    if not n:
+        return 'You had no unread notifications.'
+    return f"Marked **{n}** notification(s) as read."
+
+
 _RENDERERS = {
+    'find_on_map': _on_map,
+    'mark_notifications_read': _marked_read,
+    'draft_service_request': _draft_service_request,
+    'confirm_service_request': _confirm_service_request,
+    'draft_proposal': _draft_proposal,
+    'confirm_proposal': _confirm_proposal,
     'draft_complaint': _draft_complaint,
     'confirm_complaint': _confirm_complaint,
     'get_complaint_status': _complaint_status,

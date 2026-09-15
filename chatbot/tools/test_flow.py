@@ -39,7 +39,7 @@ class FilingFlowTests(TestCase):
         self.say('garbage is piling up near the temple')
         self.say('Taumadhi Square')
         self.say('Sita Devi')
-        self.assertIn('Nothing was filed', self.say('no'))
+        self.assertIn('Nothing was submitted', self.say('no'))
         self.assertEqual(Complaint.objects.count(), 0)
 
     def test_ambiguous_reply_does_not_submit(self):

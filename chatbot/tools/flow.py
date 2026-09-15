@@ -11,6 +11,7 @@ from .router import COMPLAINT_REF, route
 
 PENDING_KEY = 'pending_complaint_token'
 SLOTS_KEY = 'complaint_slots'
+PENDING_TOOL_KEY = 'pending_confirm_tool'
 
 AFFIRMATIVE = {
     'yes', 'y', 'yeah', 'yep', 'ok', 'okay', 'confirm', 'confirmed',
@@ -59,22 +60,25 @@ def handle(request, message, claim_token=''):
 
     pending = session.get(PENDING_KEY)
     if pending:
+        confirm_tool = session.get(PENDING_TOOL_KEY, 'confirm_complaint')
         if lowered in AFFIRMATIVE:
-            result = run_tool('confirm_complaint', request, token=pending)
+            result = run_tool(confirm_tool, request, token=pending)
             session.pop(PENDING_KEY, None)
+            session.pop(PENDING_TOOL_KEY, None)
             session.pop(SLOTS_KEY, None)
-            return _with_intent(present('confirm_complaint', result),
-                                'confirm_complaint')
+            return _with_intent(present(confirm_tool, result), confirm_tool)
         if lowered in NEGATIVE:
             session.pop(PENDING_KEY, None)
+            session.pop(PENDING_TOOL_KEY, None)
             session.pop(SLOTS_KEY, None)
-            return ('Nothing was filed. Tell me if you want to start again.',
-                    [], 'complaint_cancelled')
+            return ('Nothing was submitted. Tell me if you want to start again.',
+                    [], 'submission_cancelled')
         # Anything else is treated as a correction, so a half-finished draft
         # is never silently submitted by an ambiguous reply.
         session.pop(PENDING_KEY, None)
-        return ('Nothing has been filed. Tell me the issue again and I will '
-                'prepare a fresh draft.', [], 'complaint_cancelled')
+        session.pop(PENDING_TOOL_KEY, None)
+        return ('Nothing has been submitted. Tell me again and I will '
+                'prepare a fresh draft.', [], 'submission_cancelled')
 
     # An explicit reference is unambiguous and always wins.
     if COMPLAINT_REF.search(message.upper()):
@@ -172,5 +176,6 @@ def _filing_flow(request, session, message, lowered):
     )
     if result.ok:
         session[PENDING_KEY] = result.data['token']
+        session[PENDING_TOOL_KEY] = 'confirm_complaint'
     session.pop(SLOTS_KEY, None)
     return _with_intent(present('draft_complaint', result), 'draft_complaint')

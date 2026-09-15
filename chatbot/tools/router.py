@@ -42,6 +42,13 @@ _ROUTES = [
         'restaurant', 'where can i eat', 'hotel', 'shop', 'cafe',
         'khaja', 'food near',
     )),
+    ('mark_notifications_read', (
+        'mark notifications read', 'mark all read', 'clear my notifications',
+    )),
+    ('find_on_map', (
+        'where is', 'show me on the map', 'on the map', 'directions to',
+        'how do i get to', 'location of',
+    )),
     ('find_attractions', (
         'temple', 'heritage', 'museum', 'what to see', 'tourist',
         'durbar square', 'attraction', 'mandir',
@@ -66,7 +73,8 @@ def route(message, claim_token=''):
 
     for name, phrases in _ROUTES:
         if any(p in lowered for p in phrases):
-            if name.startswith('get_my_') and not any(m in lowered for m in _MINE):
+            if (name.startswith('get_my_') or name == 'mark_notifications_read') \
+                    and not any(m in lowered for m in _MINE):
                 # "notifications" alone is ambiguous; "my notifications" is not.
                 continue
             return name, _kwargs_for(name, lowered)

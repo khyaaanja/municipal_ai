@@ -73,3 +73,5 @@ ssl/
 # Generated artifacts
 graphify-out/
 screenshots/
+
+test_reports/

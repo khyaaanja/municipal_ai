@@ -14,9 +14,7 @@ from core.utils import get_client_ip
 from core.utils import MAX_AI_AUDIO_BYTES, valid_uploaded_file
 from core.analytics import track
 from .services.response_contract import AIResponse, public_metadata, request_id_from
-from .tools import run_tool
-from .tools.router import route as route_intent
-from .tools.present import present
+from .tools.flow import handle as tool_flow
 
 try:
     from .services.answer_engine import AnswerEngine, get_answer_engine, is_degraded_response
@@ -108,20 +106,19 @@ def chat_api(request):
         # Placed before the response cache on purpose: tool results are
         # per-citizen, and the ai_resp_ cache below is keyed on message text
         # alone, so a routed reply must return before it can be stored (I-1).
-        _routed = route_intent(user_message, claim_token=claim_token)
-        if _routed:
-            _tool_name, _tool_kwargs = _routed
-            _tool_result = run_tool(_tool_name, request, **_tool_kwargs)
-            _reply, _followups = present(_tool_name, _tool_result)
-            if _reply is not None:
-                return JsonResponse({
-                    'response': _reply,
-                    'conversation_id': None,
-                    'message_id': None,
-                    'sources': [],
-                    'intent': _tool_name,
-                    'followups': _followups,
-                })
+        if not request.session.session_key:
+            request.session.create()
+        _handled = tool_flow(request, user_message, claim_token=claim_token)
+        if _handled is not None:
+            _reply, _followups, _intent = _handled
+            return JsonResponse({
+                'response': _reply,
+                'conversation_id': None,
+                'message_id': None,
+                'sources': [],
+                'intent': _intent,
+                'followups': _followups,
+            })
 
 
         # Fast-path: civic issue keyword detection
@@ -693,21 +690,20 @@ def chat_async(request):
         # Routed tool answers are synchronous database reads — no Groq call,
         # so there is nothing to poll for. Returning here also keeps per-citizen
         # results out of the message-keyed ai_resp_ cache below (I-1).
-        _routed = route_intent(user_message, claim_token=claim_token)
-        if _routed:
-            _tool_name, _tool_kwargs = _routed
-            _tool_result = run_tool(_tool_name, request, **_tool_kwargs)
-            _reply, _followups = present(_tool_name, _tool_result)
-            if _reply is not None:
-                return JsonResponse({
-                    'response': _reply,
-                    'job_id': None,
-                    'cached': False,
-                    'status': 'done',
-                    'sources': [],
-                    'intent': _tool_name,
-                    'followups': _followups,
-                })
+        if not request.session.session_key:
+            request.session.create()
+        _handled = tool_flow(request, user_message, claim_token=claim_token)
+        if _handled is not None:
+            _reply, _followups, _intent = _handled
+            return JsonResponse({
+                'response': _reply,
+                'job_id': None,
+                'cached': False,
+                'status': 'done',
+                'sources': [],
+                'intent': _intent,
+                'followups': _followups,
+            })
 
         _msg_norm = user_message.lower().strip()[:200].rstrip('?.! ')
         _hash = hashlib.sha256(_msg_norm.encode()).hexdigest()[:24]

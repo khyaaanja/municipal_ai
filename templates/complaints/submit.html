@@ -30,7 +30,7 @@
 
 /* Reset page background for this page */
 body { background: var(--c-bg) !important; }
-.footer, .nav { display: none; }
+.footer { display: none; }
 
 /* ── CANVAS ─────────────────────────────────────────────────── */
 .rp-canvas {
@@ -52,33 +52,6 @@ body { background: var(--c-bg) !important; }
   z-index: 0;
   opacity: .5;
 }
-
-/* ── TOP NAV BAR ─────────────────────────────────────────────── */
-.rp-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 0 2rem;
-  height: 56px;
-  display: flex; align-items: center; justify-content: space-between;
-  background: rgba(13,13,13,.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 3px solid var(--c-red);
-}
-.rp-nav-logo {
-  font-family: var(--fn-serif);
-  font-size: .95rem;
-  color: var(--c-gold);
-  text-decoration: none;
-  letter-spacing: .06em;
-}
-.rp-nav-links { display: flex; gap: 1.5rem; align-items: center; }
-.rp-nav-links a {
-  font-size: .8rem;
-  color: var(--c-muted);
-  text-decoration: none;
-  transition: color .2s;
-  letter-spacing: .02em;
-}
-.rp-nav-links a:hover { color: var(--c-gold); }
 
 /* ── PROGRESS RAIL ───────────────────────────────────────────── */
 .rp-progress-rail {
@@ -758,26 +731,13 @@ body { background: var(--c-bg) !important; }
 
 /* Hide footer & base elements for this full-screen page */
 .footer { display: none !important; }
-.mobile-bottom-nav { display: none !important; }
+
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="rp-canvas">
 
-  <!-- ── NAV ── -->
-  <nav class="rp-nav">
-    <a class="rp-nav-logo" href="/">Bhaktapur<span style="color:var(--c-red)">AI</span></a>
-    <div class="rp-nav-links">
-      <a href="{% url 'complaints:complaint_track' %}">Track Complaint</a>
-      {% if user.is_authenticated %}
-      <a href="{% url 'complaints:my_complaints' %}">My Reports</a>
-      {% else %}
-      <a href="{% url 'accounts:login' %}">Sign In</a>
-      {% endif %}
-      <a href="/" style="color:var(--c-gold)">← Home</a>
-    </div>
-  </nav>
 
   <!-- ── PROGRESS RAIL ── -->
   <div class="rp-progress-rail">

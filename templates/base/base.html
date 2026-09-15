@@ -1190,20 +1190,67 @@ window.addEventListener('scroll', () => {
 }, { passive: true });
 
 /* ── MOBILE MENU ── */
+// Scroll lock for the mobile menu. overflow:hidden alone does not hold on
+// iOS Safari, so the body is pinned at its current offset and restored on
+// close — otherwise the page behind the menu scrolls under your finger.
+let _menuScrollY = 0;
+
+function _lockScroll() {
+  // _menuScrollY is captured by the caller before the menu is shown: opening
+  // it changes layout, and reading the offset afterwards records the shifted
+  // position, which then restores the reader to the wrong place on close.
+  const b = document.body;
+  b.style.position = 'fixed';
+  b.style.top = `-${_menuScrollY}px`;
+  b.style.left = '0';
+  b.style.right = '0';
+  b.style.width = '100%';
+  b.style.overflow = 'hidden';
+}
+
+function _unlockScroll() {
+  const b = document.body;
+  b.style.position = '';
+  b.style.top = '';
+  b.style.left = '';
+  b.style.right = '';
+  b.style.width = '';
+  b.style.overflow = '';
+  window.scrollTo(0, _menuScrollY);
+}
+
+function closeMobileMenu() {
+  const m = document.getElementById('mobileMenu');
+  const b = document.querySelector('.hamburger');
+  if (!m || m.style.display !== 'block') return;
+  m.style.display = 'none';
+  if (b) { b.classList.remove('open'); b.setAttribute('aria-expanded', 'false'); }
+  _unlockScroll();
+}
+
 function toggleMobileMenu() {
   const m = document.getElementById('mobileMenu');
   const b = document.querySelector('.hamburger');
-  const open = m.style.display === 'block';
-  m.style.display = open ? 'none' : 'block';
-  b.classList.toggle('open', !open);
+  if (!m) return;
+  if (m.style.display === 'block') { closeMobileMenu(); return; }
+  _menuScrollY = window.scrollY || window.pageYOffset || 0;
+  m.style.display = 'block';
+  if (b) { b.classList.add('open'); b.setAttribute('aria-expanded', 'true'); }
+  _lockScroll();
 }
-window.addEventListener('resize', () => {
-  if (window.innerWidth > 768) {
-    const m = document.getElementById('mobileMenu');
-    if (m) m.style.display = 'none';
-    const b = document.querySelector('.hamburger');
-    if (b) b.classList.remove('open');
+
+// Closing by any route must unlock, or the page is left frozen.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeMobileMenu();
+});
+document.addEventListener('click', (e) => {
+  const m = document.getElementById('mobileMenu');
+  if (m && m.style.display === 'block' && e.target.closest('#mobileMenu a')) {
+    closeMobileMenu();
   }
+});
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) closeMobileMenu();
 });
 
 /* ── CIVIC DROPDOWN TOUCH (hover fallback for mobile) ── */

@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="BhaktapurAI">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-<title>{% block title %}{{ page_title }} — {{ CITY_NAME }} City Platform{% endblock %}</title>
+<title>{% block title %}{% if page_title %}{{ page_title }} — {% endif %}{{ CITY_NAME }} City Platform{% endblock %}</title>
 <meta name="description" content="{% block meta_description %}Bhaktapur Municipal AI Platform — Report civic issues, explore attractions, find events, and connect with your municipality.{% endblock %}">
 <script>
 (function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})();
@@ -412,6 +412,10 @@ p  { line-height: 1.72; color: var(--text-2); }
 .hamburger {
   display: none; flex-direction: column; gap: 5px;
   cursor: pointer; padding: 5px; background: none; border: none;
+  /* The bars are 22px wide, but this is the only way to open navigation on a
+     phone, so the tap area is padded out to the 44px minimum. */
+  min-width: 44px; min-height: 44px;
+  align-items: center; justify-content: center;
 }
 .hamburger span {
   display: block; width: 22px; height: 2px; background: var(--paper);
@@ -953,7 +957,8 @@ select.form-control {
   .btn-nav-primary{padding:5px 10px;font-size:.72rem;}
   .nav-right .btn-nav-primary{display:none;}
   .nav-right .btn-nav-outline.btn-nav-auth{display:none;}
-  .theme-toggle{width:28px;height:28px;font-size:.85rem;}
+  .theme-toggle{width:28px;height:28px;font-size:.85rem;
+    min-width:44px;min-height:44px;}
   .page-hero{padding:40px 0 32px;}
   .hero-stat-num{font-size:1.5rem;}
   .hero-stat-label{font-size:.65rem;}
@@ -976,7 +981,8 @@ select.form-control {
   .nav-logo{font-size:.72rem;letter-spacing:-0.03em;}
   .hamburger{gap:4px;}
   .hamburger span{width:16px;height:1.5px;}
-  .theme-toggle{width:24px;height:24px;font-size:.75rem;}
+  .theme-toggle{width:24px;height:24px;font-size:.75rem;
+    min-width:44px;min-height:44px;}
   .mobile-bottom-nav .mbn-item{min-height:50px;}
   .mbn-icon{font-size:1.1rem;}
 }
@@ -1521,7 +1527,8 @@ function _md(t) {
 
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+  // Registered once above, with update handling; a second register() call
+  // here re-requested the same worker on every page load.
 }
 /* ══════════════════════════════════════════════════
    GLOBAL UI/UX ENHANCEMENTS

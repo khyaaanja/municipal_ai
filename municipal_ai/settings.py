@@ -1,12 +1,21 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'bhaktapur-ai-dev-secret-key-change-in-production')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+_DEFAULT_SECRET_KEY = 'bhaktapur-ai-dev-secret-key-change-in-production'
+SECRET_KEY = os.environ.get('SECRET_KEY', '')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = _DEFAULT_SECRET_KEY
+    else:
+        raise ImproperlyConfigured('SECRET_KEY must be set when DEBUG=False')
+if not DEBUG and SECRET_KEY == _DEFAULT_SECRET_KEY:
+    raise ImproperlyConfigured('The development SECRET_KEY cannot be used when DEBUG=False')
 # Allow common dev/test hosts used by Django's RequestFactory / runserver.
 # If ALLOWED_HOSTS env var is not set (common when running via some process managers),
 # fall back to .env-style host list including ngrok.
@@ -75,7 +84,7 @@ INSTALLED_APPS = [
     'mayor',
     'chairperson',
     'civic',
-'services',
+    'services',
 ]
 
 MIDDLEWARE = [
@@ -86,6 +95,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.ContentSecurityPolicyMiddleware',
     'core.middleware.RateLimitMiddleware',
     'core.middleware.TwoFactorMiddleware',
 ]
@@ -179,7 +189,7 @@ SECURE_BROWSER_XSS_FILTER = True
 CACHE_MIDDLEWARE_ALIAS = 'default'
 CACHE_MIDDLEWARE_SECONDS = 86400  # 24 hours for page-level caching if used
 
-# Cache — Redis in production, DatabaseCache as fallback for dev without Redis
+# Cache — Redis in production, in-memory cache as fallback for dev without Redis
 _redis_url = os.environ.get('REDIS_URL', os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/1'))
 try:
     import redis as _redis_lib
@@ -194,8 +204,8 @@ try:
 except Exception:
     CACHES = {
         'default': {
-            'BACKEND':  'django.core.cache.backends.db.DatabaseCache',
-            'LOCATION': 'cache_table',
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'municipal-ai-local-cache',
         }
     }
 
@@ -217,14 +227,14 @@ SERVER_EMAIL        = DEFAULT_FROM_EMAIL
 
 # Groq AI API
 GROQ_API_KEY          = os.environ.get('GROQ_API_KEY', '')
-GROQ_MODEL            = os.environ.get('GROQ_MODEL',         'llama-3.3-70b-versatile')
+GROQ_MODEL            = os.environ.get('GROQ_MODEL',         'openai/gpt-oss-20b')
 GROQ_VISION_MODEL     = os.environ.get('GROQ_VISION_MODEL',  'meta-llama/llama-4-scout-17b-16e-instruct')
-GROQ_FAST_MODEL       = os.environ.get('GROQ_FAST_MODEL',    'llama-3-8b-8192')
+GROQ_FAST_MODEL       = os.environ.get('GROQ_FAST_MODEL',    'openai/gpt-oss-20b')
 GROQ_WHISPER_MODEL    = os.environ.get('GROQ_WHISPER_MODEL', 'whisper-large-v3')
 GROQ_TIMEOUT          = int(os.environ.get('GROQ_TIMEOUT', '30'))
-AI_MAX_TOKENS         = int(os.environ.get('AI_MAX_TOKENS', '512'))
-AI_FAST_MAX_TOKENS    = int(os.environ.get('AI_FAST_MAX_TOKENS', '384'))
-AI_MAX_CONTEXT_CHARS  = int(os.environ.get('AI_MAX_CONTEXT_CHARS', '8000'))
+AI_MAX_TOKENS         = int(os.environ.get('AI_MAX_TOKENS', '1500'))
+AI_FAST_MAX_TOKENS    = int(os.environ.get('AI_FAST_MAX_TOKENS', '768'))
+AI_MAX_CONTEXT_CHARS  = int(os.environ.get('AI_MAX_CONTEXT_CHARS', '12000'))
 AI_TEMPERATURE        = float(os.environ.get('AI_TEMPERATURE', '0.65'))
 AI_STREAM_ENABLED     = os.environ.get('AI_STREAM_ENABLED', 'true').lower() == 'true'
 
@@ -451,11 +461,16 @@ CSRF_TRUSTED_ORIGINS += [
     'http://127.0.0.1:8000',
     'https://localhost:8000',
     'https://127.0.0.1:8000',
-    'https://*.ngrok-free.app',
-    'https://*.ngrok-free.dev',
-    'http://*.ngrok-free.app',
-    'http://*.ngrok-free.dev',
 ]
+
+# ngrok tunnels are only trusted in development — never in production.
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        'https://*.ngrok-free.app',
+        'https://*.ngrok-free.dev',
+        'http://*.ngrok-free.app',
+        'http://*.ngrok-free.dev',
+    ]
 
 CSRF_TRUSTED_ORIGINS = sorted(set(CSRF_TRUSTED_ORIGINS))
 
@@ -495,6 +510,14 @@ LOGGING = {
             'formatter': 'verbose',
             'level': 'ERROR',
         },
+        'file_audit': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(_LOG_DIR / 'audit.log'),
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 20,
+            'formatter': 'verbose',
+            'level': 'INFO',
+        },
         'file_info': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': str(_LOG_DIR / 'app.log'),
@@ -526,6 +549,10 @@ LOGGING = {
         'civic': {'handlers': ['console', 'file_info', 'file_errors'], 'level': 'INFO' if DEBUG else 'WARNING', 'propagate': False},
         'chatbot': {'handlers': ['console', 'file_info', 'file_errors'], 'level': 'INFO' if DEBUG else 'WARNING', 'propagate': False},
         'core': {'handlers': ['console', 'file_info', 'file_errors'], 'level': 'INFO' if DEBUG else 'WARNING', 'propagate': False},
+        # Audit trail stays at INFO in production — WARNING would silently
+        # discard exactly the record §35 requires.
+        'municipal_ai.audit': {'handlers': ['file_audit'], 'level': 'INFO', 'propagate': False},
+        'municipal_ai.tools': {'handlers': ['console', 'file_errors'], 'level': 'ERROR', 'propagate': False},
     },
 }
 

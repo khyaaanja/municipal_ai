@@ -1,5 +1,6 @@
 import json
 import hashlib
+import time
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, StreamingHttpResponse
 from django.views.decorators.http import require_http_methods
@@ -10,7 +11,12 @@ from django.core.cache import cache
 from .models import Conversation, Message
 from .ai_engine import MunicipalAIEngine
 from core.utils import get_client_ip
+from core.utils import MAX_AI_AUDIO_BYTES, valid_uploaded_file
 from core.analytics import track
+from .services.response_contract import AIResponse, public_metadata, request_id_from
+from .tools import run_tool
+from .tools.router import route as route_intent
+from .tools.present import present
 
 try:
     from .services.answer_engine import AnswerEngine, get_answer_engine, is_degraded_response
@@ -91,47 +97,32 @@ def chat_api(request):
         data         = json.loads(request.body)
         user_message = data.get('message', '').strip()
         conversation_id = data.get('conversation_id')
+        claim_token = data.get('claim_token', '')
 
         if not user_message:
             return JsonResponse({'error': 'Message is required'}, status=400)
         if len(user_message) > 1000:
             return JsonResponse({'error': 'Message too long (max 1000 chars)'}, status=400)
 
-        # Fast-path: complaint status lookup
-        import re as _re
-        _cid_match = _re.search(r'\b(BK-[A-Z0-9]{6,10})\b', user_message.upper())
-        if _cid_match or 'check status of my complaint' in user_message.lower():
-            if _cid_match:
-                try:
-                    from complaints.models import Complaint as _Complaint
-                    c = _Complaint.objects.get(complaint_id=_cid_match.group(1))
-                    status_text = dict(_Complaint.STATUS_CHOICES).get(c.status, c.status)
-                    reply = (
-                        f"**Complaint {c.complaint_id}** found!\n\n"
-                        f"**Status:** {status_text}\n"
-                        f"**Category:** {c.get_category_display()}\n"
-                        f"**Title:** {c.title}\n"
-                        f"**Filed:** {c.created_at.strftime('%b %d, %Y')}\n\n"
-                        f"Track full details: [{c.complaint_id}](/complaint/status/{c.complaint_id}/)"
-                    )
-                except Exception:
-                    reply = (
-                        f"I couldn't find a complaint with ID **{_cid_match.group(1)}**. "
-                        f"Please double-check the ID (format: BK-XXXXXX) and try again. "
-                        f"You can also [track your complaint here](/complaint/status/)."
-                    )
-            else:
-                reply = (
-                    "To check your complaint status, please enter your complaint ID. "
-                    "It looks like **BK-XXXXXX** (shown after you submitted). "
-                    "For example: `check BK-ABC123`\n\n"
-                    "Or [visit the status page](/complaint/status/) and enter your ID there."
-                )
-            return JsonResponse({
-                'response': reply, 'conversation_id': None,
-                'message_id': None, 'sources': [], 'intent': 'complaint_status',
-                'followups': ['How do I submit a new complaint?', 'What happens after I file a complaint?'],
-            })
+        # Tool dispatch — deterministic routing into a least-privilege tool.
+        # Placed before the response cache on purpose: tool results are
+        # per-citizen, and the ai_resp_ cache below is keyed on message text
+        # alone, so a routed reply must return before it can be stored (I-1).
+        _routed = route_intent(user_message, claim_token=claim_token)
+        if _routed:
+            _tool_name, _tool_kwargs = _routed
+            _tool_result = run_tool(_tool_name, request, **_tool_kwargs)
+            _reply, _followups = present(_tool_name, _tool_result)
+            if _reply is not None:
+                return JsonResponse({
+                    'response': _reply,
+                    'conversation_id': None,
+                    'message_id': None,
+                    'sources': [],
+                    'intent': _tool_name,
+                    'followups': _followups,
+                })
+
 
         # Fast-path: civic issue keyword detection
         _msg_lower = user_message.lower()
@@ -185,6 +176,14 @@ def chat_api(request):
                     'sources':   _cached.get('sources', []),
                     'intent':    _cached.get('intent', 'cached'),
                     'followups': _cached.get('followups', []),
+                    **public_metadata(
+                        sources=_cached.get('sources', []),
+                        source=_cached.get('source', 'primary'),
+                        source_note=_cached.get('source_note'),
+                        fallback=_cached.get('fallback', False),
+                        degraded=_cached.get('degraded', False),
+                        citations=_cached.get('citations', []),
+                    ),
                 })
 
         # Get or create conversation
@@ -232,12 +231,17 @@ def chat_api(request):
                     request, user_message, history, user=request.user
                 )
                 if fallback_result and fallback_result.get('answer'):
+                    fallback_meta = fallback_result.get('metadata', {})
                     result = {
                         'response':   fallback_result['answer'],
-                        'sources':    ['knowledge_base'],
-                        'intent':     'general',
+                        'sources':    fallback_meta.get('sources', ['knowledge_base']),
+                        'intent':     engine._detect_intent(user_message),
                         'followups':  [],
-                        'source_note': 'Answered from local records',
+                        'source_note': fallback_meta.get('source_note') or 'Answered from local records',
+                        'source': fallback_result.get('source', 'local_db'),
+                        'fallback': True,
+                        'degraded': True,
+                        'citations': fallback_meta.get('citations', []),
                     }
                     ai_msg = Message.objects.create(
                         conversation=conversation,
@@ -256,8 +260,18 @@ def chat_api(request):
                         'intent':          result['intent'],
                         'followups':       result.get('followups', []),
                         'source_note':     result.get('source_note'),
+                        **public_metadata(
+                            sources=result['sources'],
+                            source='fallback',
+                            source_note=result.get('source_note'),
+                            fallback=True,
+                            degraded=True,
+                            citations=result.get('citations', []),
+                            request_id=request_id_from(request),
+                        ),
                     })
 
+        started = time.perf_counter()
         result = engine.chat(user_message, history, user=request.user)
 
         # ── Fallback layer ──────────────────────────────────────────────────
@@ -270,16 +284,39 @@ def chat_api(request):
                 request, user_message, history, user=request.user
             )
             if fallback_result and fallback_result.get('answer'):
+                fallback_meta = fallback_result.get('metadata', {})
                 result['response'] = fallback_result['answer']
-                source_note = 'Answered from local records'
+                result['sources'] = fallback_meta.get('sources', result.get('sources', []))
+                result['source'] = fallback_result.get('source', 'local_db')
+                result['source_note'] = fallback_meta.get('source_note') or 'Answered from local records'
+                result['fallback'] = True
+                result['degraded'] = True
+                result['citations'] = fallback_meta.get('citations', [])
+                source_note = result['source_note']
 
-        ai_msg = Message.objects.create(
-            conversation=conversation,
-            role=Message.ROLE_ASSISTANT,
-            content=result['response'],
-            sources=result['sources'],
-            intent=result['intent']
+        # Keep operational metadata in one internal contract without adding
+        # fields to the established JSON response.
+        response_contract = AIResponse(
+            answer=result['response'],
+            sources=result.get('sources', []),
+            source_note=source_note,
+            degraded=bool(source_note),
+            fallback=bool(source_note),
+            latency_ms=round((time.perf_counter() - started) * 1000, 2),
+            request_id=request_id_from(request),
+            metadata={'intent': result.get('intent', 'general')},
         )
+        source_note = response_contract.source_note
+
+        ai_msg = None
+        if result.get('response', '').strip():
+            ai_msg = Message.objects.create(
+                conversation=conversation,
+                role=Message.ROLE_ASSISTANT,
+                content=result['response'],
+                sources=result['sources'],
+                intent=result['intent']
+            )
 
         conversation.save()
         track(request, 'chat', object_type='conversation', object_id=conversation.id)
@@ -290,16 +327,31 @@ def chat_api(request):
                 'sources':   result['sources'],
                 'intent':    result['intent'],
                 'followups': result.get('followups', []),
+                'source': result.get('source') or ('fallback' if source_note else 'primary'),
+                'source_note': source_note or result.get('source_note'),
+                'fallback': bool(source_note) or result.get('fallback', False),
+                'degraded': bool(source_note) or result.get('degraded', False),
+                'citations': result.get('citations', []),
             }, 3600)
 
         return JsonResponse({
             'response':        result['response'],
             'conversation_id': conversation.id,
-            'message_id':      ai_msg.id,
+            'message_id':      ai_msg.id if ai_msg else None,
             'sources':         result['sources'],
             'intent':          result['intent'],
             'followups':       result.get('followups', []),
             'source_note':     source_note,
+            **public_metadata(
+                sources=result.get('sources', []),
+                source=result.get('source') or ('fallback' if source_note else 'primary'),
+                source_note=source_note or result.get('source_note'),
+                fallback=bool(source_note) or result.get('fallback', False),
+                degraded=bool(source_note) or result.get('degraded', False),
+                citations=result.get('citations', []),
+                latency_ms=response_contract.latency_ms,
+                request_id=response_contract.request_id,
+            ),
         })
 
     except json.JSONDecodeError:
@@ -373,6 +425,7 @@ def chat_stream(request):
 
     def event_stream():
         engine     = MunicipalAIEngine()
+        started    = time.perf_counter()
         full_text  = ''
         final_meta = {}
 
@@ -388,16 +441,32 @@ def chat_stream(request):
                 final_meta = payload
 
         # Save assistant response to DB
-        ai_msg = Message.objects.create(
-            conversation=conversation,
-            role=Message.ROLE_ASSISTANT,
-            content=full_text,
-            sources=final_meta.get('sources', []),
-            intent=final_meta.get('intent', 'general'),
-        )
+        final_meta = {
+            **public_metadata(
+                sources=final_meta.get('sources', []),
+                source=final_meta.get('source'),
+                source_note=final_meta.get('source_note'),
+                fallback=final_meta.get('fallback', False),
+                degraded=final_meta.get('degraded', False),
+                citations=final_meta.get('citations', []),
+                latency_ms=round((time.perf_counter() - started) * 1000, 2),
+                request_id=request_id_from(request),
+            ),
+            'intent': final_meta.get('intent', 'general'),
+            'followups': final_meta.get('followups', []),
+        }
+        ai_msg = None
+        if full_text.strip():
+            ai_msg = Message.objects.create(
+                conversation=conversation,
+                role=Message.ROLE_ASSISTANT,
+                content=full_text,
+                sources=final_meta['sources'],
+                intent=final_meta['intent'],
+            )
         conversation.save()
 
-        yield f"data: {json.dumps({'done': True, 'conversation_id': conversation.id, 'message_id': ai_msg.id, **final_meta})}\n\n"
+        yield f"data: {json.dumps({'done': True, 'conversation_id': conversation.id, 'message_id': ai_msg.id if ai_msg else None, 'response': full_text, **final_meta})}\n\n"
 
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
     response['Cache-Control']     = 'no-cache'
@@ -419,6 +488,8 @@ def voice_transcribe(request):
     audio_file = request.FILES.get('audio')
     if not audio_file:
         return JsonResponse({'error': 'No audio file provided.'}, status=400)
+    if not valid_uploaded_file(audio_file, MAX_AI_AUDIO_BYTES, 'audio/'):
+        return JsonResponse({'error': 'Audio file is too large or invalid.'}, status=400)
 
     api_key = getattr(settings, 'GROQ_API_KEY', '')
     if not api_key:
@@ -613,15 +684,45 @@ def chat_async(request):
     try:
         data         = json.loads(request.body)
         user_message = data.get('message', '').strip()
+        claim_token = data.get('claim_token', '')
         if not user_message:
             return JsonResponse({'error': 'Message is required'}, status=400)
         if len(user_message) > 1000:
             return JsonResponse({'error': 'Message too long (max 1000 chars)'}, status=400)
 
-        _hash = hashlib.md5(user_message.lower().encode()).hexdigest()
-        _cached = _cache.get(f'chat_cache:{_hash}')
+        # Routed tool answers are synchronous database reads — no Groq call,
+        # so there is nothing to poll for. Returning here also keeps per-citizen
+        # results out of the message-keyed ai_resp_ cache below (I-1).
+        _routed = route_intent(user_message, claim_token=claim_token)
+        if _routed:
+            _tool_name, _tool_kwargs = _routed
+            _tool_result = run_tool(_tool_name, request, **_tool_kwargs)
+            _reply, _followups = present(_tool_name, _tool_result)
+            if _reply is not None:
+                return JsonResponse({
+                    'response': _reply,
+                    'job_id': None,
+                    'cached': False,
+                    'status': 'done',
+                    'sources': [],
+                    'intent': _tool_name,
+                    'followups': _followups,
+                })
+
+        _msg_norm = user_message.lower().strip()[:200].rstrip('?.! ')
+        _hash = hashlib.sha256(_msg_norm.encode()).hexdigest()[:24]
+        _cached = _cache.get(f'ai_resp_{_hash}')
         if _cached:
-            return JsonResponse({**_cached, 'job_id': None, 'cached': True})
+            return JsonResponse({
+                **_cached,
+                'job_id': None,
+                'cached': True,
+                'source': _cached.get('source', 'primary'),
+                'source_note': _cached.get('source_note'),
+                'fallback': _cached.get('fallback', False),
+                'degraded': _cached.get('degraded', False),
+                'citations': _cached.get('citations', []),
+            })
 
         if not request.session.session_key:
             request.session.create()
@@ -641,8 +742,8 @@ def chat_async(request):
                     conv.messages.filter(role__in=['user', 'assistant'])
                     .order_by('created_at').values('role', 'content')
                 )
-            except Exception:
-                pass
+            except (Conversation.DoesNotExist, ValueError, TypeError):
+                return JsonResponse({'error': 'Conversation not found'}, status=404)
 
         from .tasks import process_chat_async
         try:
@@ -653,12 +754,62 @@ def chat_async(request):
                 user_id=request.user.pk if request.user.is_authenticated else None,
                 conversation_id=conversation_id,
                 session_key=request.session.session_key,
+                is_staff=request.user.is_staff,
+                claim_token=claim_token,
             )
             return JsonResponse({'job_id': job_id, 'status': 'queued'})
         except Exception:
-            # Redis/Celery unavailable — fall back to synchronous path
+            # Redis/Celery unavailable — fall back to synchronous path, but still
+            # persist the conversation so history and feedback are not lost.
+            import logging as _log
+            _log.getLogger(__name__).warning('Celery unavailable — chat_async running synchronously')
+
+            user_obj = request.user if request.user.is_authenticated else None
+
+            # Get or create the conversation so messages are persisted.
+            if not request.session.session_key:
+                request.session.create()
+            if conversation_id:
+                try:
+                    if user_obj:
+                        conv = Conversation.objects.get(id=conversation_id, user=user_obj)
+                    else:
+                        conv = Conversation.objects.get(
+                            id=conversation_id,
+                            session_key=request.session.session_key,
+                        )
+                except Conversation.DoesNotExist:
+                    conv = None
+            else:
+                conv = None
+
+            if conv is None:
+                conv = Conversation.objects.create(
+                    user=user_obj,
+                    session_key=request.session.session_key,
+                    title=user_message[:50],
+                )
+
+            Message.objects.create(
+                conversation=conv,
+                role=Message.ROLE_USER,
+                content=user_message,
+            )
+
             engine = MunicipalAIEngine()
-            result = engine.chat(user_message, history, user=request.user if request.user.is_authenticated else None)
+            result = engine.chat(user_message, history, user=user_obj)
+
+            ai_msg = None
+            if result.get('response', '').strip():
+                ai_msg = Message.objects.create(
+                    conversation=conv,
+                    role=Message.ROLE_ASSISTANT,
+                    content=result['response'],
+                    sources=result.get('sources', []),
+                    intent=result.get('intent', ''),
+                )
+            conv.save()
+
             return JsonResponse({
                 'job_id': None,
                 'status': 'done',
@@ -666,8 +817,17 @@ def chat_async(request):
                 'sources': result.get('sources', []),
                 'intent': result.get('intent', ''),
                 'followups': result.get('followups', []),
-                'conversation_id': None,
-                'message_id': None,
+                'conversation_id': conv.id,
+                'message_id': ai_msg.id if ai_msg else None,
+                **public_metadata(
+                    sources=result.get('sources', []),
+                    source=result.get('source'),
+                    source_note=result.get('source_note'),
+                    fallback=result.get('fallback', False),
+                    degraded=result.get('degraded', False),
+                    citations=result.get('citations', []),
+                    request_id=request_id_from(request),
+                ),
             })
 
     except json.JSONDecodeError:

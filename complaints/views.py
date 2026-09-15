@@ -1,16 +1,21 @@
 import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, FileResponse, Http404
 from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.core.mail import send_mail
 from django.conf import settings as django_settings
 from django.views.decorators.http import require_POST
-from .models import Complaint, ComplaintFollow, ComplaintRating, ComplaintUpdate, ComplaintSupport, ComplaintEscalation
+from .models import (
+    Complaint, ComplaintFollow, ComplaintRating, ComplaintUpdate,
+    ComplaintSupport, ComplaintEscalation, ComplaintPhoto, ComplaintStatusHistory,
+)
 from django.utils import timezone as tz
 from core.utils import get_client_ip
+from core.utils import MAX_AI_IMAGE_BYTES, valid_uploaded_image
 from core.analytics import track
 
 logger = logging.getLogger(__name__)
@@ -121,83 +126,37 @@ def submit_complaint(request):
                 error='Too many submissions. Try again in an hour.',
             ))
 
-        category       = request.POST.get('category', '').strip()
-        title          = request.POST.get('title', '').strip()
-        description    = request.POST.get('description', '').strip()
-        location       = request.POST.get('location', '').strip()
-        submitter_name = request.POST.get('name', '').strip()
-        phone          = request.POST.get('phone', '').strip()
-        email          = request.POST.get('email', '').strip()
-        priority       = request.POST.get('priority', 'MEDIUM').strip()
-        ward_raw       = request.POST.get('ward_number', '').strip()
-        try:
-            ward_number = int(ward_raw) if ward_raw else None
-            if ward_number is not None and not (1 <= ward_number <= 17):
-                ward_number = None
-        except ValueError:
-            ward_number = None
-        try:
-            lat = float(request.POST.get('latitude', '')) or None
-            lng = float(request.POST.get('longitude', '')) or None
-        except (ValueError, TypeError):
-            lat = lng = None
-        valid_priorities = {'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'}
-        if priority not in valid_priorities:
-            priority = 'MEDIUM'
+        from .services import clean_coord, clean_ward, create_complaint
 
-        errors = []
-        if not category:
-            errors.append('Please select a category.')
-        if not title:
-            errors.append('Title is required.')
-        if not description:
-            errors.append('Description is required.')
-        if not location:
-            errors.append('Location is required.')
-        if not submitter_name:
-            errors.append('Your name is required.')
+        if not request.session.session_key:
+            request.session.create()
 
-        if errors:
+        try:
+            complaint = create_complaint(
+                category=request.POST.get('category', ''),
+                title=request.POST.get('title', ''),
+                description=request.POST.get('description', ''),
+                location=request.POST.get('location', ''),
+                submitter_name=request.POST.get('name', ''),
+                phone=request.POST.get('phone', ''),
+                email=request.POST.get('email', ''),
+                priority=request.POST.get('priority', 'MEDIUM').strip(),
+                ward_number=clean_ward(request.POST.get('ward_number', '')),
+                latitude=clean_coord(request.POST.get('latitude', '')),
+                longitude=clean_coord(request.POST.get('longitude', '')),
+                user=request.user,
+                session_key=request.session.session_key,
+                photos=request.FILES.getlist('photos'),
+            )
+        except DjangoValidationError as exc:
             return render(request, 'complaints/submit.html', _ctx(
                 prefill_name=prefill_name, prefill_email=prefill_email,
                 prefill_category=prefill_category,
-                errors=errors, post=request.POST,
+                errors=exc.messages, post=request.POST,
             ))
 
-        # Ensure session exists before reading session_key
-        if not request.session.session_key:
-            request.session.create()
-        is_anon = not request.user.is_authenticated
-
-        import uuid as _uuid
-        complaint = Complaint.objects.create(
-            category=category,
-            title=title,
-            description=description,
-            location=location,
-            submitter_name=submitter_name,
-            submitter_phone=phone,
-            submitter_email=email,
-            priority=priority,
-            ward_number=ward_number,
-            latitude=lat,
-            longitude=lng,
-            user=request.user if not is_anon else None,
-            claim_token=_uuid.uuid4() if is_anon else None,
-            session_key=request.session.session_key if is_anon else '',
-        )
-
-        # Save uploaded photos — verify each file is a real image via PIL
-        from .models import ComplaintPhoto
-        from PIL import Image as _PIL
-        for photo in request.FILES.getlist('photos')[:5]:
-            try:
-                img = _PIL.open(photo)
-                img.verify()
-                photo.seek(0)
-                ComplaintPhoto.objects.create(complaint=complaint, image=photo)
-            except Exception:
-                logger.warning("Rejected invalid image upload for complaint %s", complaint.complaint_id)
+        ward_number = complaint.ward_number
+        is_anon = complaint.user_id is None
 
         # Notify ward chairperson of new complaint
         if ward_number:
@@ -213,33 +172,18 @@ def submit_complaint(request):
             except Exception:
                 logger.exception("Failed to notify chairperson of new complaint %s", complaint.complaint_id)
 
-        # AI auto-categorization: if user left category blank or used OTHER,
-        # run a fast LLM call to suggest a better category and priority
-        if complaint.category == 'OTHER' or not complaint.priority or complaint.priority == 'MEDIUM':
+        # AI auto-categorization: dispatched as a background Celery task so it
+        # never blocks the HTTP response. If Celery is unavailable the task is
+        # skipped silently — the complaint is still saved with the user-supplied values.
+        if complaint.category == 'OTHER' or complaint.priority == 'MEDIUM':
             try:
-                from chatbot.ai_engine import MunicipalAIEngine
-                engine = MunicipalAIEngine()
-                ai_cat = engine.categorize_complaint(complaint.title, complaint.description)
-                update_fields = []
-                if ai_cat.get('category') and ai_cat['category'] in {c[0] for c in Complaint.CATEGORY_CHOICES}:
-                    if complaint.category == 'OTHER':
-                        complaint.category = ai_cat['category']
-                        update_fields.append('category')
-                if ai_cat.get('priority'):
-                    pmap = {'low': 'LOW', 'medium': 'MEDIUM', 'high': 'HIGH', 'urgent': 'CRITICAL'}
-                    mapped = pmap.get(ai_cat['priority'].lower())
-                    if mapped and complaint.priority == 'MEDIUM':
-                        complaint.priority = mapped
-                        update_fields.append('priority')
-                if ai_cat.get('ward') and not complaint.ward_number:
-                    w = ai_cat['ward']
-                    if isinstance(w, int) and 1 <= w <= 17:
-                        complaint.ward_number = w
-                        update_fields.append('ward_number')
-                if update_fields:
-                    complaint.save(update_fields=update_fields)
+                from chatbot.tasks import categorize_complaint_async
+                categorize_complaint_async.delay(complaint.pk)
             except Exception:
-                logger.warning("AI categorization failed for complaint %s", complaint.complaint_id)
+                logger.warning(
+                    "Could not dispatch AI categorization for complaint %s (Celery unavailable)",
+                    complaint.complaint_id,
+                )
 
         track(request, 'complaint_submit', object_type='complaint', object_id=complaint.pk)
         try:
@@ -301,13 +245,13 @@ def _calc_impact(complaint):
 def complaint_status(request, complaint_id):
     complaint = get_object_or_404(Complaint, complaint_id__iexact=complaint_id)
 
-    # Show admin_notes whenever they exist (not just on resolved/rejected)
-    show_notes = bool(complaint.admin_notes)
-
     # Submitter contact details (PII) only shown to the complaint owner or staff
-    is_staff_user = request.user.is_authenticated and request.user.role in ('staff', 'official', 'admin')
+    is_staff_user = request.user.is_authenticated and (
+        request.user.is_staff or request.user.role in ('staff', 'official', 'admin')
+    )
     is_owner = request.user.is_authenticated and complaint.user == request.user
     show_sensitive = is_owner or is_staff_user
+    show_notes = show_sensitive and bool(complaint.admin_notes)
 
     # Find the chairperson assigned to this ward
     ward_chairperson = None
@@ -320,8 +264,11 @@ def complaint_status(request, complaint_id):
         except Exception:
             pass
 
-    from .models import ComplaintStatusHistory, ComplaintVote
-    history    = ComplaintStatusHistory.objects.filter(complaint=complaint).order_by('changed_at')
+    from .models import ComplaintVote
+    history = (
+        ComplaintStatusHistory.objects.filter(complaint=complaint).order_by('changed_at')
+        if show_sensitive else ComplaintStatusHistory.objects.none()
+    )
     vote_count = ComplaintVote.objects.filter(complaint=complaint).count()
     follow_count = complaint.followers.count()
 
@@ -337,7 +284,10 @@ def complaint_status(request, complaint_id):
     # Follow / rating / updates for authenticated owner
     is_following = False
     existing_rating = None
-    citizen_updates = complaint.updates.select_related('user').all()
+    citizen_updates = (
+        complaint.updates.select_related('user').all()
+        if show_sensitive else ComplaintUpdate.objects.none()
+    )
     if request.user.is_authenticated:
         is_following = ComplaintFollow.objects.filter(complaint=complaint, user=request.user).exists()
         if is_owner and complaint.status == 'RESOLVED':
@@ -544,6 +494,8 @@ def add_complaint_update(request, complaint_id):
     if not message:
         return JsonResponse({'error': 'Message required'}, status=400)
     photo = request.FILES.get('photo')
+    if photo and not valid_uploaded_image(photo, MAX_AI_IMAGE_BYTES):
+        return JsonResponse({'error': 'Invalid image upload'}, status=400)
     update = ComplaintUpdate.objects.create(
         complaint=complaint,
         user=request.user,
@@ -563,12 +515,49 @@ def complaint_pdf(request, complaint_id):
     complaint = get_object_or_404(Complaint, complaint_id=complaint_id)
     # Public access only if they know the ID; PII stripped for non-owners
     is_owner = request.user.is_authenticated and complaint.user == request.user
+    is_staff_user = request.user.is_authenticated and (
+        request.user.is_staff or request.user.role in ('staff', 'official', 'admin')
+    )
+    show_private = is_owner or is_staff_user
     return render(request, 'complaints/complaint_pdf.html', {
         'complaint': complaint,
         'is_owner': is_owner,
-        'history': complaint.history.all(),
-        'photos': complaint.photos.all(),
+        'show_private': show_private,
+        'history': complaint.history.all() if show_private else ComplaintStatusHistory.objects.none(),
+        'photos': complaint.photos.all() if show_private else ComplaintPhoto.objects.none(),
     })
+
+
+@login_required
+def complaint_photo(request, complaint_id, photo_id):
+    """Serve complaint photos only to the complainant or authorized staff."""
+    complaint = get_object_or_404(Complaint, complaint_id=complaint_id)
+    is_staff_user = request.user.is_staff or request.user.role in ('staff', 'official', 'admin')
+    if complaint.user_id != request.user.pk and not is_staff_user:
+        raise Http404
+    photo = get_object_or_404(ComplaintPhoto, pk=photo_id, complaint=complaint)
+    try:
+        photo.image.open('rb')
+        return FileResponse(photo.image.file, content_type='image/*')
+    except (FileNotFoundError, OSError):
+        raise Http404
+
+
+@login_required
+def complaint_update_photo(request, complaint_id, update_id):
+    """Serve complaint update photos only to the complainant or authorized staff."""
+    complaint = get_object_or_404(Complaint, complaint_id=complaint_id)
+    is_staff_user = request.user.is_staff or request.user.role in ('staff', 'official', 'admin')
+    if complaint.user_id != request.user.pk and not is_staff_user:
+        raise Http404
+    update = get_object_or_404(ComplaintUpdate, pk=update_id, complaint=complaint)
+    if not update.photo:
+        raise Http404
+    try:
+        update.photo.open('rb')
+        return FileResponse(update.photo.file, content_type='image/*')
+    except (FileNotFoundError, OSError):
+        raise Http404
 
 
 @login_required
@@ -880,4 +869,3 @@ def claim_complaint(request, token):
         pass
 
     return redirect('complaints:complaint_status', complaint_id=complaint.complaint_id)
-

@@ -81,9 +81,10 @@
 /* Hero headline */
 .hero-title {
   font-family: var(--font-head);
-  font-size: clamp(2.8rem, 6.5vw, 5.4rem);
+  font-size: clamp(1.75rem, 6.5vw, 5.4rem);
   font-weight: 800; color: var(--paper);
   line-height: 1.04; margin-bottom: 10px; letter-spacing: -0.02em;
+  word-break: break-word; overflow-wrap: break-word;
 }
 .hero-title .highlight {
   background: linear-gradient(135deg, var(--red-soft) 0%, #FF8C42 50%, var(--gold-light) 100%);
@@ -300,6 +301,11 @@
   .announcement-inner span:last-child { white-space: normal; }
 }
 
+/* 1400px – laptop range: keep hero-title readable at 1366px */
+@media(max-width:1400px){
+  .hero-title { font-size: clamp(1.75rem, 5vw, 3.8rem); }
+}
+
 /* 900px – landscape phone / small tablet */
 @media(max-width:900px){
   .grid-2[style*="gap:52px"] { grid-template-columns: 1fr; gap: 32px !important; }
@@ -367,7 +373,7 @@
 
 /* 480px – phone */
 @media(max-width:480px){
-  .hero-title { font-size: clamp(2.2rem,8vw,3rem); }
+  .hero-title { font-size: clamp(1.8rem,7vw,2.4rem); }
   .svc-grid { grid-template-columns: 1fr; }
   .hero-stats { gap: 0; }
   .hero-stat { flex: 1 1 calc(50% - 8px); min-width: 0; padding: 0 10px; }
@@ -933,12 +939,20 @@ async function askAI() {
             metaData = ev;
             if (ev.conversation_id) sessionStorage.setItem(CONV_KEY, ev.conversation_id);
           } else if (ev.error) {
-            respText.textContent += '\n[Error: ' + ev.message + ']';
+            throw new Error(ev.error);
           }
         } catch (_) {}
       }
     }
 
+    if (!respText.textContent.trim()) throw new Error('empty_response');
+    if (metaData?.source_note) {
+      const note = document.createElement('div');
+      note.className = 'ai-source-tag';
+      note.textContent = metaData.source_note;
+      sources.appendChild(note);
+      sources.style.display = 'flex';
+    }
     if (metaData?.sources?.length) {
       sources.style.display = 'flex';
       const lbls = { attractions_db:'🏛 Attractions', events_db:'🎪 Events', businesses_db:'🍽 Businesses', marketplace_db:'🛍 Shop', knowledge_base:'📚 Knowledge', news_db:'📰 News' };
@@ -958,13 +972,14 @@ async function askAI() {
           headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
           body
         });
-        const d = await r2.json();
-        if (d.error) throw new Error(d.error);
+        let d;
+        try { d = await r2.json(); } catch (_) { throw new Error(`HTTP ${r2.status}`); }
+        if (!r2.ok || d.error) throw new Error(d.error || `HTTP ${r2.status}`);
         if (d.conversation_id) sessionStorage.setItem(CONV_KEY, d.conversation_id);
         loading.style.display  = 'none';
         respText.style.display = 'block';
         actions.style.display  = 'flex';
-        respText.textContent   = d.response || '';
+        respText.textContent   = (typeof d.response === 'string' && d.response.trim()) ? d.response : 'Sorry, the assistant returned no response. Please try again.';
         if (d.sources?.length) {
           sources.style.display = 'flex';
           const lbls = { attractions_db:'🏛 Attractions', events_db:'🎪 Events', businesses_db:'🍽 Businesses', marketplace_db:'🛍 Shop', knowledge_base:'📚 Knowledge', news_db:'📰 News' };
@@ -1130,6 +1145,15 @@ document.querySelectorAll('#mobileMenu a').forEach(a => {
 @media(max-width:380px){
   #tourist-pass-widget { width: calc(100vw - 1.2rem); right: 0.6rem; bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)); left: 0.6rem; }
 }
+
+/* Collapsed state: only show icon + title bar, hide body content */
+#tourist-pass-widget.tp-collapsed { width: auto; left: auto; right: 1rem; }
+#tourist-pass-widget.tp-collapsed .tp-body > *:not(.tp-header) { display: none; }
+#tourist-pass-widget.tp-collapsed .tp-header { cursor: pointer; margin-bottom: 0; }
+#tourist-pass-widget.tp-collapsed .tp-dismiss { display: none; }
+@media(max-width:480px){
+  #tourist-pass-widget.tp-collapsed { right: 1rem; left: auto; width: auto; }
+}
 </style>
 
 {% if is_tourist_pass %}
@@ -1151,6 +1175,16 @@ document.querySelectorAll('#mobileMenu a').forEach(a => {
     <div class="tp-note">Tap above to save your session data &amp; unlock full features</div>
   </div>
 </div>
+<script>
+(function(){
+  var w = document.getElementById('tourist-pass-widget');
+  if (!w) return;
+  if (window.innerWidth <= 640) w.classList.add('tp-collapsed');
+  w.querySelector('.tp-header').addEventListener('click', function(){
+    if (w.classList.contains('tp-collapsed')) w.classList.remove('tp-collapsed');
+  });
+})();
+</script>
 {% else %}
 <div id="tourist-pass-widget">
   <div class="tp-accent"></div>
@@ -1188,6 +1222,14 @@ document.getElementById('tp-form').addEventListener('submit', function(){
   btn.disabled = true;
   btn.textContent = 'Unlocking Bhaktapur for you…';
 });
+(function(){
+  var w = document.getElementById('tourist-pass-widget');
+  if (!w) return;
+  if (window.innerWidth <= 640) w.classList.add('tp-collapsed');
+  w.querySelector('.tp-header').addEventListener('click', function(){
+    if (w.classList.contains('tp-collapsed')) w.classList.remove('tp-collapsed');
+  });
+})();
 </script>
 {% endif %}
 {% endif %}

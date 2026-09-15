@@ -262,21 +262,20 @@ def create_or_update_user_from_google(strategy, details, backend, uid, response,
                     logger.exception('Failed to update Profile.google_id')
 
                 if avatar_url:
-                    # Save image into Profile.avatar (best-effort). Avoid crashing login if download fails.
+                    # The URL comes from the provider's response, so it is
+                    # fetched through the guarded client: https only, no
+                    # redirects, public addresses only, size-capped, and the
+                    # bytes decoded to confirm they are really an image.
                     try:
                         import uuid as _uuid
-                        import requests
 
-                        resp = requests.get(avatar_url, timeout=5)
-                        if resp.status_code == 200 and resp.content:
-                            ext = 'jpg'
-                            ct = resp.headers.get('content-type', '')
-                            if 'png' in ct:
-                                ext = 'png'
-                            elif 'webp' in ct:
-                                ext = 'webp'
+                        from core.safe_fetch import fetch_image
+
+                        fetched = fetch_image(avatar_url)
+                        if fetched is not None:
+                            data, ext = fetched
                             filename = f"google_avatar_{_uuid.uuid4().hex}.{ext}"
-                            profile.avatar.save(filename, ContentFile(resp.content), save=True)
+                            profile.avatar.save(filename, ContentFile(data), save=True)
                     except Exception:
                         logger.exception('Failed to download/save Google avatar')
 

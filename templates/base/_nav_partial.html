@@ -125,6 +125,15 @@
 
   <!-- Mobile Menu -->
   <div class="mobile-menu" id="mobileMenu">
+    {% if user.is_authenticated %}
+    <div class="mobile-account">
+      <span class="mobile-account-who">Signed in as <strong>{{ user.first_name|default:user.username|truncatechars:18 }}</strong></span>
+      <form method="post" action="{% url 'accounts:logout' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="mobile-signout">⏏ Sign Out</button>
+      </form>
+    </div>
+    {% endif %}
     <a href="{% url 'core:home' %}">🏠 Home</a>
     <a href="/attractions/">🏛 Attractions</a>
     <a href="/events/">🎪 Events</a>
@@ -154,10 +163,6 @@
     <a href="{% url 'dashboard:home' %}">Staff Dashboard</a>
     <a href="/admin/dashboard/">CMS</a>
     {% endif %}
-    <form method="post" action="{% url 'accounts:logout' %}" style="margin:0;">
-      {% csrf_token %}
-      <button type="submit" style="display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid rgba(255,255,255,.06);padding:10px 0;color:#FCA5A5;font-size:.9rem;cursor:pointer;font-family:var(--font-body);">⏏ Sign Out</button>
-    </form>
     {% elif is_tourist_pass %}
     <a href="{% url 'accounts:tourist_pass_clear' %}" style="color:#F59E0B;font-weight:700;">🧳 {{ tourist_name }} (Tourist Mode)</a>
     <a href="{% url 'accounts:login' %}" style="color:var(--red-soft);font-weight:700;">Create Account →</a>

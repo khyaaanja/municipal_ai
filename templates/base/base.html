@@ -443,6 +443,20 @@ p  { line-height: 1.72; color: var(--text-2); }
   /* Reaching the end of the menu must not start scrolling the page behind. */
   overscroll-behavior: contain;
 }
+.mobile-account {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 0 12px; margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.mobile-account-who { font-size: .82rem; color: rgba(255,255,255,.55); }
+.mobile-account-who strong { color: var(--paper); font-weight: 600; }
+.mobile-signout {
+  background: rgba(252,165,165,.10); border: 1px solid rgba(252,165,165,.28);
+  color: #FCA5A5; font-family: var(--font-body); font-size: .85rem;
+  padding: 8px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap;
+  min-height: 40px;
+}
+.mobile-signout:hover { background: rgba(252,165,165,.18); }
 .mobile-menu a {
   display: block; color: rgba(255,255,255,0.58);
   padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);

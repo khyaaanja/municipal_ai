@@ -1,4 +1,6 @@
 import uuid
+import hashlib
+import re
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
@@ -28,7 +30,12 @@ def decrypt_otp_secret(ciphertext: str) -> str:
     try:
         return f.decrypt(ciphertext.encode()).decode()
     except Exception:
-        return ciphertext
+        import logging
+        logging.getLogger(__name__).error(
+            'decrypt_otp_secret failed — TOTP_ENCRYPTION_KEY may have changed. '
+            '2FA will be broken for this user until the secret is reset.'
+        )
+        return ''
 
 
 class Role(models.Model):
@@ -64,6 +71,14 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError('Email is required')
         email = self.normalize_email(email)
+        if not extra_fields.get('username'):
+            local_part = re.sub(
+                r'[^a-zA-Z0-9._-]+',
+                '-',
+                email.split('@', 1)[0],
+            ).strip('-._') or 'user'
+            suffix = hashlib.sha256(email.encode('utf-8')).hexdigest()[:8]
+            extra_fields['username'] = f'{local_part}-{suffix}'[:100]
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

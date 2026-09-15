@@ -11,6 +11,26 @@ def make_user(email='test@test.com', role='citizen', **kw):
     )
 
 
+class UserManagerTests(TestCase):
+    def test_create_user_generates_username_when_omitted(self):
+        first = User.objects.create_user(
+            email='first@example.com',
+            password='TestPass1!',
+            first_name='First',
+            last_name='User',
+        )
+        second = User.objects.create_user(
+            email='second@example.com',
+            password='TestPass1!',
+            first_name='Second',
+            last_name='User',
+        )
+
+        self.assertTrue(first.username)
+        self.assertTrue(second.username)
+        self.assertNotEqual(first.username, second.username)
+
+
 class RegistrationTests(TestCase):
     def test_register_page_loads(self):
         r = self.client.get('/register/')
@@ -108,6 +128,27 @@ class ProfileTests(TestCase):
         self.client.logout()
         r = self.client.get('/profile/')
         self.assertEqual(r.status_code, 302)
+
+
+class TwoFactorSecurityTests(TestCase):
+    def test_totp_rejects_external_next_url(self):
+        import pyotp
+        from accounts.models import encrypt_otp_secret
+        user = make_user('2fa@test.com')
+        user.otp_enabled = True
+        secret = pyotp.random_base32()
+        # Store encrypted, exactly as totp_setup does in production.
+        user.otp_secret = encrypt_otp_secret(secret)
+        user.save(update_fields=['otp_enabled', 'otp_secret'])
+        self.client.force_login(user)
+
+        response = self.client.post('/2fa/verify/', {
+            'code': pyotp.TOTP(secret).now(),
+            'next': 'https://attacker.example/phish',
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/')
 
 
 class DefaultRoleTests(TestCase):

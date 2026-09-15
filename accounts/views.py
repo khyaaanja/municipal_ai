@@ -47,6 +47,7 @@ def _password_strong(password):
         len(password) >= 8
         and any(c.isupper() for c in password)
         and any(c.isdigit() for c in password)
+        and any(not c.isalnum() for c in password)
     )
 
 
@@ -147,7 +148,7 @@ def register_page(request):
         if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
             errors.append('Please enter a valid email address.')
         if not _password_strong(password):
-            errors.append('Password must be at least 8 characters with 1 uppercase and 1 digit.')
+            errors.append('Password must be at least 8 characters with 1 uppercase, 1 digit, and 1 special character.')
         if password != confirm:
             errors.append('Passwords do not match.')
 
@@ -467,6 +468,7 @@ def totp_setup(request):
 @login_required
 def totp_verify(request):
     import pyotp
+    from django.utils.http import url_has_allowed_host_and_scheme
     user = request.user
     if not user.otp_enabled:
         return redirect('accounts:profile')
@@ -478,6 +480,12 @@ def totp_verify(request):
         if totp.verify(code, valid_window=1):
             request.session['otp_verified'] = True
             next_url = request.POST.get('next') or request.GET.get('next') or '/'
+            if not url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                next_url = '/'
             return redirect(next_url)
         else:
             return render(request, 'accounts/totp_verify.html', {

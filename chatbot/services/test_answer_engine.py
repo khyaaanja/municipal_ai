@@ -116,6 +116,8 @@ class AnswerEngineSuccessTests(AnswerEngineTestBase):
 
         self.assertEqual(result['source'], 'groq')
         self.assertFalse(result['degraded'])
+        self.assertIn('latency_ms', result['metadata'])
+        self.assertEqual(result['metadata']['fallback'], False)
         self.assertIn('Nyatapola', result['answer'])
         # Verify Groq was called
         mock_client.chat.completions.create.assert_called_once()
@@ -152,6 +154,8 @@ class AnswerEngineTimeoutTests(AnswerEngineTestBase):
 
         self.assertEqual(result['source'], 'local_db')
         self.assertTrue(result['degraded'])
+        self.assertTrue(result['metadata']['fallback'])
+        self.assertIn('latency_ms', result['metadata'])
         self.assertIn('Nyatapola', result['answer'])
         # Circuit breaker should be open
         self.assertTrue(is_circuit_open())
@@ -492,6 +496,52 @@ class AnswerEngineRetrieverAdapterTests(TestCase):
         self.assertIn('Nyatapola', text)
         self.assertIn('NPR 1,500', text)
 
+    def test_retriever_adapter_query_reranks_direct_match(self):
+        city_data = {
+            'kb:search': [
+                {'title': 'General', 'content': 'Bhaktapur has many historic places.'},
+                {'title': 'Temple', 'content': 'Nyatapola Temple is a five-storey pagoda.'},
+            ],
+        }
+        chunks = LocalRetrieverAdapter.chunks_from_city_data(
+            city_data, query='Where is Nyatapola Temple?', top_k=2
+        )
+        self.assertEqual(chunks[0].title, 'Temple')
+        self.assertGreater(chunks[0].score, chunks[1].score)
+
+    def test_retriever_adapter_adds_source_citation_metadata(self):
+        chunks = LocalRetrieverAdapter.chunks_from_city_data({
+            'faq:search': [{
+                'title': 'Office hours',
+                'content': 'The office is open during working hours.',
+                'score': 0.8,
+                'citation': 'faq:42',
+            }],
+        })
+        self.assertEqual(chunks[0].source, 'faq')
+        self.assertEqual(chunks[0].citation, 'faq:42')
+
+    def test_fallback_response_includes_citations(self):
+        engine = AnswerEngine(
+            groq_client=None,
+            retriever=MockRetriever([FakeChunk('Nyatapola is in Taumadhi Square.', 0.85, 'Nyatapola')]),
+            api_key='',
+        )
+        result = engine.answer('Where is Nyatapola?')
+        self.assertEqual(result['source'], 'local_db')
+        self.assertIn('citations', result['metadata'])
+        self.assertEqual(result['metadata']['citations'][0]['title'], 'Nyatapola')
+
+    def test_low_confidence_abstains_after_reranking(self):
+        engine = AnswerEngine(
+            groq_client=None,
+            retriever=MockRetriever([FakeChunk('Unrelated municipal text.', 0.20)]),
+            api_key='',
+        )
+        result = engine.answer('What is the weather tomorrow?')
+        self.assertEqual(result['source'], 'none')
+        self.assertTrue(result['degraded'])
+
 
 class IsDegradedResponseTests(TestCase):
     """Tests for the is_degraded_response heuristic."""
@@ -585,4 +635,3 @@ class AnswerEngineFallbackModelFailureTests(AnswerEngineTestBase):
         self.assertEqual(result['source'], 'local_db')
         self.assertTrue(result['degraded'])
         self.assertIn('culture', result['answer'])
-

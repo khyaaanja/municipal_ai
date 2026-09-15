@@ -593,18 +593,26 @@ async function sendMessage() {
         conversation_id: conversationId
       })
     });
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); } catch (_) {
+      throw new Error(`HTTP ${res.status}`);
+    }
 
     removeTyping(typingId);
 
-    if (data.error) {
+    if (!res.ok || data.error) {
       addMessage('assistant', '⚠️ ' + data.error);
     } else {
       conversationId = data.conversation_id;
-      const msgDiv = addMessage('assistant', data.response, data.sources);
-      if (data.message_id) {
-        const fb = msgDiv.querySelector('.msg-feedback');
-        if (fb) fb.dataset.mid = data.message_id;
+      const responseText = typeof data.response === 'string' ? data.response.trim() : '';
+      if (!responseText) {
+        addMessage('assistant', '⚠️ The assistant returned an empty response. Please try again.');
+      } else {
+        const msgDiv = addMessage('assistant', responseText, data.sources, data);
+        if (data.message_id) {
+          const fb = msgDiv.querySelector('.msg-feedback');
+          if (fb) fb.dataset.mid = data.message_id;
+        }
       }
     }
   } catch(e) {
@@ -617,7 +625,7 @@ async function sendMessage() {
   chatInput.focus();
 }
 
-function addMessage(role, content, sources = []) {
+function addMessage(role, content, sources = [], metadata = {}) {
   const div = document.createElement('div');
   div.className = `message ${role}`;
   div.style.animation = 'fadeUp 0.2s ease';
@@ -633,6 +641,9 @@ function addMessage(role, content, sources = []) {
       `<span class="msg-source">${sourceLabels[s] || s}</span>`
     ).join('');
     sourcesHTML = `<div class="msg-sources">${tags}</div>`;
+  }
+  if (metadata.source_note) {
+    sourcesHTML += `<div class="msg-source-note">${escapeHtml(metadata.source_note)}</div>`;
   }
 
   const feedbackHTML = role === 'assistant' ? `

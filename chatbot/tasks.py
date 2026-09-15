@@ -7,7 +7,8 @@ logger = logging.getLogger(__name__)
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=5, time_limit=90, soft_time_limit=80)
 def process_chat_async(self, job_id: str, user_message: str, history: list,
-                       user_id=None, conversation_id=None, session_key=None):
+                       user_id=None, conversation_id=None, session_key=None,
+                       is_staff=False, claim_token=None):
     """
     Async Celery task for AI chat.  Queued by chat_async view, polled via chat_poll.
     Result stored in Redis under key  chat_job:<job_id>  with a 1-hour TTL.
@@ -28,6 +29,30 @@ def process_chat_async(self, job_id: str, user_message: str, history: list,
             try:
                 from complaints.models import Complaint as _C
                 c = _C.objects.get(complaint_id=_cid.group(1))
+                if is_staff:
+                    can_view = True
+                elif user_id:
+                    can_view = c.user_id == user_id
+                else:
+                    can_view = bool(
+                        (session_key and c.user_id is None and c.session_key == session_key)
+                        or (claim_token and c.claim_token and str(c.claim_token) == str(claim_token))
+                    )
+                if not can_view:
+                    _set({
+                        'status': 'done',
+                        'response': (
+                            "For privacy, complaint details are only available to the "
+                            "complainant. Sign in, use the claim link from your confirmation, "
+                            "or visit the public tracking page."
+                        ),
+                        'sources': [],
+                        'intent': 'complaint_status',
+                        'followups': [],
+                        'conversation_id': conversation_id,
+                        'message_id': None,
+                    })
+                    return
                 status_text = dict(_C.STATUS_CHOICES).get(c.status, c.status)
                 reply = (
                     f"**Complaint {c.complaint_id}** found!\n\n"
@@ -37,7 +62,9 @@ def process_chat_async(self, job_id: str, user_message: str, history: list,
                     f"**Filed:** {c.created_at.strftime('%b %d, %Y')}"
                 )
                 _set({'status': 'done', 'response': reply, 'sources': [], 'intent': 'complaint_status',
-                      'followups': [], 'conversation_id': conversation_id, 'message_id': None})
+                      'followups': [], 'conversation_id': conversation_id, 'message_id': None,
+                      'source': 'complaint_lookup', 'source_note': None, 'fallback': False,
+                      'degraded': False, 'citations': []})
                 return
             except Exception:
                 pass
@@ -55,6 +82,30 @@ def process_chat_async(self, job_id: str, user_message: str, history: list,
                 pass
 
         result = engine.chat(user_message, history, user=user_obj)
+        try:
+            from chatbot.services.answer_engine import is_degraded_response
+            if result.get('response', '').strip() and (
+                result.get('degraded')
+                or result.get('fallback')
+                or is_degraded_response(result.get('response', ''))
+            ):
+                from chatbot.views import _answer_with_fallback
+                fallback_result = _answer_with_fallback(
+                    None, user_message, history, user=user_obj
+                )
+                if fallback_result and fallback_result.get('answer'):
+                    metadata = fallback_result.get('metadata', {})
+                    result.update({
+                        'response': fallback_result['answer'],
+                        'source': fallback_result.get('source', 'local_db'),
+                        'sources': metadata.get('sources', ['knowledge_base']),
+                        'source_note': metadata.get('source_note') or 'Answered from local records',
+                        'fallback': True,
+                        'degraded': True,
+                        'citations': metadata.get('citations', []),
+                    })
+        except Exception:
+            logger.exception('chat_async: fallback coordination failed')
 
         # Persist message to DB
         msg_id = None
@@ -62,7 +113,14 @@ def process_chat_async(self, job_id: str, user_message: str, history: list,
         try:
             from chatbot.models import Conversation, Message
             if conv_id:
-                conversation = Conversation.objects.get(pk=conv_id)
+                if user_id:
+                    conversation = Conversation.objects.get(pk=conv_id, user_id=user_id)
+                else:
+                    conversation = Conversation.objects.get(
+                        pk=conv_id,
+                        user__isnull=True,
+                        session_key=session_key or '',
+                    )
             else:
                 conversation = Conversation.objects.create(
                     user=user_obj,
@@ -72,14 +130,15 @@ def process_chat_async(self, job_id: str, user_message: str, history: list,
                 conv_id = conversation.pk
 
             Message.objects.create(conversation=conversation, role=Message.ROLE_USER, content=user_message)
-            ai_msg = Message.objects.create(
-                conversation=conversation,
-                role=Message.ROLE_ASSISTANT,
-                content=result['response'],
-                sources=result.get('sources', []),
-                intent=result.get('intent', ''),
-            )
-            msg_id = ai_msg.pk
+            if result.get('response', '').strip():
+                ai_msg = Message.objects.create(
+                    conversation=conversation,
+                    role=Message.ROLE_ASSISTANT,
+                    content=result['response'],
+                    sources=result.get('sources', []),
+                    intent=result.get('intent', ''),
+                )
+                msg_id = ai_msg.pk
             conversation.save()
         except Exception as db_exc:
             logger.warning('chat_async: DB persist failed: %s', db_exc)
@@ -92,10 +151,19 @@ def process_chat_async(self, job_id: str, user_message: str, history: list,
             'followups': result.get('followups', []),
             'conversation_id': conv_id,
             'message_id': msg_id,
+            'source': result.get('source'),
+            'source_note': result.get('source_note'),
+            'fallback': result.get('fallback', False),
+            'degraded': result.get('degraded', False),
+            'citations': result.get('citations', []),
         })
 
         # Auto-save interesting answers to KB asynchronously
-        auto_save_kb_entry.delay(user_message, result['response'], result.get('intent', ''))
+        try:
+            auto_save_kb_entry.delay(user_message, result['response'], result.get('intent', ''))
+        except Exception as enqueue_exc:
+            # Autosave is secondary; never turn a completed answer into a job error.
+            logger.warning('chat_async: KB autosave enqueue failed: %s', enqueue_exc)
 
     except Exception as exc:
         logger.exception('process_chat_async job %s failed: %s', job_id, exc)
@@ -315,4 +383,57 @@ def sync_municipal_announcements():
         return {'status': 'ok', 'created': created_count}
     except Exception as exc:
         logger.exception("sync_municipal_announcements failed: %s", exc)
+        return {'status': 'error', 'error': str(exc)}
+
+
+@shared_task(bind=True, max_retries=1, time_limit=60, soft_time_limit=50)
+def categorize_complaint_async(self, complaint_pk: int):
+    """
+    Run AI categorization on a newly submitted complaint without blocking
+    the HTTP response. Dispatched by complaints/views.py after saving.
+    Falls back to no-op if Groq is unavailable.
+    """
+    try:
+        from complaints.models import Complaint
+        from chatbot.ai_engine import MunicipalAIEngine
+
+        try:
+            complaint = Complaint.objects.get(pk=complaint_pk)
+        except Complaint.DoesNotExist:
+            return {'status': 'skip', 'reason': 'complaint not found'}
+
+        engine = MunicipalAIEngine()
+        ai_cat = engine.categorize_complaint(complaint.title, complaint.description)
+
+        update_fields = []
+        if ai_cat.get('category'):
+            from complaints.models import Complaint as _C
+            valid_cats = {c[0] for c in _C.CATEGORY_CHOICES}
+            if ai_cat['category'] in valid_cats and complaint.category == 'OTHER':
+                complaint.category = ai_cat['category']
+                update_fields.append('category')
+
+        if ai_cat.get('priority'):
+            pmap = {'low': 'LOW', 'medium': 'MEDIUM', 'high': 'HIGH', 'urgent': 'CRITICAL'}
+            mapped = pmap.get(ai_cat['priority'].lower())
+            if mapped and complaint.priority == 'MEDIUM':
+                complaint.priority = mapped
+                update_fields.append('priority')
+
+        if ai_cat.get('ward') and not complaint.ward_number:
+            w = ai_cat['ward']
+            if isinstance(w, int) and 1 <= w <= 17:
+                complaint.ward_number = w
+                update_fields.append('ward_number')
+
+        if update_fields:
+            complaint.save(update_fields=update_fields)
+            logger.info(
+                "categorize_complaint_async: updated complaint %s fields=%s",
+                complaint.complaint_id, update_fields,
+            )
+
+        return {'status': 'ok', 'updated': update_fields}
+    except Exception as exc:
+        logger.warning("categorize_complaint_async failed for pk=%s: %s", complaint_pk, exc)
         return {'status': 'error', 'error': str(exc)}

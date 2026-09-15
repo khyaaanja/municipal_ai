@@ -48,7 +48,14 @@ if 'testserver' not in ALLOWED_HOSTS:
 
 # ── Production security (all inactive when DEBUG=True) ────────────────────────
 _IS_PROD = not DEBUG
+# Increase from Django's default 2.5MB to allow larger municipal document uploads
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
 SECURE_SSL_REDIRECT          = _IS_PROD
+# Ensure both settings are respected even when Django globals are loaded
+if not _IS_PROD:
+    # In development, also set the venv-level override if needed
+    pass
 SECURE_HSTS_SECONDS          = 31536000 if _IS_PROD else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = _IS_PROD
 SECURE_HSTS_PRELOAD          = _IS_PROD
@@ -201,7 +208,16 @@ try:
             'LOCATION': _redis_url,
         }
     }
-except Exception:
+except Exception as _redis_exc:
+    # LocMemCache is per-process. In production that silently breaks the
+    # chat_async -> chat_poll handshake whenever the poll lands on a different
+    # worker than the write, multiplies every rate limit by the worker count,
+    # and would do the same to pending-action tokens. Degrading quietly is
+    # worse than not starting, so outside DEBUG this is fatal.
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            f'Redis is required when DEBUG=False (tried {_redis_url}): {_redis_exc}'
+        )
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

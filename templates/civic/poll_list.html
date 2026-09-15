@@ -1,0 +1,64 @@
+{% extends "base/base.html" %}
+{% block title %}Civic Polls{% endblock %}
+{% block content %}
+<style>
+.civic-wrap{max-width:900px;margin:0 auto;padding:32px 20px}
+.page-header{margin-bottom:24px}
+.page-header h1{font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--ink);margin:0 0 6px}
+.page-header p{color:var(--stone);margin:0;font-size:.88rem}
+.section-label{font-family:var(--font-head);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--stone);margin:0 0 12px}
+.poll-grid{display:grid;gap:14px;margin-bottom:28px}
+.poll-card{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:20px}
+.poll-question{font-family:var(--font-head);font-size:1.05rem;font-weight:700;color:var(--ink);margin:0 0 8px;text-decoration:none;display:block}
+.poll-question:hover{color:#16a34a}
+.poll-meta{font-size:.78rem;color:var(--stone);margin-bottom:12px}
+.vote-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700;background:#dcfce7;color:#166534}
+.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.68rem;font-weight:700;text-transform:uppercase}
+.pill-active{background:rgba(34,197,94,.12);color:#166534}
+.pill-closed{background:rgba(100,116,139,.1);color:#475569}
+.result-bar{height:6px;background:#e8e3da;border-radius:3px;margin-top:4px;overflow:hidden}
+.result-bar-fill{height:100%;background:#16a34a;border-radius:3px}
+</style>
+<div class="civic-wrap">
+  <div class="page-header">
+    <h1>Civic Polls</h1>
+    <p>Vote on decisions that affect your ward and city.</p>
+  </div>
+
+  <div class="section-label">Active Polls</div>
+  <div class="poll-grid">
+    {% for p in active_polls %}
+    <div class="poll-card">
+      <a href="/civic/polls/{{ p.pk }}/" class="poll-question">{{ p.question }}</a>
+      <div class="poll-meta">
+        {% if p.ward_number %}Ward {{ p.ward_number }}{% else %}City-wide{% endif %}
+        {% if p.closes_at %}· Closes {{ p.closes_at|date:"M d, Y" }}{% endif %}
+        · {{ p.votes.count }} votes
+      </div>
+      <span class="pill pill-active">Active</span>
+      {% if p.pk in voted_ids %}<span class="vote-tag" style="margin-left:8px">✓ Voted</span>{% endif %}
+    </div>
+    {% empty %}
+    <div style="padding:40px;text-align:center;color:var(--stone);background:#fff;border:1px solid #e8e3da;border-radius:8px">No active polls right now.</div>
+    {% endfor %}
+  </div>
+
+  {% if closed_polls %}
+  <div class="section-label">Closed Polls</div>
+  <div class="poll-grid">
+    {% for p in closed_polls %}
+    <div class="poll-card" style="opacity:.75">
+      <a href="/civic/polls/{{ p.pk }}/" class="poll-question">{{ p.question }}</a>
+      <div class="poll-meta">
+        {% if p.ward_number %}Ward {{ p.ward_number }}{% else %}City-wide{% endif %}
+        · {{ p.votes.count }} total votes
+      </div>
+      {% for opt in p.options.all %}<div style="margin:4px 0;font-size:.83rem">{{ opt.text }}
+        <div class="result-bar"><div class="result-bar-fill" style="width:{% widthratio opt.vote_count p.votes.count 100 %}%"></div></div>
+      </div>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

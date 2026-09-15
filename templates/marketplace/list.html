@@ -1,6 +1,37 @@
 {% extends "base/base.html" %}
 {% block title %}Marketplace — {{ CITY_NAME }} AI{% endblock %}
 {% block content %}
+<!-- ── UNDER CONSTRUCTION OVERLAY ── -->
+<style>
+.uc-overlay{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(13,13,13,.72);}
+.uc-card{background:var(--paper);border:3px solid var(--ink);border-top:6px solid var(--red);max-width:480px;width:calc(100% - 40px);padding:48px 40px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.45);}
+.uc-icon{font-size:3.5rem;margin-bottom:16px;display:block;}
+.uc-title{font-family:var(--font-head);font-size:1.9rem;font-weight:800;color:var(--ink);margin-bottom:10px;}
+.uc-sub{color:var(--stone);font-size:.95rem;line-height:1.7;margin-bottom:28px;}
+.uc-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(193,59,42,.08);border:1.5px solid rgba(193,59,42,.25);color:var(--red);border-radius:50px;padding:6px 18px;font-size:.8rem;font-weight:700;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px;}
+.uc-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:ucpulse 1.4s ease-in-out infinite;}
+@keyframes ucpulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+.uc-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.uc-btn{padding:11px 22px;border-radius:4px;font-family:var(--font-head);font-weight:700;font-size:.85rem;text-decoration:none;border:none;cursor:pointer;transition:all .15s;}
+.uc-btn-primary{background:var(--ink);color:var(--paper);}
+.uc-btn-primary:hover{background:var(--red);}
+.uc-btn-ghost{background:transparent;color:var(--stone);border:1.5px solid var(--stone-light);}
+.uc-btn-ghost:hover{border-color:var(--ink);color:var(--ink);}
+</style>
+<div class="uc-overlay" id="ucOverlay">
+  <div class="uc-card">
+    <span class="uc-icon">🏗️</span>
+    <div class="uc-badge"><span class="uc-badge-dot"></span>Coming Soon</div>
+    <div class="uc-title">Marketplace Under Construction</div>
+    <p class="uc-sub">We're putting the finishing touches on our marketplace. Local artisans, handicrafts, and Newari products will be available here very soon.</p>
+    <div class="uc-actions">
+      <a href="/" class="uc-btn uc-btn-primary">← Back to Home</a>
+      <a href="/chat/" class="uc-btn uc-btn-primary" style="background:var(--red);">Ask AI Instead</a>
+      <button class="uc-btn uc-btn-ghost" onclick="document.getElementById('ucOverlay').style.display='none'">Browse Anyway</button>
+    </div>
+  </div>
+</div>
+<!-- ── END OVERLAY ── -->
 <style>
 .page-header{background:var(--ink);color:#fff;padding:50px 20px 40px;}
 .page-header-inner{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
@@ -22,8 +53,8 @@
   .page-header h1{font-size:1.6rem;}
 }
 @media(max-width:480px){
-  .product-grid{grid-template-columns:repeat(2,1fr);}
-  .product-img{height:140px;}
+  .product-grid{grid-template-columns:1fr;}
+  .product-img{height:200px;}
 }
 .filter-sidebar{position:sticky;top:80px;height:fit-content;}
 .filter-box{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;}
@@ -51,7 +82,6 @@
 .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
 .count{font-size:.86rem;color:var(--ink-light);}
 .sort-select{border:1.5px solid var(--border);background:var(--paper);padding:7px 12px;border-radius:6px;font-size:.83rem;}
-.added-msg{position:fixed;bottom:20px;right:20px;background:var(--ink);color:#fff;padding:12px 20px;border-radius:8px;font-size:.88rem;font-weight:600;display:none;z-index:999;}
 </style>
 
 <div class="page-header">
@@ -138,8 +168,6 @@
   </main>
 </div>
 
-<div class="added-msg" id="addedMsg">✓ Added to cart!</div>
-
 <script>
 async function addToCart(productId, btn) {
   btn.disabled = true;
@@ -154,15 +182,15 @@ async function addToCart(productId, btn) {
     if (data.success) {
       btn.textContent = '✓ Added';
       btn.style.background = '#22c55e';
-      const msg = document.getElementById('addedMsg');
-      msg.style.display = 'block';
-      setTimeout(() => { msg.style.display = 'none'; }, 2000);
       const cc = document.querySelector('.cart-count');
       if (cc) cc.textContent = data.cart_count;
+      if (window.showToast) showToast('Added to cart!', 'success', 2500);
+      setTimeout(() => { btn.textContent = 'Add to Cart'; btn.style.background = ''; btn.disabled = false; }, 2000);
     } else {
       btn.textContent = 'Login to buy';
       btn.style.background = 'var(--accent)';
-      setTimeout(() => { window.location.href = '/login/'; }, 800);
+      if (window.showToast) showToast('Please log in to add items to your cart.', 'info');
+      setTimeout(() => { window.location.href = '/login/'; }, 1000);
     }
   } catch(e) {
     btn.textContent = 'Add to Cart';

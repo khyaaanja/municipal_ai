@@ -1,526 +1,537 @@
 {% extends "base/base.html" %}
-{% block title %}{{ CITY_NAME }} — AI City Platform{% endblock %}
+{% block title %}Bhaktapur — Ancient City. Smart Governance.{% endblock %}
+{% block meta_description %}Bhaktapur's official AI platform — report civic issues, explore UNESCO-listed temples and Newari heritage, attend ward meetings, and shape your neighbourhood. Built for 17 wards, one city.{% endblock %}
 
 {% block extra_css %}
 <style>
-/* ── HERO ── */
+/* ═══ HERO ═══ */
 .hero {
   background: var(--ink);
-  min-height: 92vh;
+  min-height: 94vh; /* fallback */
+  min-height: 94dvh; /* iOS dynamic viewport */
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
-  overflow: hidden;
-  padding: 80px 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 80px 0 60px;
 }
-.hero-pattern {
+
+/* Animated gradient orbs */
+.hero-orb {
   position: absolute;
-  inset: 0;
-  background-image:
-    repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(255,255,255,0.025) 79px, rgba(255,255,255,0.025) 80px),
-    repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(255,255,255,0.015) 79px, rgba(255,255,255,0.015) 80px);
-}
-.hero-ornament {
-  position: absolute;
-  right: -100px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 600px;
-  height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(193,59,42,0.15) 0%, transparent 70%);
+  filter: blur(80px);
   pointer-events: none;
+  animation: orbFloat 8s ease-in-out infinite;
+  will-change: transform;
 }
-.hero-ornament-2 {
-  position: absolute;
-  left: -200px;
-  bottom: -100px;
-  width: 500px;
-  height: 500px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(201,162,39,0.08) 0%, transparent 70%);
-  pointer-events: none;
+.hero-orb-1 {
+  width: 520px; height: 520px;
+  right: -120px; top: -80px;
+  background: radial-gradient(circle, rgba(220,38,38,0.12) 0%, transparent 65%);
+  animation-duration: 9s;
 }
+.hero-orb-2 {
+  width: 380px; height: 380px;
+  left: -100px; bottom: -60px;
+  background: radial-gradient(circle, rgba(217,119,6,0.08) 0%, transparent 65%);
+  animation-duration: 12s;
+  animation-delay: -3s;
+}
+@keyframes orbFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(30px,-20px) scale(1.05); }
+  66%      { transform: translate(-15px,25px) scale(0.96); }
+}
+
+/* Heritage lattice texture (evokes Newari carved wood windows) */
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cline x1='0' y1='0' x2='40' y2='40' stroke='rgba(255,255,255,0.028)' stroke-width='0.5'/%3E%3Cline x1='40' y1='0' x2='0' y2='40' stroke='rgba(255,255,255,0.028)' stroke-width='0.5'/%3E%3Crect x='18' y='18' width='4' height='4' transform='rotate(45 20 20)' fill='rgba(217,119,6,0.1)'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, black 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, black 0%, transparent 100%);
+}
+
 .hero-content {
-  position: relative;
-  z-index: 2;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+  position: relative; z-index: 2;
+  max-width: 1200px; margin: 0 auto; padding: 0 20px;
 }
+
+/* Eyebrow pill */
 .hero-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(193,59,42,0.15);
-  border: 1px solid rgba(193,59,42,0.3);
-  border-radius: 50px;
-  padding: 6px 16px;
-  margin-bottom: 24px;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(220,38,38,0.12);
+  border: 1px solid rgba(220,38,38,0.25);
+  border-radius: 50px; padding: 6px 16px; margin-bottom: 28px;
+  max-width: 100%;
 }
 .hero-eyebrow-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--red);
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+  width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+  animation: pulse 2s infinite; flex-shrink: 0;
 }
 .hero-eyebrow-text {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(245,240,232,0.7);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-size: 0.73rem; font-weight: 600; color: rgba(245,241,233,0.65);
+  text-transform: uppercase; letter-spacing: 0.11em; font-family: var(--font-head);
+  white-space: normal; overflow-wrap: break-word; line-height: 1.4;
 }
+
+/* Hero headline */
 .hero-title {
   font-family: var(--font-head);
-  font-size: clamp(2.8rem, 6vw, 5rem);
-  font-weight: 800;
-  color: var(--paper);
-  line-height: 1.05;
-  margin-bottom: 8px;
+  font-size: clamp(2.8rem, 6.5vw, 5.4rem);
+  font-weight: 800; color: var(--paper);
+  line-height: 1.04; margin-bottom: 10px; letter-spacing: -0.02em;
 }
 .hero-title .highlight {
-  color: var(--red);
-  position: relative;
+  background: linear-gradient(135deg, var(--red-soft) 0%, #FF8C42 50%, var(--gold-light) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  display: inline-block;
 }
-.hero-subtitle {
-  font-size: clamp(1.1rem, 2vw, 1.4rem);
-  color: var(--stone-light);
-  margin-bottom: 40px;
-  max-width: 560px;
-  line-height: 1.5;
-  font-weight: 300;
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.28rem); color: rgba(255,255,255,0.48);
+  margin-bottom: 40px; max-width: 560px; line-height: 1.6; font-weight: 300;
 }
 
-/* ── AI CHAT BAR ── */
+/* ── AI SEARCH BAR ── */
 .ai-bar {
   max-width: 760px;
-  background: rgba(255,255,255,0.04);
-  border: 1.5px solid rgba(255,255,255,0.12);
-  border-radius: 8px;
-  padding: 6px 6px 6px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.11);
+  border-radius: 12px; padding: 6px 6px 6px 20px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 18px;
+  transition: border-color .22s, box-shadow .22s, background .22s;
+  backdrop-filter: blur(12px);
 }
 .ai-bar:focus-within {
-  border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(193,59,42,0.15);
+  border-color: rgba(220,38,38,0.45);
+  box-shadow: 0 0 0 4px rgba(220,38,38,0.1), 0 8px 32px rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.07);
 }
-.ai-bar-icon { color: var(--red); font-size: 1.1rem; flex-shrink: 0; }
+.ai-bar-icon { color: var(--red-soft); font-size: 1.1rem; flex-shrink: 0; }
 .ai-bar input {
-  flex: 1;
-  background: none;
-  border: none;
-  outline: none;
-  font-family: var(--font-body);
-  font-size: 1rem;
-  color: var(--paper);
-  caret-color: var(--red);
+  flex: 1; background: none; border: none; outline: none;
+  font-family: var(--font-body); font-size: 1rem; color: var(--paper);
+  caret-color: var(--red-soft);
 }
-.ai-bar input::placeholder { color: rgba(138,127,114,0.7); }
+.ai-bar input::placeholder { color: rgba(255,255,255,0.25); }
 .ai-bar-btn {
-  background: var(--red);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 12px 24px;
-  font-family: var(--font-head);
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
+  background: linear-gradient(135deg, var(--red), var(--red-soft));
+  color: white; border: none; border-radius: 8px;
+  padding: 12px 24px; font-family: var(--font-head); font-weight: 700;
+  font-size: 0.9rem; cursor: pointer; transition: all .18s; white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(220,38,38,0.3);
 }
-.ai-bar-btn:hover { background: var(--red-dark); }
-.ai-bar-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.ai-bar-btn:hover { background: linear-gradient(135deg,var(--red-dark),var(--red)); box-shadow: 0 4px 18px rgba(220,38,38,0.5); transform: translateY(-1px); }
+.ai-bar-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 
-.ai-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 48px;
-}
+/* Suggestion pills */
+.ai-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 52px; }
 .ai-suggestion {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 50px;
-  padding: 7px 16px;
-  font-size: 0.82rem;
-  color: rgba(245,240,232,0.6);
-  cursor: pointer;
-  transition: all 0.15s;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px; padding: 7px 16px; font-size: 0.81rem;
+  color: rgba(245,241,233,0.55); cursor: pointer; transition: all .18s;
 }
 .ai-suggestion:hover {
-  background: rgba(193,59,42,0.15);
-  border-color: rgba(193,59,42,0.3);
-  color: var(--paper);
+  background: rgba(220,38,38,0.14); border-color: rgba(220,38,38,0.3);
+  color: var(--paper); transform: translateY(-1px);
 }
 
-/* ── AI RESPONSE BUBBLE ── */
-.ai-response-container {
-  max-width: 760px;
-  display: none;
-  margin-bottom: 30px;
-}
+/* AI Response bubble */
+.ai-response-container { max-width: 760px; display: none; margin-bottom: 32px; }
 .ai-response-bubble {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-left: 3px solid var(--red);
-  border-radius: 6px;
-  padding: 20px 24px;
-  color: var(--paper);
-  font-size: 0.95rem;
-  line-height: 1.7;
-  position: relative;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-left: 3px solid var(--red-soft); border-radius: 10px;
+  padding: 20px 24px; color: var(--paper); font-size: 0.95rem; line-height: 1.7;
+  backdrop-filter: blur(12px);
 }
-.ai-response-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.ai-avatar {
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  background: var(--red);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  color: white;
-  font-weight: 700;
-  font-family: var(--font-head);
-  flex-shrink: 0;
-}
-.ai-response-name { font-size: 0.8rem; font-weight: 600; color: var(--stone-light); }
-.ai-loading {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 0;
-}
-.ai-loading span {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--stone-light);
-  animation: bounce 1.2s infinite;
-}
-.ai-loading span:nth-child(2) { animation-delay: 0.2s; }
-.ai-loading span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce {
-  0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
-}
-.ai-response-text { white-space: pre-wrap; line-height: 1.75; }
-.ai-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-}
-.ai-source-tag {
-  font-size: 0.72rem;
-  padding: 2px 8px;
-  background: rgba(201,162,39,0.1);
-  color: rgba(240,208,106,0.8);
-  border: 1px solid rgba(201,162,39,0.2);
-  border-radius: 3px;
-}
-.ai-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 14px;
-}
-.ai-action-btn {
-  background: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 4px;
-  color: var(--stone-light);
-  font-size: 0.78rem;
-  padding: 5px 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.ai-action-btn:hover { background: rgba(255,255,255,0.06); color: var(--paper); }
+.ai-response-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ai-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,var(--red),var(--red-soft)); display: flex; align-items: center; justify-content: center; font-size: .8rem; color: white; font-weight: 700; font-family: var(--font-head); flex-shrink: 0; }
+.ai-response-name { font-size: .8rem; font-weight: 600; color: rgba(255,255,255,.45); }
+.ai-loading { display: flex; align-items: center; gap: 4px; padding: 8px 0; }
+.ai-loading span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.45); animation: bounce 1.2s infinite; }
+.ai-loading span:nth-child(2){animation-delay:.2s}
+.ai-loading span:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1);opacity:1}}
+.ai-response-text { white-space: pre-wrap; line-height: 1.78; }
+.ai-sources { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+.ai-source-tag { font-size: .71rem; padding: 2px 8px; background: rgba(217,119,6,.1); color: rgba(245,208,100,.8); border: 1px solid rgba(217,119,6,.2); border-radius: 3px; }
+.ai-actions { display: flex; gap: 10px; margin-top: 14px; }
+.ai-action-btn { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 6px; color: rgba(255,255,255,.55); font-size: .78rem; padding: 6px 14px; cursor: pointer; transition: all .15s; }
+.ai-action-btn:hover { background: rgba(255,255,255,.1); color: var(--paper); }
 
-/* ── HERO STATS ── */
-.hero-stats {
-  display: flex;
-  gap: 40px;
-  padding-top: 12px;
+/* Hero CTAs */
+.hero-cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.hero-cta-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, var(--red), var(--red-soft));
+  color: white; border-radius: 10px; padding: .78rem 1.5rem;
+  font-size: .95rem; font-weight: 700; font-family: var(--font-head);
+  text-decoration: none; box-shadow: 0 4px 18px rgba(220,38,38,.35);
+  transition: all .2s;
 }
+.hero-cta-primary:hover { box-shadow: 0 8px 28px rgba(220,38,38,.5); transform: translateY(-2px); color: white; }
+.hero-cta-secondary {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.18);
+  color: var(--paper); border-radius: 10px; padding: .78rem 1.5rem;
+  font-size: .95rem; font-weight: 600; text-decoration: none; transition: all .2s;
+}
+.hero-cta-secondary:hover { background: rgba(255,255,255,.13); color: var(--paper); border-color: rgba(255,255,255,.3); }
+
+/* Hero stats */
+.hero-stats { display: flex; gap: 0; padding-top: 16px; flex-wrap: wrap; }
+.hero-stat {
+  position: relative;
+  padding: 0 18px;
+  border-right: 1px solid rgba(255,255,255,.1);
+  flex: 0 0 auto;
+}
+.hero-stat:last-child { border-right: none; }
 .hero-stat-num {
-  font-family: var(--font-head);
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: var(--paper);
-  line-height: 1;
+  font-family: var(--font-head); font-size: 1.9rem; font-weight: 800;
+  color: var(--paper); line-height: 1;
 }
-.hero-stat-label {
-  font-size: 0.75rem;
-  color: var(--stone);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-top: 2px;
-}
+.hero-stat-label { font-size: .72rem; color: rgba(255,255,255,.38); text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
 
-/* ── FEATURED ATTRACTIONS ── */
+/* ═══ ATTRACTIONS SECTION ═══ */
 .bg-cream { background: var(--cream); }
-.attraction-card { cursor: pointer; }
-.attraction-card .rating-bar {
-  height: 3px;
-  background: var(--cream);
-  border-radius: 2px;
-  margin-top: 10px;
-  overflow: hidden;
-}
-.attraction-card .rating-fill {
-  height: 100%;
-  background: var(--gold);
-  border-radius: 2px;
-}
+.attraction-card .rating-bar { height: 3px; background: rgba(0,0,0,.08); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.attraction-card .rating-fill { height: 100%; background: linear-gradient(90deg,var(--gold),var(--gold-light)); border-radius: 2px; }
 
-/* ── EVENTS SECTION ── */
+/* ═══ EVENTS ═══ */
 .event-card {
-  display: flex;
-  gap: 16px;
-  background: var(--white);
-  border-radius: 6px;
-  padding: 16px;
-  border: var(--border);
-  box-shadow: var(--shadow);
-  transition: transform 0.2s;
+  display: flex; gap: 16px; background: var(--surface); border-radius: 10px;
+  padding: 16px; border: 1px solid rgba(0,0,0,.06);
+  box-shadow: var(--shadow-sm); transition: all var(--spring);
 }
-.event-card:hover { transform: translateX(4px); }
+.event-card:hover { transform: translateX(6px); box-shadow: var(--shadow-md); }
 .event-date-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  background: var(--red);
-  border-radius: 6px;
-  flex-shrink: 0;
-  color: white;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--red), var(--red-soft));
+  border-radius: 10px; flex-shrink: 0; color: white;
+  box-shadow: 0 4px 14px rgba(220,38,38,.3);
 }
-.event-date-day {
-  font-family: var(--font-head);
-  font-weight: 800;
-  font-size: 1.3rem;
-  line-height: 1;
-}
-.event-date-month {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.85;
-}
-.event-info { flex: 1; min-width: 0; }
-.event-title {
-  font-family: var(--font-head);
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.event-venue { font-size: 0.8rem; color: var(--stone); }
-.event-price { font-size: 0.8rem; font-weight: 600; color: var(--red); white-space: nowrap; }
+.event-date-day   { font-family: var(--font-head); font-weight: 800; font-size: 1.3rem; line-height: 1; }
+.event-date-month { font-size: .63rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; opacity: .85; }
+.event-info   { flex: 1; min-width: 0; }
+.event-title  { font-family: var(--font-head); font-size: .95rem; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-venue  { font-size: .8rem; color: var(--stone); }
+.event-price  { font-size: .8rem; font-weight: 700; color: var(--red); white-space: nowrap; align-self: center; }
 
-/* ── MARQUEE STRIP ── */
-.marquee-strip {
-  background: var(--red);
-  color: white;
-  padding: 10px 0;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.marquee-inner {
-  display: inline-block;
-  animation: marquee 30s linear infinite;
-}
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.marquee-item {
-  display: inline-block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  font-family: var(--font-head);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0 40px;
-}
-.marquee-dot {
-  display: inline-block;
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.5);
-  margin-right: 40px;
-  vertical-align: middle;
-}
-
-/* ── MAP CTA ── */
+/* ═══ MAP CTA ═══ */
 .map-cta {
-  background: var(--ink);
-  color: var(--paper);
-  border-radius: 8px;
-  padding: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  position: relative;
-  overflow: hidden;
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 100%);
+  color: var(--paper); border-radius: 16px; padding: 52px 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 32px; position: relative; overflow: hidden;
+  border: 1px solid rgba(255,255,255,.07);
+  box-shadow: var(--shadow-lg);
 }
 .map-cta::before {
-  content: '🗺️';
-  position: absolute;
-  right: 160px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 8rem;
-  opacity: 0.06;
+  content: '🗺️'; position: absolute; right: 180px; top: 50%;
+  transform: translateY(-50%); font-size: 9rem; opacity: .05; pointer-events: none;
+}
+.map-cta::after {
+  content: ''; position: absolute; right: -100px; top: -100px;
+  width: 400px; height: 400px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(217,119,6,.08) 0%, transparent 65%);
   pointer-events: none;
 }
 .map-cta-content h2 { color: var(--paper); margin-bottom: 8px; }
-.map-cta-content p { color: var(--stone-light); max-width: 500px; }
+.map-cta-content p  { color: rgba(255,255,255,.45); max-width: 480px; }
+.map-stat-chips { display: flex; gap: 12px; flex-shrink: 0; flex-wrap: wrap; position: relative; z-index: 1; }
+.map-stat-chip {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px; padding: 18px 22px; text-align: center; min-width: 100px;
+  backdrop-filter: blur(12px);
+}
+.map-stat-chip-num { font-family: var(--font-head); font-size: 1.7rem; font-weight: 800; color: var(--paper); }
+.map-stat-chip-lbl { font-size: .72rem; color: rgba(255,255,255,.38); text-transform: uppercase; letter-spacing: .07em; margin-top: 3px; }
 
-/* ── PRODUCT STRIP ── */
-.product-mini {
-  background: var(--white);
-  border-radius: 6px;
-  border: var(--border);
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.product-mini:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
-.product-mini-img {
-  width: 100%;
-  aspect-ratio: 1;
-  background: var(--cream);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-}
+/* ═══ PRODUCTS ═══ */
+.product-mini { background: var(--surface); border-radius: 10px; border: 1px solid rgba(0,0,0,.06); overflow: hidden; transition: all var(--spring); }
+.product-mini:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.product-mini-img { width: 100%; aspect-ratio: 1; background: var(--cream); display: flex; align-items: center; justify-content: center; font-size: 2rem; }
 .product-mini-body { padding: 12px; }
-.product-mini-name {
-  font-family: var(--font-head);
-  font-size: 0.85rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.product-mini-price { font-size: 0.9rem; font-weight: 700; color: var(--red); }
-.product-mini-vendor { font-size: 0.72rem; color: var(--stone); }
+.product-mini-name { font-family: var(--font-head); font-size: .85rem; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.product-mini-price { font-size: .9rem; font-weight: 700; color: var(--red); }
+.product-mini-vendor { font-size: .71rem; color: var(--stone); }
 
-/* ── ANNOUNCEMENT BANNER ── */
+/* ═══ ANNOUNCEMENT BAR ═══ */
 .announcement-bar {
-  background: #FFF8E6;
-  border-bottom: 1px solid rgba(201,162,39,0.3);
-  padding: 10px 0;
+  background: linear-gradient(90deg, rgba(217,119,6,.08), rgba(220,38,38,.05));
+  border-bottom: 1px solid rgba(217,119,6,.2); padding: 10px 0;
 }
-.announcement-inner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-  font-size: 0.85rem;
+.announcement-inner { display: flex; align-items: center; gap: 12px; max-width: 1200px; margin: 0 auto; padding: 0 20px; font-size: .85rem; }
+.announcement-badge { background: linear-gradient(135deg,var(--gold),var(--gold-light)); color: var(--ink); font-size: .69rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; padding: 3px 10px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
+
+/* ═══ REGISTER CTA ═══ */
+.register-cta {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 50%, var(--ink) 100%);
+  padding: 56px 0; border-top: 1px solid rgba(255,255,255,.05);
+  position: relative; overflow: hidden;
 }
-.announcement-badge {
-  background: var(--gold);
-  color: var(--ink);
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 8px;
-  border-radius: 2px;
-  white-space: nowrap;
-  flex-shrink: 0;
+.register-cta::before {
+  content: ''; position: absolute; left: 50%; top: -200px; transform: translateX(-50%);
+  width: 800px; height: 400px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(220,38,38,.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.benefit-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px; padding: 16px;
+  transition: all var(--t);
+}
+.benefit-card:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.12); transform: translateY(-2px); }
+
+/* 1024px – tablet / small desktop */
+@media(max-width:1024px){
+  .hero { padding: 64px 0 48px; min-height: 86dvh; }
+  .hero-stats { gap: 24px; }
+  .hero-stat-num { font-size: 1.6rem; }
+  .grid-3 { grid-template-columns: repeat(2,1fr); }
+  .grid-5 { grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .announcement-inner { flex-wrap: wrap; font-size: .8rem; }
+  .announcement-inner span:last-child { white-space: normal; }
+}
+
+/* 900px – landscape phone / small tablet */
+@media(max-width:900px){
+  .grid-2[style*="gap:52px"] { grid-template-columns: 1fr; gap: 32px !important; }
+  .hero-eyebrow-text { font-size: .65rem; letter-spacing: .08em; }
+  .hero-title { font-size: clamp(2.4rem,6vw,3.8rem); }
+  .hero-sub { max-width: 100%; }
+  .hero-cta-row .hero-cta-primary,
+  .hero-cta-row .hero-cta-secondary { font-size: .88rem; padding: .7rem 1.2rem; }
+  .map-stat-chips { flex: 1; justify-content: center; }
+  .map-stat-chip { padding: 14px 18px; min-width: 80px; }
+  .map-stat-chip-num { font-size: 1.4rem; }
+}
+
+/* 768px – tablet portrait */
+@media(max-width:768px){
+  .hero-stats { gap: 24px; flex-wrap: wrap; }
+  .map-cta { flex-direction: column; padding: 36px 24px; }
+  .map-cta::before { display: none; }
+  .svc-grid { grid-template-columns: repeat(2,1fr); }
+  .ai-bar { gap: 8px; padding: 6px 6px 6px 14px; }
+  .ai-bar-btn { padding: 10px 16px; font-size: 0.82rem; }
+  .ai-suggestion { padding: 9px 16px; font-size: 0.8rem; min-height: 36px; }
+  .marquee-inner { animation: marquee 20s linear infinite; }
+  .hero-cta-row .hero-cta-primary,
+  .hero-cta-row .hero-cta-secondary { flex: 1; justify-content: center; min-width: 0; }
+  .hero-orb-1, .hero-orb-2 { display: none; }
+  .grid-2[style*="gap:52px"] { gap: 24px !important; }
+  .hero { padding: 48px 0 40px; min-height: 80dvh; }
+  .hero-content { padding: 0 16px; }
+  .ai-suggestions { margin-bottom: 36px; }
+  .grid-5 { grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .register-cta h2 { font-size: 1.4rem !important; }
+  .register-cta .container { padding: 0 20px; }
+  .map-cta-content h2 { font-size: 1.4rem; }
+  .map-cta-content p { font-size: .9rem; max-width: 100%; }
+}
+
+/* 640px – small tablet / large phone */
+@media(max-width:640px){
+  .hero-title { font-size: clamp(2rem,7vw,2.8rem); }
+  .hero-sub { font-size: clamp(.9rem,2.5vw,1.1rem); margin-bottom: 28px; }
+  .hero-eyebrow { padding: 5px 12px; gap: 7px; }
+  .hero-eyebrow-text { font-size: .6rem; }
+  .grid-5 { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .grid-3 { grid-template-columns: repeat(2,1fr); gap: 14px; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .map-cta { padding: 28px 20px; }
+  .map-cta-content h2 { font-size: 1.3rem; }
+  .map-cta-content p { font-size: .85rem; }
+  .map-stat-chip { padding: 12px 14px; min-width: 70px; }
+  .map-stat-chip-num { font-size: 1.2rem; }
+  .map-stat-chip-lbl { font-size: .65rem; }
+  .event-card { padding: 12px; gap: 12px; }
+  .event-date-block { width: 46px; height: 46px; }
+  .event-date-day { font-size: 1.1rem; }
+  .event-title { font-size: .88rem; }
+  .section-header { margin-bottom: 24px; }
+  .benefit-card { padding: 14px; }
+  .benefit-card div[style*="font-weight:700"] { font-size: .82rem !important; }
+  .register-cta { padding: 40px 0; }
+  .register-cta h2 { font-size: 1.3rem !important; }
+  .announcement-inner { font-size: .78rem; gap: 8px; }
+  .announcement-badge { font-size: .65rem; }
+}
+
+/* 480px – phone */
+@media(max-width:480px){
+  .hero-title { font-size: clamp(2.2rem,8vw,3rem); }
+  .svc-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 0; }
+  .hero-stat { flex: 1 1 calc(50% - 8px); min-width: 0; padding: 0 10px; }
+  .hero-stat:nth-child(2) { border-right: none; }
+  .hero-stat:nth-child(4) { border-right: none; }
+  .hero-stat-num { font-size: 1.5rem; }
+  .hero-stat-label { font-size: 0.65rem; letter-spacing: 0.05em; }
+  .hero-cta-row { flex-direction: column; }
+  .hero-cta-row .hero-cta-primary,
+  .hero-cta-row .hero-cta-secondary { width: 100%; justify-content: center; }
+  .ai-bar { flex-wrap: nowrap; padding: 4px 4px 4px 12px; gap: 4px; }
+  .ai-bar-icon { display: none; }
+  .ai-bar input { font-size: 0.88rem; min-width: 60px; width: 60px; flex: 1 1 auto; }
+  .ai-bar .ai-bar-btn { padding: 8px 12px; font-size: 0.78rem; flex-shrink: 0; }
+  .ai-suggestion { padding: 8px 12px; font-size: 0.74rem; }
+  .marquee-item { font-size: 0.7rem; padding: 0 24px; }
+  .hero-eyebrow { white-space: normal; overflow: visible; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-5 { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .attraction-card .card-body { padding: 14px; }
+  .attraction-card .card-title { font-size: .95rem; }
+  .attraction-card .card-desc { font-size: .8rem; }
+  .section { padding: 32px 0; }
+  .product-mini-body { padding: 10px; }
+  .product-mini-name { font-size: .78rem; }
+  .product-mini-price { font-size: .82rem; }
+}
+
+/* 380px – very small phone */
+@media(max-width:380px){
+  .hero { min-height: 75dvh; padding: 36px 0; }
+  .hero-title { font-size: clamp(1.7rem,7vw,2.2rem); }
+  .hero-stats { gap: 0; flex-wrap: wrap; }
+  .hero-stat { flex: 1 1 100%; padding: 6px 0; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .hero-stat:last-child { border-bottom: none; }
+  .hero-stat-num { font-size: 1.2rem; }
+  .hero-stat-label { font-size: .58rem; letter-spacing: .04em; }
+  .hero-cta-primary,
+  .hero-cta-secondary { padding: .6rem 1rem !important; font-size: .82rem !important; }
+  .ai-bar { padding: 3px 3px 3px 10px; gap: 3px; }
+  .ai-bar input { font-size: .82rem; min-width: 50px; }
+  .ai-bar .ai-bar-btn { padding: 6px 10px; font-size: .72rem; }
+  .ai-suggestion { padding: 6px 10px; font-size: .68rem; }
+  .grid-5 { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .grid-3 { gap: 10px; }
+  .map-cta { padding: 24px 16px; border-radius: 12px; }
+  .map-stat-chip { padding: 10px 12px; min-width: 60px; }
+  .map-stat-chip-num { font-size: 1rem; }
+  .benefit-card { padding: 12px; }
+  .benefit-card div[style*="font-weight:700"] { font-size: .78rem !important; }
+  .benefit-card div[style*="font-size:.78rem"] { font-size: .72rem !important; }
+  .register-cta { padding: 32px 0; }
+  .register-cta h2 { font-size: 1.1rem !important; }
+  .register-cta a { padding: 12px 24px !important; font-size: .88rem !important; }
+  .product-mini-body { padding: 8px; }
+  .product-mini-name { font-size: .72rem; }
+  .event-card { padding: 10px; gap: 10px; }
+  .event-date-block { width: 40px; height: 40px; }
+  .event-date-day { font-size: 1rem; }
+}
+
+/* 360px – smallest possible */
+@media(max-width:360px){
+  .hero-title { font-size: clamp(1.5rem,6vw,1.8rem); }
+  .hero-stat { flex: 1 1 100%; padding: 5px 0; border-right: none; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .hero-stat:last-child { border-bottom: none; }
+  .grid-5 { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .map-stat-chips { gap: 8px; }
+  .map-stat-chip { min-width: 50px; padding: 8px 10px; }
+  .announcement-inner { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .register-cta .benefit-card { padding: 10px; }
+  .register-cta .benefit-card div[style*="font-size:.78rem"] { font-size: .7rem !important; overflow-wrap: break-word; }
+  .hero-eyebrow { flex-wrap: wrap; }
+  .hero-eyebrow-text { font-size: .55rem; }
+  .hero-sub { font-size: .85rem; }
+  #tourist-pass-widget { width: calc(100vw - 1.2rem); right: 0.6rem; bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- ── ANNOUNCEMENT BAR ── -->
-{% if latest_news %}
-{% with latest_news.0 as news_item %}
-{% if news_item.category == 'announcement' or news_item.category == 'alert' %}
+{% if latest_announcements %}
+{% with latest_announcements.0 as ann %}
+<div class="announcement-bar">
+  <div class="announcement-inner">
+    <span class="announcement-badge">📢 Notice</span>
+    <span style="flex:1;color:var(--text-2);">{{ ann.title }}</span>
+    <a href="/announcements/" style="color:var(--gold);font-weight:600;white-space:nowrap;font-size:.82rem;text-decoration:none;">All notices →</a>
+  </div>
+</div>
+{% endwith %}
+{% elif latest_news %}
+{% with latest_news.0 as n %}
+{% if n.category == 'announcement' or n.category == 'alert' %}
 <div class="announcement-bar">
   <div class="announcement-inner">
     <span class="announcement-badge">Notice</span>
-    <span>{{ news_item.title }} — <a href="/news/{{ news_item.slug }}/" style="color:var(--gold);font-weight:600;">Read more →</a></span>
+    <span style="color:var(--text-2);">{{ n.title }} — <a href="/news/{{ n.slug }}/" style="color:var(--gold);font-weight:600;">Read →</a></span>
   </div>
 </div>
 {% endif %}
 {% endwith %}
 {% endif %}
 
-<!-- ── HERO SECTION ── -->
+<!-- ═══════════ HERO ═══════════ -->
 <section class="hero">
-  <div class="hero-pattern"></div>
-  <div class="hero-ornament"></div>
-  <div class="hero-ornament-2"></div>
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+  <div class="hero-grid"></div>
+
   <div class="hero-content">
 
     <div class="hero-eyebrow">
       <span class="hero-eyebrow-dot"></span>
-      <span class="hero-eyebrow-text">AI-Powered City Platform · {{ CITY_NAME }}, {{ CITY_COUNTRY }}</span>
+      <span class="hero-eyebrow-text">Official Civic Platform · {{ CITY_NAME }}, Nepal · Est. 1620 CE</span>
     </div>
 
+    {% if user.is_authenticated and user.role == 'citizen' %}
     <h1 class="hero-title">
-      Discover<br>
-      <span class="highlight">{{ CITY_NAME }}</span><br>
-      with AI.
+      Welcome back,<br>
+      <span class="highlight">{{ user.first_name|default:user.username }}</span>
     </h1>
-    <p class="hero-subtitle">
-      Ask anything about the city — attractions, events, food, transport, emergency contacts, and more. Powered by real city data.
+    <p class="hero-sub">
+      {% if user.ward_number %}Ward {{ user.ward_number }} — {% endif %}Your city is listening. Your reports matter.
     </p>
+    <div class="hero-cta-row" style="margin-bottom:2rem;">
+      <a href="/my/" class="hero-cta-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--ink);box-shadow:0 4px 18px rgba(217,119,6,.35);">
+        🏠 My Dashboard →
+      </a>
+      <a href="/complaint/" class="hero-cta-secondary">📝 Report Issue</a>
+      <a href="/notifications/" class="hero-cta-secondary">
+        🔔 Notifications{% if unread_notifications %} <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:.68rem;font-weight:700;">{{ unread_notifications }}</span>{% endif %}
+      </a>
+    </div>
+    {% else %}
+    <h1 class="hero-title">
+      नागरिक बोल्छन्।<br>
+      <span class="highlight">Cities Change.</span>
+    </h1>
 
-    <!-- AI CHAT BAR -->
+    <!-- AI SEARCH (action leads) -->
     <div class="ai-bar" id="heroAiBar">
       <span class="ai-bar-icon">✦</span>
-      <input
-        type="text"
-        id="heroQuery"
-        placeholder="What should I visit in {{ CITY_NAME }}? What events are happening today?"
-        autocomplete="off"
-      >
+      <input type="text" id="heroQuery"
+             placeholder="Ask about Nyatapola, Bisket Jatra, report a broken road, plan your visit…"
+             autocomplete="off">
+      <button id="heroMicBtn" title="Voice input" onclick="heroVoiceInput()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.45);padding:0 6px;display:flex;align-items:center;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color='rgba(255,255,255,.9)'" onmouseout="this.style.color=this.classList.contains('recording')?'#ef4444':'rgba(255,255,255,.45)'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
       <button class="ai-bar-btn" id="heroAskBtn" onclick="askAI()">Ask AI →</button>
     </div>
 
     <!-- SUGGESTION PILLS -->
     <div class="ai-suggestions">
-      <span class="ai-suggestion" onclick="fillAndAsk('Best attractions to visit in {{ CITY_NAME }}')">🏛️ Best attractions</span>
-      <span class="ai-suggestion" onclick="fillAndAsk('What events are happening this week?')">🎪 Events this week</span>
-      <span class="ai-suggestion" onclick="fillAndAsk('Best restaurants near {{ CITY_NAME }} Durbar Square')">🍽️ Where to eat</span>
-      <span class="ai-suggestion" onclick="fillAndAsk('Plan a 2-day itinerary for {{ CITY_NAME }}')">📅 Plan my trip</span>
-      <span class="ai-suggestion" onclick="fillAndAsk('Emergency contacts in {{ CITY_NAME }}')">🚨 Emergency contacts</span>
-      <span class="ai-suggestion" onclick="fillAndAsk('How to get around {{ CITY_NAME }}?')">🚌 Transportation</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('Tell me about Nyatapola Temple')">🏛 Nyatapola</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('When is Bisket Jatra and what happens?')">🎭 Bisket Jatra</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('Where to find the best Juju Dhau in Bhaktapur')">🍯 Juju Dhau</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('What to see at Bhaktapur Durbar Square?')">🗺 Durbar Square</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('Where can I find authentic Thangka and Newari crafts?')">🧵 Local Crafts</span>
+      <span class="ai-suggestion" onclick="fillAndAsk('Emergency contacts in Bhaktapur')">🚑 Emergency</span>
     </div>
 
-    <!-- AI RESPONSE AREA -->
+    <!-- AI RESPONSE -->
     <div class="ai-response-container" id="aiResponseContainer">
       <div class="ai-response-bubble">
         <div class="ai-response-header">
@@ -528,9 +539,7 @@
           <span class="ai-response-name">{{ CITY_NAME }} AI Assistant</span>
         </div>
         <div id="aiResponseContent">
-          <div class="ai-loading" id="aiLoading">
-            <span></span><span></span><span></span>
-          </div>
+          <div class="ai-loading" id="aiLoading"><span></span><span></span><span></span></div>
           <div class="ai-response-text" id="aiResponseText" style="display:none;"></div>
         </div>
         <div class="ai-sources" id="aiSources" style="display:none;"></div>
@@ -541,61 +550,70 @@
       </div>
     </div>
 
+    <!-- PRIMARY CTAs (anonymous / non-citizen) -->
+    {% if not user.is_authenticated or user.role != 'citizen' %}
+    <p class="hero-sub" style="margin-top:0;margin-bottom:24px;">
+      Nepal's most storied city — now with an AI that knows every temple, every lane, and every ward meeting.
+    </p>
+    <div class="hero-cta-row">
+      <a href="/complaint/" class="hero-cta-primary">📝 Report a Civic Issue</a>
+      <a href="/complaint/track/" class="hero-cta-secondary">🔍 Track My Complaint</a>
+      <a href="/transparency/" class="hero-cta-secondary">📊 City Transparency</a>
+    </div>
+    {% endif %}
+    {% endif %}
+
     <!-- HERO STATS -->
     <div class="hero-stats">
-      <div>
-        <div class="hero-stat-num">{{ featured_attractions|length }}+</div>
-        <div class="hero-stat-label">Attractions</div>
+      <div class="hero-stat">
+        <div class="hero-stat-num" data-count="{{ stat_complaints_total|default:0 }}">{{ stat_complaints_total|default:0 }}</div>
+        <div class="hero-stat-label">Civic Reports Filed</div>
       </div>
-      <div>
-        <div class="hero-stat-num">{{ upcoming_events|length }}+</div>
-        <div class="hero-stat-label">Events</div>
+      <div class="hero-stat">
+        <div class="hero-stat-num" data-count="{{ stat_resolved_month|default:0 }}">{{ stat_resolved_month|default:0 }}</div>
+        <div class="hero-stat-label">Resolved This Month</div>
       </div>
-      <div>
-        <div class="hero-stat-num">{{ popular_businesses|length }}+</div>
-        <div class="hero-stat-label">Businesses</div>
+      <div class="hero-stat">
+        <div class="hero-stat-num" data-count="{{ stat_pending|default:0 }}">{{ stat_pending|default:0 }}</div>
+        <div class="hero-stat-label">Under Review</div>
       </div>
-      <div>
-        <div class="hero-stat-num">{{ featured_products|length }}+</div>
-        <div class="hero-stat-label">Products</div>
+      <div class="hero-stat">
+        <div class="hero-stat-num" data-count="{{ active_projects|default:0 }}">{{ active_projects|default:0 }}</div>
+        <div class="hero-stat-label">Ward Projects Active</div>
       </div>
     </div>
 
   </div>
 </section>
 
-<!-- ── MARQUEE ── -->
+<!-- MARQUEE -->
 <div class="marquee-strip">
   <div class="marquee-inner">
-    <span class="marquee-item">{{ CITY_NAME }} City Platform</span><span class="marquee-dot"></span>
-    <span class="marquee-item">UNESCO World Heritage City</span><span class="marquee-dot"></span>
-    <span class="marquee-item">AI-Powered Tourism</span><span class="marquee-dot"></span>
-    <span class="marquee-item">Local Marketplace</span><span class="marquee-dot"></span>
-    <span class="marquee-item">Business Directory</span><span class="marquee-dot"></span>
-    <span class="marquee-item">Live City Events</span><span class="marquee-dot"></span>
-    <span class="marquee-item">{{ CITY_NAME }} City Platform</span><span class="marquee-dot"></span>
-    <span class="marquee-item">UNESCO World Heritage City</span><span class="marquee-dot"></span>
-    <span class="marquee-item">AI-Powered Tourism</span><span class="marquee-dot"></span>
-    <span class="marquee-item">Local Marketplace</span><span class="marquee-dot"></span>
-    <span class="marquee-item">Business Directory</span><span class="marquee-dot"></span>
-    <span class="marquee-item">Live City Events</span><span class="marquee-dot"></span>
+    {% for _ in "123456" %}
+    <span class="marquee-item">{{ CITY_NAME }} · Founded 1620 CE</span><span class="marquee-dot"></span>
+    <span class="marquee-item">UNESCO World Heritage Site</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Newari Heritage · Digital Governance</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Home of the Nyatapola Temple</span><span class="marquee-dot"></span>
+    <span class="marquee-item">City of 72 Festivals</span><span class="marquee-dot"></span>
+    <span class="marquee-item">Ancient Soul · Smart Future</span><span class="marquee-dot"></span>
+    {% endfor %}
   </div>
 </div>
 
-<!-- ── FEATURED ATTRACTIONS ── -->
+<!-- ═══════════ ATTRACTIONS ═══════════ -->
 {% if featured_attractions %}
-<section class="section bg-cream">
+<section class="section bg-cream" data-reveal>
   <div class="container">
     <div class="section-header">
       <div>
-        <div class="section-label">Places to Visit</div>
-        <h2 class="section-title">Featured Attractions</h2>
+        <div class="section-label section-label-gold">UNESCO World Heritage</div>
+        <h2 class="section-title">Temples, Durbar Squares & Living Traditions</h2>
       </div>
-      <a href="/attractions/" class="view-all">View all attractions →</a>
+      <a href="/attractions/" class="view-all">View all →</a>
     </div>
     <div class="grid-3">
       {% for attraction in featured_attractions %}
-      <a href="/attractions/{{ attraction.slug }}/" class="card attraction-card">
+      <a href="/attractions/{{ attraction.slug }}/" class="card attraction-card" data-reveal data-reveal-delay="{{ forloop.counter }}">
         {% if attraction.images.first %}
         <img class="card-img" src="{{ attraction.images.first.image.url }}" alt="{{ attraction.name }}" loading="lazy">
         {% else %}
@@ -604,7 +622,7 @@
         <div class="card-body">
           <div class="card-category">{{ attraction.category.name|default:"Attraction" }}</div>
           <div class="card-title">{{ attraction.name }}</div>
-          <div class="card-desc">{{ attraction.short_description|default:attraction.description|truncatewords:18 }}</div>
+          <div class="card-desc">{{ attraction.short_description|default:attraction.description|truncatewords:16 }}</div>
           <div class="card-meta">
             <span class="stars">★★★★★</span>
             <span>{{ attraction.avg_rating }}/5</span>
@@ -622,17 +640,17 @@
 </section>
 {% endif %}
 
-<!-- ── EVENTS + BUSINESSES SPLIT ── -->
-<section class="section">
+<!-- ═══════════ EVENTS + BUSINESSES ═══════════ -->
+<section class="section" data-reveal>
   <div class="container">
-    <div class="grid-2" style="align-items:start; gap:48px;">
+    <div class="grid-2" style="align-items:start;gap:52px;">
 
       <!-- Events -->
       <div>
         <div class="section-header">
           <div>
-            <div class="section-label">What's On</div>
-            <h2 class="section-title">Upcoming Events</h2>
+            <div class="section-label">What's On in Bhaktapur</div>
+            <h2 class="section-title">Jatras, Festivals & Ward Events</h2>
           </div>
           <a href="/events/" class="view-all">All events →</a>
         </div>
@@ -653,46 +671,48 @@
           {% endfor %}
         </div>
         {% else %}
-        <div style="background:var(--cream);border-radius:6px;padding:32px;text-align:center;color:var(--stone);">
-          <div style="font-size:2rem;margin-bottom:8px;">🎪</div>
-          <p>No upcoming events. Check back soon!</p>
+        <div style="background:var(--cream);border-radius:10px;padding:36px;text-align:center;color:var(--stone);">
+          <div style="font-size:2.5rem;margin-bottom:10px;">🎪</div>
+          <p style="font-weight:600;color:var(--text-2);margin-bottom:6px;">Nothing scheduled right now</p>
+          <p style="font-size:.85rem;">Bisket Jatra, Indra Jatra, and 70+ other festivals are posted when announced. <a href="/events/" style="color:var(--red);">See full calendar →</a></p>
         </div>
         {% endif %}
       </div>
 
-      <!-- Popular Businesses -->
+      <!-- Businesses -->
       <div>
         <div class="section-header">
           <div>
-            <div class="section-label">Local Businesses</div>
-            <h2 class="section-title">Popular Spots</h2>
+            <div class="section-label section-label-gold">Dine, Stay & Discover</div>
+            <h2 class="section-title">Newari Kitchens & Local Gems</h2>
           </div>
           <a href="/businesses/" class="view-all">All businesses →</a>
         </div>
         {% if popular_businesses %}
         <div style="display:flex;flex-direction:column;gap:12px;">
           {% for biz in popular_businesses %}
-          <a href="/businesses/{{ biz.slug }}/" style="display:flex;gap:14px;background:var(--white);border-radius:6px;padding:14px;border:var(--border);box-shadow:var(--shadow);transition:transform 0.2s;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='none'">
-            <div style="width:52px;height:52px;border-radius:6px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">
-              {% if biz.category.name == "Restaurant" %}🍽️
-              {% elif biz.category.name == "Hotel" %}🏨
-              {% elif biz.category.name == "Cafe" %}☕
-              {% else %}🏪{% endif %}
+          <a href="/businesses/{{ biz.slug }}/"
+             style="display:flex;gap:14px;background:var(--surface);border-radius:10px;padding:14px;border:1px solid rgba(0,0,0,.06);box-shadow:var(--shadow-sm);transition:all var(--spring);text-decoration:none;color:inherit;"
+             onmouseover="this.style.transform='translateX(5px)';this.style.boxShadow='var(--shadow-md)'"
+             onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-sm)'">
+            <div style="width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,var(--cream),var(--stone-light));display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">
+              {% if biz.category.name == "Restaurant" %}🍽️{% elif biz.category.name == "Hotel" %}🏨{% elif biz.category.name == "Cafe" %}☕{% else %}🏪{% endif %}
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-family:var(--font-head);font-weight:700;font-size:0.95rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ biz.name }}</div>
-              <div style="font-size:0.8rem;color:var(--stone);">{{ biz.category.name|default:"Business" }} · {{ biz.price_range|default:"" }}</div>
+              <div style="font-family:var(--font-head);font-weight:700;font-size:.95rem;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ biz.name }}</div>
+              <div style="font-size:.8rem;color:var(--stone);">{{ biz.category.name|default:"Business" }} · {{ biz.price_range|default:"" }}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-              <span style="font-size:0.9rem;color:var(--gold);">★ {{ biz.avg_rating }}</span>
+              <span style="font-size:.9rem;color:var(--gold);font-weight:700;">★ {{ biz.avg_rating }}</span>
             </div>
           </a>
           {% endfor %}
         </div>
         {% else %}
-        <div style="background:var(--cream);border-radius:6px;padding:32px;text-align:center;color:var(--stone);">
-          <div style="font-size:2rem;margin-bottom:8px;">🏪</div>
-          <p>Business directory coming soon.</p>
+        <div style="background:var(--cream);border-radius:10px;padding:36px;text-align:center;color:var(--stone);">
+          <div style="font-size:2.5rem;margin-bottom:10px;">🏪</div>
+          <p style="font-weight:600;color:var(--text-2);margin-bottom:6px;">No businesses listed yet</p>
+          <p style="font-size:.85rem;">From Juju Dhau shops to heritage guesthouses — more coming soon. <a href="/businesses/" style="color:var(--red);">Browse directory →</a></p>
         </div>
         {% endif %}
       </div>
@@ -701,37 +721,41 @@
   </div>
 </section>
 
-<!-- ── MAP CTA ── -->
-<section class="section-sm">
+<!-- ═══════════ MAP CTA ═══════════ -->
+<section class="section-sm" data-reveal>
   <div class="container">
     <div class="map-cta">
-      <div class="map-cta-content">
-        <h2>Explore {{ CITY_NAME }} on the Map</h2>
-        <p>Find attractions, restaurants, hotels, and businesses near you with our interactive city map.</p>
-        <a href="/map/" class="btn btn-gold" style="margin-top:20px;">Open City Map →</a>
+      <div class="map-cta-content" style="position:relative;z-index:1;">
+        <h2>Every Corner of {{ CITY_NAME }}, Mapped.</h2>
+        <p>From Nyatapola to your ward office — every temple, dhau shop, hotel, and civic point, one tap away.</p>
+        <a href="/map/" class="btn btn-gold" style="margin-top:22px;">Explore the City Map →</a>
       </div>
-      <div style="display:flex;gap:16px;flex-shrink:0;flex-wrap:wrap;">
-        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:20px;text-align:center;min-width:100px;">
-          <div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--paper);">{{ featured_attractions|length }}</div>
-          <div style="font-size:0.75rem;color:var(--stone);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Attractions</div>
+      <div class="map-stat-chips">
+        <div class="map-stat-chip">
+          <div class="map-stat-chip-num">{{ featured_attractions|length }}</div>
+          <div class="map-stat-chip-lbl">Attractions</div>
         </div>
-        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:20px;text-align:center;min-width:100px;">
-          <div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--paper);">{{ popular_businesses|length }}</div>
-          <div style="font-size:0.75rem;color:var(--stone);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Businesses</div>
+        <div class="map-stat-chip">
+          <div class="map-stat-chip-num">{{ popular_businesses|length }}</div>
+          <div class="map-stat-chip-lbl">Businesses</div>
+        </div>
+        <div class="map-stat-chip">
+          <div class="map-stat-chip-num">17</div>
+          <div class="map-stat-chip-lbl">Wards</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── MARKETPLACE STRIP ── -->
+<!-- ═══════════ MARKETPLACE ═══════════ -->
 {% if featured_products %}
-<section class="section bg-cream">
+<section class="section bg-cream" data-reveal>
   <div class="container">
     <div class="section-header">
       <div>
-        <div class="section-label">Local Handicrafts & Souvenirs</div>
-        <h2 class="section-title">City Marketplace</h2>
+        <div class="section-label section-label-gold">Handmade in Bhaktapur</div>
+        <h2 class="section-title">Shop Bhaktapur</h2>
       </div>
       <a href="/marketplace/" class="view-all">Shop all →</a>
     </div>
@@ -755,25 +779,28 @@
 </section>
 {% endif %}
 
-<!-- ── NEWS ── -->
+<!-- ═══════════ NEWS ═══════════ -->
 {% if latest_news %}
-<section class="section">
+<section class="section" data-reveal>
   <div class="container">
     <div class="section-header">
       <div>
-        <div class="section-label">Municipal Updates</div>
-        <h2 class="section-title">News & Announcements</h2>
+        <div class="section-label">Ward News & Notices</div>
+        <h2 class="section-title">Civic Updates & Announcements</h2>
       </div>
       <a href="/news/" class="view-all">All news →</a>
     </div>
     <div class="grid-2">
       {% for article in latest_news %}
-      <a href="/news/{{ article.slug }}/" style="display:flex;gap:16px;background:var(--white);border-radius:6px;padding:20px;border:var(--border);transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <a href="/news/{{ article.slug }}/"
+         style="display:flex;gap:16px;background:var(--surface);border-radius:10px;padding:22px;border:1px solid rgba(0,0,0,.06);box-shadow:var(--shadow-sm);transition:all var(--spring);text-decoration:none;color:inherit;"
+         onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shadow-md)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='var(--shadow-sm)'">
         <div style="flex:1;min-width:0;">
-          <span class="tag tag-{% if article.category == 'alert' %}red{% elif article.category == 'announcement' %}gold{% else %}{% endif %}" style="margin-bottom:8px;">{{ article.get_category_display }}</span>
-          <div style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:6px;line-height:1.3;">{{ article.title }}</div>
-          <div style="font-size:0.85rem;color:var(--stone);line-height:1.5;">{{ article.summary|truncatewords:18 }}</div>
-          <div style="font-size:0.75rem;color:var(--stone-light);margin-top:10px;">{{ article.published_at|date:"M j, Y" }}</div>
+          <span class="tag tag-{% if article.category == 'alert' %}red{% elif article.category == 'announcement' %}gold{% else %}{% endif %}" style="margin-bottom:10px;">{{ article.get_category_display }}</span>
+          <div style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-bottom:7px;line-height:1.3;color:var(--text-1);">{{ article.title }}</div>
+          <div style="font-size:.85rem;color:var(--stone);line-height:1.55;">{{ article.summary|truncatewords:18 }}</div>
+          <div style="font-size:.74rem;color:var(--stone-light);margin-top:10px;">{{ article.published_at|date:"M j, Y" }}</div>
         </div>
       </a>
       {% endfor %}
@@ -782,184 +809,387 @@
 </section>
 {% endif %}
 
-<!-- ── CITIZEN SERVICES ── -->
-<section class="section" style="background:var(--ink);">
-  <div class="container">
-    <div class="section-header">
-      <div>
-        <div class="section-label" style="color:rgba(201,162,39,0.8);">Municipality</div>
-        <h2 class="section-title" style="color:var(--paper);">Citizen Services</h2>
+<!-- ═══════════ REGISTER CTA ═══════════ -->
+{% if not user.is_authenticated %}
+<section class="register-cta">
+  <div class="container" style="max-width:880px;">
+    <div style="text-align:center;margin-bottom:32px;" data-reveal>
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:rgba(217,119,6,.7);margin-bottom:8px;">Become a Digital Citizen</div>
+      <h2 style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--paper);margin:0 0 8px;">Join 17 Wards. One City.</h2>
+      <p style="color:rgba(255,255,255,.4);margin:0;font-size:.9rem;">Join thousands of Bhaktapur residents who report issues, track ward projects, and help shape the city they live in — all from one platform.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:32px;" data-reveal>
+      <div class="benefit-card">
+        <div style="font-size:1.4rem;margin-bottom:7px;">📬</div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--paper);margin-bottom:4px;overflow-wrap:break-word;">Instant Notifications</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.38);overflow-wrap:break-word;">Get notified the moment your complaint moves — no tracking ID needed</div>
+      </div>
+      <div class="benefit-card">
+        <div style="font-size:1.4rem;margin-bottom:7px;">📋</div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--paper);margin-bottom:4px;overflow-wrap:break-word;">Your Report History</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.38);overflow-wrap:break-word;">Every issue you've ever filed, tracked from submission to resolution</div>
+      </div>
+      <div class="benefit-card">
+        <div style="font-size:1.4rem;margin-bottom:7px;">🏘</div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--paper);margin-bottom:4px;overflow-wrap:break-word;">Ward Live Feed</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.38);overflow-wrap:break-word;">See what your ward is talking about — issues, projects, council notices</div>
+      </div>
+      <div class="benefit-card">
+        <div style="font-size:1.4rem;margin-bottom:7px;">⭐</div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--paper);margin-bottom:4px;overflow-wrap:break-word;">Civic Score</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.38);overflow-wrap:break-word;">Every report and vote earns points. Rise from Citizen to City Champion</div>
+      </div>
+      <div class="benefit-card">
+        <div style="font-size:1.4rem;margin-bottom:7px;">🔔</div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--paper);margin-bottom:4px;overflow-wrap:break-word;">Follow Any Issue</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.38);overflow-wrap:break-word;">Support any complaint in the city — get updates as it's resolved</div>
+      </div>
+      <div class="benefit-card">
+        <div style="font-size:1.4rem;margin-bottom:7px;">💡</div>
+        <div style="font-weight:700;font-size:.88rem;color:var(--paper);margin-bottom:4px;overflow-wrap:break-word;">Submit Proposals</div>
+        <div style="font-size:.78rem;color:rgba(255,255,255,.38);overflow-wrap:break-word;">Have an idea for your ward? Submit it, let neighbours vote, make it real</div>
       </div>
     </div>
-    <div class="grid-3" style="gap:16px;">
-
-      <a href="/complaint/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
-        <span style="font-size:2rem;">📝</span>
-        <div>
-          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">Report an Issue</div>
-          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">Submit complaints about infrastructure, sanitation, water, roads or electricity directly to the municipality.</div>
-        </div>
-        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">Submit now →</span>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;" data-reveal>
+      <a href="/register/"
+         style="background:linear-gradient(135deg,var(--red),var(--red-soft));color:#fff;padding:14px 36px;border-radius:10px;font-weight:700;font-size:1rem;text-decoration:none;box-shadow:0 4px 18px rgba(220,38,38,.38);transition:all .2s;"
+         onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(220,38,38,.5)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='0 4px 18px rgba(220,38,38,.38)'">
+        Join Bhaktapur — Free →
       </a>
-
-      <a href="/complaint/track/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
-        <span style="font-size:2rem;">🔍</span>
-        <div>
-          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">Track Your Complaint</div>
-          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">Enter your BK-XXXXX reference number to check real-time status, priority, and municipality notes.</div>
-        </div>
-        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">Track status →</span>
+      <a href="/login/"
+         style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);color:var(--paper);padding:14px 28px;border-radius:10px;font-weight:600;font-size:.95rem;text-decoration:none;transition:all .2s;"
+         onmouseover="this.style.background='rgba(255,255,255,.14)'"
+         onmouseout="this.style.background='rgba(255,255,255,.08)'">
+        Sign In
       </a>
-
-      {% if user.is_authenticated %}
-      <a href="/complaint/my/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
-        <span style="font-size:2rem;">📋</span>
-        <div>
-          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">My Complaints</div>
-          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">View all complaints you have submitted, their current status, and the full timeline of updates.</div>
-        </div>
-        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">View my complaints →</span>
-      </a>
-      {% else %}
-      <a href="/register/" style="display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,162,39,0.2);border-radius:8px;padding:28px 24px;transition:border-color 0.2s,background 0.2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(201,162,39,0.6)';this.style.background='rgba(201,162,39,0.06)'" onmouseout="this.style.borderColor='rgba(201,162,39,0.2)';this.style.background='rgba(255,255,255,0.04)'">
-        <span style="font-size:2rem;">👤</span>
-        <div>
-          <div style="font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--paper);margin-bottom:6px;">Create a Citizen Account</div>
-          <div style="font-size:0.85rem;color:var(--stone-light);line-height:1.5;">Register to track all your complaints in one place, get status updates, and connect with the municipality.</div>
-        </div>
-        <span style="font-size:0.82rem;color:#C9A227;font-weight:600;margin-top:4px;">Register free →</span>
-      </a>
-      {% endif %}
-
     </div>
   </div>
 </section>
+{% endif %}
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const CONVERSATION_ID_KEY = 'municipal_ai_conv_id';
+const CONV_KEY = 'muni_conv_id';
 
 async function askAI() {
-  const input = document.getElementById('heroQuery');
-  const query = input.value.trim();
-  if (!query) return;
+  const inp   = document.getElementById('heroQuery');
+  const query = inp.value.trim();
+  if (!query) { inp.focus(); return; }
 
-  const btn = document.getElementById('heroAskBtn');
+  const btn       = document.getElementById('heroAskBtn');
   const container = document.getElementById('aiResponseContainer');
-  const loading = document.getElementById('aiLoading');
-  const responseText = document.getElementById('aiResponseText');
-  const sources = document.getElementById('aiSources');
-  const actions = document.getElementById('aiActions');
+  const loading   = document.getElementById('aiLoading');
+  const respText  = document.getElementById('aiResponseText');
+  const sources   = document.getElementById('aiSources');
+  const actions   = document.getElementById('aiActions');
 
-  // Show container, reset state
   container.style.display = 'block';
-  loading.style.display = 'flex';
-  responseText.style.display = 'none';
-  sources.style.display = 'none';
-  actions.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = 'Thinking...';
-
-  // Scroll to response
+  loading.style.display   = 'flex';
+  respText.style.display  = 'none';
+  respText.textContent    = '';
+  sources.style.display   = 'none';
+  actions.style.display   = 'none';
+  btn.disabled = true; btn.textContent = 'Thinking…';
   container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
+  const convId = sessionStorage.getItem(CONV_KEY);
+  const body   = JSON.stringify({ message: query, conversation_id: convId ? parseInt(convId) : null });
+
   try {
-    const convId = sessionStorage.getItem(CONVERSATION_ID_KEY);
-    const res = await fetch('/api/chat/', {
+    const res = await fetch('/api/chat/stream/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-      body: JSON.stringify({ message: query, conversation_id: convId ? parseInt(convId) : null })
+      body
     });
+    if (!res.ok || !res.body) throw new Error('stream_unavailable');
 
-    const data = await res.json();
-    if (data.error) {
-      throw new Error(data.error);
-    }
+    loading.style.display  = 'none';
+    respText.style.display = 'block';
+    actions.style.display  = 'flex';
 
-    // Store conversation ID
-    if (data.conversation_id) {
-      sessionStorage.setItem(CONVERSATION_ID_KEY, data.conversation_id);
-    }
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let metaData = null;
 
-    loading.style.display = 'none';
-    responseText.style.display = 'block';
-    responseText.textContent = '';
-    actions.style.display = 'flex';
-
-    // Typewriter effect
-    typeWrite(responseText, data.response, () => {
-      // Show sources
-      if (data.sources && data.sources.length > 0) {
-        sources.style.display = 'flex';
-        sources.innerHTML = '<span style="font-size:0.72rem;color:var(--stone-light);margin-right:6px;">Sources:</span>';
-        const sourceLabels = {
-          'attractions_db': '🏛️ Attractions',
-          'events_db': '🎪 Events',
-          'businesses_db': '🍽️ Businesses',
-          'marketplace_db': '🛍️ Marketplace',
-          'knowledge_base': '📚 Knowledge Base',
-          'news_db': '📰 News',
-        };
-        data.sources.forEach(s => {
-          const tag = document.createElement('span');
-          tag.className = 'ai-source-tag';
-          tag.textContent = sourceLabels[s] || s;
-          sources.appendChild(tag);
-        });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (!raw || raw === '[DONE]') continue;
+        try {
+          const ev = JSON.parse(raw);
+          if (ev.token !== undefined) {
+            respText.textContent += ev.token;
+          } else if (ev.done) {
+            metaData = ev;
+            if (ev.conversation_id) sessionStorage.setItem(CONV_KEY, ev.conversation_id);
+          } else if (ev.error) {
+            respText.textContent += '\n[Error: ' + ev.message + ']';
+          }
+        } catch (_) {}
       }
-    });
+    }
 
+    if (metaData?.sources?.length) {
+      sources.style.display = 'flex';
+      const lbls = { attractions_db:'🏛 Attractions', events_db:'🎪 Events', businesses_db:'🍽 Businesses', marketplace_db:'🛍 Shop', knowledge_base:'📚 Knowledge', news_db:'📰 News' };
+      sources.innerHTML = '<span style="font-size:.71rem;color:rgba(255,255,255,.38);margin-right:6px;">Sources:</span>';
+      metaData.sources.forEach(s => {
+        const t = document.createElement('span');
+        t.className = 'ai-source-tag'; t.textContent = lbls[s]||s;
+        sources.appendChild(t);
+      });
+    }
   } catch(e) {
-    loading.style.display = 'none';
-    responseText.style.display = 'block';
-    responseText.textContent = 'Sorry, I could not process your request. Please try again.';
-    actions.style.display = 'flex';
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Ask AI →';
-}
-
-function typeWrite(el, text, callback) {
-  let i = 0;
-  const speed = 12;
-  el.textContent = '';
-  function step() {
-    if (i < text.length) {
-      el.textContent += text.charAt(i);
-      i++;
-      setTimeout(step, speed);
-    } else if (callback) {
-      callback();
+    if (e.message === 'stream_unavailable') {
+      /* fallback to non-streaming endpoint */
+      try {
+        const r2 = await fetch('/api/chat/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+          body
+        });
+        const d = await r2.json();
+        if (d.error) throw new Error(d.error);
+        if (d.conversation_id) sessionStorage.setItem(CONV_KEY, d.conversation_id);
+        loading.style.display  = 'none';
+        respText.style.display = 'block';
+        actions.style.display  = 'flex';
+        respText.textContent   = d.response || '';
+        if (d.sources?.length) {
+          sources.style.display = 'flex';
+          const lbls = { attractions_db:'🏛 Attractions', events_db:'🎪 Events', businesses_db:'🍽 Businesses', marketplace_db:'🛍 Shop', knowledge_base:'📚 Knowledge', news_db:'📰 News' };
+          sources.innerHTML = '<span style="font-size:.71rem;color:rgba(255,255,255,.38);margin-right:6px;">Sources:</span>';
+          d.sources.forEach(s => { const t = document.createElement('span'); t.className = 'ai-source-tag'; t.textContent = lbls[s]||s; sources.appendChild(t); });
+        }
+      } catch(_) {
+        loading.style.display  = 'none';
+        respText.style.display = 'block';
+        respText.textContent   = 'Sorry, could not process your request. Please try again.';
+        actions.style.display  = 'flex';
+      }
+    } else {
+      loading.style.display  = 'none';
+      respText.style.display = 'block';
+      respText.textContent   = 'Sorry, could not process your request. Please try again.';
+      actions.style.display  = 'flex';
     }
   }
-  step();
+  btn.disabled = false; btn.textContent = 'Ask AI →';
 }
 
-function fillAndAsk(text) {
-  document.getElementById('heroQuery').value = text;
-  askAI();
+function fillAndAsk(t) { document.getElementById('heroQuery').value = t; askAI(); }
+function openFullChat() { window.location.href = '/chat/'; }
+function clearResponse() { document.getElementById('aiResponseContainer').style.display='none'; document.getElementById('heroQuery').value=''; }
+function getCookie(n) { const v = document.cookie.match('(^|;) ?'+n+'=([^;]*)(;|$)'); return v?v[2]:null; }
+
+document.getElementById('heroQuery').addEventListener('keydown', e => { if (e.key==='Enter') askAI(); });
+
+/* ── HERO VOICE INPUT ── */
+let _heroRecorder = null, _heroAudioChunks = [];
+function heroVoiceInput() {
+  const btn = document.getElementById('heroMicBtn');
+  if (_heroRecorder && _heroRecorder.state === 'recording') { _heroRecorder.stop(); return; }
+  if (!navigator.mediaDevices?.getUserMedia) { alert('Microphone not supported on this browser.'); return; }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    _heroAudioChunks = [];
+    _heroRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg' });
+    _heroRecorder.ondataavailable = e => { if (e.data.size > 0) _heroAudioChunks.push(e.data); };
+    _heroRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      btn.classList.remove('recording');
+      btn.style.color = 'rgba(255,255,255,.45)';
+      const blob = new Blob(_heroAudioChunks, { type: _heroRecorder.mimeType });
+      const fd   = new FormData();
+      fd.append('audio', blob, 'voice.webm');
+      fd.append('language', 'en');
+      fetch('/api/voice/', { method:'POST', headers:{'X-CSRFToken': getCookie('csrftoken')}, body: fd })
+        .then(r => r.json())
+        .then(d => { if (d.text) { document.getElementById('heroQuery').value = d.text; askAI(); } })
+        .catch(() => {});
+    };
+    _heroRecorder.start();
+    btn.classList.add('recording');
+    btn.style.color = '#ef4444';
+    setTimeout(() => { if (_heroRecorder?.state==='recording') _heroRecorder.stop(); }, 10000);
+  }).catch(() => alert('Microphone access denied.'));
 }
 
-function openFullChat() {
-  window.location.href = '/chat/';
+/* Mobile menu auto-close on link click */
+document.querySelectorAll('#mobileMenu a').forEach(a => {
+  a.addEventListener('click', function() {
+    document.getElementById('mobileMenu').style.display = 'none';
+    document.querySelector('.hamburger')?.classList.remove('open');
+  });
+});
+
+/* Animated counter */
+(function(){
+  const els = document.querySelectorAll('.hero-stat-num[data-count]');
+  if (!els.length || window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const run = el => {
+    const target = parseInt(el.dataset.count, 10)||0;
+    if (!target) return;
+    let start = 0;
+    const step = ts => {
+      if (!start) start = ts;
+      const pct = Math.min((ts-start)/1100, 1);
+      const ease = 1-Math.pow(1-pct, 3);
+      el.textContent = Math.floor(ease*target);
+      if (pct < 1) requestAnimationFrame(step);
+      else el.textContent = target;
+    };
+    requestAnimationFrame(step);
+  };
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { run(e.target); obs.unobserve(e.target); } });
+  }, { threshold:.5 });
+  els.forEach(el => obs.observe(el));
+})();
+</script>
+
+{% if not user.is_authenticated %}
+<!-- ── TOURIST PASS FLOATING WIDGET (bottom-right, homepage only) ── -->
+<style>
+#tourist-pass-widget {
+  position: fixed;
+  bottom: 1.5rem; right: 1.5rem;
+  z-index: 820;
+  width: 280px;
+  background: linear-gradient(145deg, rgba(13,10,2,.97) 0%, rgba(22,16,3,.95) 100%);
+  border: 1px solid rgba(201,162,39,.28);
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(201,162,39,.06), inset 0 1px 0 rgba(201,162,39,.08);
+  overflow: hidden;
+  transform: translateY(0);
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+}
+#tourist-pass-widget:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 52px rgba(0,0,0,.55), 0 0 0 1px rgba(201,162,39,.12), inset 0 1px 0 rgba(201,162,39,.1);
+}
+.tp-accent { height: 2px; background: linear-gradient(90deg,#C9A227,#F59E0B,#FF8C42,#F59E0B,#C9A227); background-size:200% 100%; animation: tpGrad 4s linear infinite; }
+@keyframes tpGrad { 0%{background-position:0 0} 100%{background-position:200% 0} }
+.tp-body { padding: 14px 16px 16px; }
+.tp-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.tp-icon-wrap {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg,rgba(201,162,39,.2),rgba(245,158,11,.08));
+  border: 1px solid rgba(201,162,39,.25);
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+}
+.tp-title { font-family: var(--font-head); font-weight: 800; font-size: .95rem; color: #F5E6B8; }
+.tp-sub { font-size: .65rem; color: rgba(201,162,39,.55); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-top: 1px; }
+.tp-dismiss {
+  margin-left: auto; background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.25); font-size: .85rem; line-height: 1; padding: 2px 4px;
+  transition: color .15s;
+}
+.tp-dismiss:hover { color: rgba(255,255,255,.55); }
+.tp-perks { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin-bottom: 12px; }
+.tp-perk { font-size: .69rem; color: rgba(245,240,232,.65); display:flex; align-items:center; gap: 4px; }
+.tp-name-input {
+  width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(201,162,39,.18);
+  border-radius: 7px; padding: 7px 10px; font-size: .8rem; color: var(--paper);
+  font-family: var(--font-body); outline: none; margin-bottom: 8px;
+  box-sizing: border-box; transition: border-color .2s;
+}
+.tp-name-input:focus { border-color: rgba(201,162,39,.45); }
+.tp-name-input::placeholder { color: rgba(255,255,255,.22); }
+.tp-btn {
+  width: 100%; padding: 9px; cursor: pointer; border: none; border-radius: 8px;
+  background: linear-gradient(135deg, #C9A227 0%, #F59E0B 50%, #E8A820 100%);
+  font-family: var(--font-head); font-size: .84rem; font-weight: 800;
+  color: #140c00; letter-spacing: .02em;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: opacity .15s, transform .15s;
+  box-shadow: 0 3px 14px rgba(201,162,39,.3);
+}
+.tp-btn:hover { opacity: .9; transform: translateY(-1px); }
+.tp-note { text-align:center; font-size:.6rem; color:rgba(255,255,255,.2); margin-top:7px; letter-spacing:.03em; }
+
+/* Tourist-mode badge state */
+#tourist-pass-widget.tourist-active .tp-btn {
+  background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+  color: #F59E0B; border: 1px solid rgba(201,162,39,.25); box-shadow: none;
 }
 
-function clearResponse() {
-  document.getElementById('aiResponseContainer').style.display = 'none';
-  document.getElementById('heroQuery').value = '';
+@media(max-width:480px){
+  #tourist-pass-widget { width: calc(100vw - 2rem); right: 1rem; bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); left: 1rem; }
 }
 
-function getCookie(name) {
-  let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-  return v ? v[2] : null;
+@media(max-width:380px){
+  #tourist-pass-widget { width: calc(100vw - 1.2rem); right: 0.6rem; bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)); left: 0.6rem; }
 }
+</style>
 
-// Enter key on hero input
-document.getElementById('heroQuery').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') askAI();
+{% if is_tourist_pass %}
+<div id="tourist-pass-widget" class="tourist-active">
+  <div class="tp-accent"></div>
+  <div class="tp-body">
+    <div class="tp-header">
+      <div class="tp-icon-wrap">🧳</div>
+      <div>
+        <div class="tp-title">{{ tourist_name }}</div>
+        <div class="tp-sub">Tourist Mode Active</div>
+      </div>
+      <button class="tp-dismiss" onclick="document.getElementById('tourist-pass-widget').remove()" title="Dismiss">×</button>
+    </div>
+    <a href="/tourist-pass/clear/" class="tp-btn" style="text-decoration:none;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      Sign In / Create Account
+    </a>
+    <div class="tp-note">Tap above to save your session data &amp; unlock full features</div>
+  </div>
+</div>
+{% else %}
+<div id="tourist-pass-widget">
+  <div class="tp-accent"></div>
+  <div class="tp-body">
+    <div class="tp-header">
+      <div class="tp-icon-wrap">🧳</div>
+      <div>
+        <div class="tp-title">Tourist Pass</div>
+        <div class="tp-sub">Explore Without Signing Up</div>
+      </div>
+      <button class="tp-dismiss" onclick="document.getElementById('tourist-pass-widget').remove()" title="Dismiss">×</button>
+    </div>
+    <div class="tp-perks">
+      <div class="tp-perk">🏛 Temples &amp; heritage</div>
+      <div class="tp-perk">🤖 AI city guide</div>
+      <div class="tp-perk">🗺 Interactive map</div>
+      <div class="tp-perk">🎪 Events &amp; festivals</div>
+      <div class="tp-perk">✈ Itinerary planner</div>
+      <div class="tp-perk">🍜 Local food spots</div>
+    </div>
+    <form method="post" action="{% url 'accounts:tourist_pass' %}?next=/" id="tp-form">
+      {% csrf_token %}
+      <input type="text" name="name" class="tp-name-input" placeholder="Your name (optional)" maxlength="60">
+      <button type="submit" class="tp-btn" id="tp-submit">
+        Explore Bhaktapur →
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </form>
+    <div class="tp-note">Free · No sign-up · Leave anytime</div>
+  </div>
+</div>
+<script>
+document.getElementById('tp-form').addEventListener('submit', function(){
+  const btn = document.getElementById('tp-submit');
+  btn.disabled = true;
+  btn.textContent = 'Unlocking Bhaktapur for you…';
 });
 </script>
+{% endif %}
+{% endif %}
+
 {% endblock %}

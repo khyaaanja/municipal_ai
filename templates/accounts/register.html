@@ -31,6 +31,8 @@
 
 <form method="post" id="register-form" novalidate>
   {% csrf_token %}
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+  {% if claim %}<input type="hidden" name="claim" value="{{ claim }}">{% endif %}
 
   <!-- ── Step 1: Identity ── -->
   <div class="step-panel" id="step1">
@@ -54,6 +56,20 @@
                value="{{ email|default:'' }}">
         <span class="field-icon" id="icon-email"></span>
       </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="ward_number">Your ward in Bhaktapur <span style="color:var(--stone);font-weight:400;">(optional)</span></label>
+<div class="input-wrap">
+        <select name="ward_number" id="ward_number"
+                style="width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:8px;padding:11px 14px;font-size:.95rem;font-family:var(--font-body);color:var(--paper);outline:none;appearance:none;cursor:pointer;">
+          <option value="" style="background:#0C0C14;color:#F5F1E9;">Select ward (unlocks neighbourhood feed)</option>
+          {% for w in wards %}
+          <option value="{{ w }}" style="background:#0C0C14;color:#F5F1E9;" {% if ward_number == w|stringformat:"s" %}selected{% endif %}>Ward {{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="font-size:.75rem;color:var(--stone);margin-top:5px;">Shows recent activity from your ward on the homepage</div>
     </div>
 
     <button type="button" class="btn-submit" id="next1-btn">
@@ -132,6 +148,17 @@
           <span class="preview-label">Password</span>
           <span class="preview-value" id="preview-pass">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span>
         </div>
+      </div>
+    </div>
+
+    <!-- What you're about to unlock -->
+    <div style="background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.18);border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;">
+      <div style="font-size:.69rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(201,162,39,.65);margin-bottom:.55rem;">You're about to unlock</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;">
+        <span style="display:inline-flex;align-items:center;gap:.3rem;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.22);border-radius:20px;padding:3px 10px;font-size:.73rem;color:var(--paper);">🤖 AI complaint assistant</span>
+        <span style="display:inline-flex;align-items:center;gap:.3rem;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.22);border-radius:20px;padding:3px 10px;font-size:.73rem;color:var(--paper);">⚡ Mayor escalation</span>
+        <span style="display:inline-flex;align-items:center;gap:.3rem;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.22);border-radius:20px;padding:3px 10px;font-size:.73rem;color:var(--paper);">🙋 Co-sign neighbours</span>
+        <span style="display:inline-flex;align-items:center;gap:.3rem;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.22);border-radius:20px;padding:3px 10px;font-size:.73rem;color:var(--paper);">📊 Civic impact score</span>
       </div>
     </div>
 

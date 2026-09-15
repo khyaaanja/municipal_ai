@@ -1,0 +1,86 @@
+{% extends "base/base.html" %}
+{% block title %}Application {{ sr.reference_number }}{% endblock %}
+{% block content %}
+<style>
+.sr-wrap{max-width:800px;margin:0 auto;padding:32px 20px}
+.breadcrumb{font-size:.8rem;color:var(--stone);margin-bottom:20px}
+.breadcrumb a{color:var(--stone);text-decoration:none}
+.sr-header{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:28px;margin-bottom:20px}
+.sr-header h1{font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--ink);margin:0 0 6px}
+.sr-ref{font-family:var(--font-head);font-size:.9rem;color:var(--stone);margin-bottom:12px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.detail-item label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);display:block;margin-bottom:3px}
+.detail-item span{font-size:.9rem;color:var(--ink)}
+.pill{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase}
+.pill-submitted{background:rgba(59,130,246,.1);color:#1e4e8c}
+.pill-documents{background:rgba(201,162,39,.12);color:#8B6E10}
+.pill-in_review{background:rgba(168,85,247,.1);color:#6b21a8}
+.pill-approved{background:rgba(34,197,94,.12);color:#166534}
+.pill-rejected{background:rgba(193,59,42,.1);color:var(--red-dark)}
+.pill-ready{background:rgba(34,197,94,.18);color:#14532d}
+.pill-completed{background:rgba(34,197,94,.12);color:#166534}
+.section-card{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:24px;margin-bottom:16px}
+.section-card h3{font-family:var(--font-head);font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin:0 0 14px}
+.timeline{list-style:none;padding:0;margin:0;position:relative}
+.timeline::before{content:'';position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:#e8e3da}
+.timeline-item{display:flex;gap:16px;margin-bottom:16px;position:relative}
+.timeline-dot{width:18px;height:18px;background:#16a34a;border-radius:50%;flex-shrink:0;margin-top:2px;z-index:1}
+.timeline-body{flex:1}
+.timeline-status{font-family:var(--font-head);font-size:.85rem;font-weight:700;color:var(--ink)}
+.timeline-note{font-size:.82rem;color:var(--stone);margin-top:2px}
+.timeline-date{font-size:.72rem;color:var(--stone-light)}
+</style>
+<div class="sr-wrap">
+  <div class="breadcrumb"><a href="/services/my/">My Applications</a> / {{ sr.reference_number }}</div>
+  <div class="sr-header">
+    <div class="sr-ref">{{ sr.reference_number }}</div>
+    <h1>{{ sr.get_service_type_display }}</h1>
+    <span class="pill pill-{{ sr.status|lower }}">{{ sr.get_status_display }}</span>
+    {% if sr.estimated_ready %}<p style="font-size:.85rem;color:var(--stone);margin-top:8px">Estimated ready: {{ sr.estimated_ready|date:"M d, Y" }}</p>{% endif %}
+    {% if sr.documents_requested %}
+    <div style="background:#fffbeb;border:1px solid rgba(201,162,39,.3);border-radius:6px;padding:12px 16px;margin-top:12px">
+      <strong style="font-size:.8rem">Documents Requested by Staff:</strong>
+      <p style="margin:4px 0 0;font-size:.85rem">{{ sr.documents_requested }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="section-card">
+    <h3>Application Details</h3>
+    <div class="detail-grid">
+      <div class="detail-item"><label>Applicant Name</label><span>{{ sr.applicant_name }}</span></div>
+      <div class="detail-item"><label>Phone</label><span>{{ sr.applicant_phone }}</span></div>
+      <div class="detail-item"><label>Ward</label><span>Ward {{ sr.ward_number }}</span></div>
+      <div class="detail-item"><label>Submitted</label><span>{{ sr.created_at|date:"M d, Y" }}</span></div>
+    </div>
+    {% if sr.details %}<p style="font-size:.88rem;color:var(--ink);margin:0">{{ sr.details }}</p>{% endif %}
+  </div>
+
+  <div class="section-card">
+    <h3>Status Timeline</h3>
+    <ul class="timeline">
+      {% for h in history %}
+      <li class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-body">
+          <div class="timeline-status">
+            {% if h.old_status %}{{ h.old_status }} → {% endif %}{{ h.new_status }}
+          </div>
+          {% if h.note %}<div class="timeline-note">{{ h.note }}</div>{% endif %}
+          <div class="timeline-date">{{ h.changed_at|date:"M d, Y H:i" }}</div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if sr.document_1 or sr.document_2 or sr.document_3 %}
+  <div class="section-card">
+    <h3>Uploaded Documents</h3>
+    {% if sr.document_1 %}<p><a href="{{ sr.document_1.url }}" target="_blank">📄 Document 1</a></p>{% endif %}
+    {% if sr.document_2 %}<p><a href="{{ sr.document_2.url }}" target="_blank">📄 Document 2</a></p>{% endif %}
+    {% if sr.document_3 %}<p><a href="{{ sr.document_3.url }}" target="_blank">📄 Document 3</a></p>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

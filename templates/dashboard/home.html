@@ -17,7 +17,7 @@
   .bar-row{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;}
   .bar-label{width:120px;font-size:0.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
   .bar-track{flex:1;height:10px;background:var(--surface);border-radius:5px;overflow:hidden;}
-  .bar-fill{height:100%;background:linear-gradient(90deg,#c9a84c,#a07830);border-radius:5px;width:0;transition:width 1s ease;}
+  .bar-fill{height:100%;background:var(--gold);border-radius:5px;width:0;transition:width 1s ease;}
   .bar-count{width:30px;font-size:0.78rem;color:var(--text);text-align:right;flex-shrink:0;}
 
   /* Recent table */
@@ -47,6 +47,14 @@
   <div class="stat-card"><span class="stat-val" data-target="{{ pending }}">0</span><div class="stat-label">Pending</div></div>
   <div class="stat-card"><span class="stat-val" data-target="{{ in_progress }}">0</span><div class="stat-label">In Progress</div></div>
   <div class="stat-card"><span class="stat-val" data-target="{{ resolved_wk }}">0</span><div class="stat-label">Resolved This Week</div></div>
+</div>
+
+<!-- Status funnel chart -->
+<div class="bar-chart" style="margin-bottom:1.5rem;">
+  <div class="section-title">STATUS FUNNEL</div>
+  <div style="max-width:280px;margin:0 auto;">
+    <canvas id="chartStatus" height="220"></canvas>
+  </div>
 </div>
 
 <!-- Bar chart -->
@@ -88,31 +96,46 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Count-up animation
-  document.querySelectorAll('.stat-val[data-target]').forEach(el => {
-    const target = parseInt(el.dataset.target);
-    if (!prefersReducedMotion && target > 0) {
-      gsap.fromTo({val:0}, {val:target, duration:1.2, ease:'power2.out',
-        onUpdate: function() { el.textContent = Math.round(this.targets()[0].val); }
-      });
-    } else {
-      el.textContent = target;
+  // Status doughnut chart
+  new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: {{ status_labels_json|safe }},
+      datasets: [{
+        data: {{ status_values_json|safe }},
+        backgroundColor: ['#C9A227','#4A7AB5','#D4620A','#3A7D50','#C13B2A'],
+        borderWidth: 0, hoverOffset: 4
+      }]
+    },
+    options: {
+      cutout: '65%',
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 11 }, color: '#8A7F72' } } }
     }
   });
 
-  // Bar chart fill
-  if (!prefersReducedMotion) {
-    document.querySelectorAll('.bar-fill').forEach(bar => {
-      const w = bar.dataset.width + '%';
-      setTimeout(() => bar.style.width = w, 200);
+  // Count-up animation (vanilla JS)
+  document.querySelectorAll('.stat-val[data-target]').forEach(el => {
+    const target = parseInt(el.dataset.target) || 0;
+    el.textContent = target;
+    if (prefersReducedMotion || target === 0) return;
+    const duration = 1200, start = performance.now();
+    requestAnimationFrame(function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      el.textContent = Math.round(t * target);
+      if (t < 1) requestAnimationFrame(tick);
     });
-  } else {
+  });
+
+  // Bar chart fill
+  const delay = prefersReducedMotion ? 0 : 200;
+  setTimeout(() => {
     document.querySelectorAll('.bar-fill').forEach(bar => {
       bar.style.width = bar.dataset.width + '%';
     });
-  }
+  }, delay);
 </script>
 {% endblock %}

@@ -1,0 +1,152 @@
+{% extends "mayor/base.html" %}
+{% block mayor_content %}
+<div style="padding:24px 32px;">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--ink);margin:0 0 4px;">
+      🚨 Escalation Inbox
+    </h1>
+    <p style="color:#666;margin:0;">Critical and SLA-breached complaints from all wards requiring immediate attention.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;">
+    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#C13B2A;">{{ total }}</div>
+      <div style="font-size:0.8rem;color:#666;margin-top:4px;">SLA Breached</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#C13B2A;">{{ critical_count }}</div>
+      <div style="font-size:0.8rem;color:#666;margin-top:4px;">CRITICAL Priority</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#D4620A;">{{ overdue_count }}</div>
+      <div style="font-size:0.8rem;color:#666;margin-top:4px;">SLA Overdue</div>
+    </div>
+    <div style="background:#fff;border:2px solid #C13B2A;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#C13B2A;">{{ citizen_esc_count }}</div>
+      <div style="font-size:0.8rem;color:#C13B2A;margin-top:4px;font-weight:600;">Citizen Escalated</div>
+    </div>
+  </div>
+
+  {% if citizen_escalations %}
+  <div style="background:#fff;border:1.5px solid #C13B2A;border-radius:12px;overflow:hidden;margin-bottom:28px;">
+    <div style="background:rgba(193,59,42,.06);padding:14px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+      <strong style="color:#C13B2A;font-size:.9rem;">⚡ Formal Citizen Escalations — Pending Response</strong>
+      <span style="font-size:.78rem;color:#888;">Citizens filed these formally — requires acknowledgment</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:.875rem;">
+      <thead>
+        <tr style="background:#fafafa;border-bottom:1px solid #eee;">
+          <th style="padding:10px 16px;text-align:left;">Complaint</th>
+          <th style="padding:10px 16px;text-align:left;">Escalated By</th>
+          <th style="padding:10px 16px;text-align:left;">Reason</th>
+          <th style="padding:10px 16px;text-align:left;">Note</th>
+          <th style="padding:10px 16px;text-align:left;">Date</th>
+          <th style="padding:10px 16px;text-align:left;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for esc in citizen_escalations %}
+        <tr style="border-bottom:1px solid #f0f0f0;" id="esc-{{ esc.pk }}">
+          <td style="padding:12px 16px;">
+            <a href="/mayor/complaints/{{ esc.complaint.complaint_id }}/" style="font-weight:700;color:#C13B2A;font-family:monospace;">{{ esc.complaint.complaint_id }}</a>
+            <div style="font-size:.76rem;color:#666;margin-top:2px;">{{ esc.complaint.title|truncatechars:40 }}</div>
+          </td>
+          <td style="padding:12px 16px;font-size:.82rem;">{{ esc.escalated_by.get_full_name|default:esc.escalated_by.username }}</td>
+          <td style="padding:12px 16px;font-size:.8rem;color:#C13B2A;">{{ esc.get_reason_display }}</td>
+          <td style="padding:12px 16px;font-size:.8rem;color:#555;max-width:180px;">{{ esc.note|truncatechars:60|default:"—" }}</td>
+          <td style="padding:12px 16px;font-size:.78rem;color:#888;">{{ esc.escalated_at|date:"M j, H:i" }}</td>
+          <td style="padding:12px 16px;">
+            <button onclick="ackEsc({{ esc.pk }}, this)"
+              style="background:#C13B2A;color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:.78rem;font-weight:600;cursor:pointer;">
+              Acknowledge
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div style="background:#fff;border:1px solid #eee;border-radius:12px;overflow:hidden;">
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <thead>
+          <tr style="background:#fafafa;border-bottom:2px solid #eee;">
+            <th style="padding:12px 16px;text-align:left;font-weight:600;">ID</th>
+            <th style="padding:12px 16px;text-align:left;font-weight:600;">Title</th>
+            <th style="padding:12px 16px;text-align:left;font-weight:600;">Priority</th>
+            <th style="padding:12px 16px;text-align:left;font-weight:600;">Ward</th>
+            <th style="padding:12px 16px;text-align:left;font-weight:600;">Status</th>
+            <th style="padding:12px 16px;text-align:left;font-weight:600;">Filed</th>
+            <th style="padding:12px 16px;text-align:left;font-weight:600;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in page %}
+          <tr style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:12px 16px;font-family:monospace;color:#C13B2A;font-weight:700;">{{ c.complaint_id }}</td>
+            <td style="padding:12px 16px;max-width:220px;">
+              <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.title }}</div>
+              <div style="font-size:0.75rem;color:#999;">{{ c.category }}</div>
+            </td>
+            <td style="padding:12px 16px;">
+              {% if c.priority == 'CRITICAL' %}
+                <span style="background:#C13B2A;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.75rem;font-weight:700;">CRITICAL</span>
+              {% elif c.priority == 'HIGH' %}
+                <span style="background:#D4620A;color:#fff;padding:3px 8px;border-radius:4px;font-size:0.75rem;">HIGH</span>
+              {% else %}
+                <span style="background:#eee;color:#555;padding:3px 8px;border-radius:4px;font-size:0.75rem;">{{ c.priority }}</span>
+              {% endif %}
+              {% if c.is_overdue %}<span style="background:#fee2e2;color:#C13B2A;padding:2px 6px;border-radius:4px;font-size:0.7rem;margin-left:4px;">OVERDUE</span>{% endif %}
+            </td>
+            <td style="padding:12px 16px;">Ward {{ c.ward_number|default:"—" }}</td>
+            <td style="padding:12px 16px;font-size:0.8rem;">{{ c.get_status_display }}</td>
+            <td style="padding:12px 16px;font-size:0.8rem;color:#888;">{{ c.created_at|date:"M d, Y" }}</td>
+            <td style="padding:12px 16px;">
+              <a href="/mayor/complaints/{{ c.complaint_id }}/" style="background:var(--mayor-gold,#C9A227);color:#000;padding:5px 12px;border-radius:6px;font-size:0.8rem;font-weight:600;text-decoration:none;">Manage</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" style="padding:40px;text-align:center;color:#999;">
+            No escalations right now — all complaints are within SLA.
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page.has_other_pages %}
+    <div style="padding:16px;display:flex;gap:8px;justify-content:center;border-top:1px solid #eee;">
+      {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}" style="padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;">← Prev</a>{% endif %}
+      <span style="padding:6px 14px;background:#f5f5f5;border-radius:6px;font-size:0.85rem;">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a href="?page={{ page.next_page_number }}" style="padding:6px 14px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block mayor_extra_js %}
+<script>
+const CSRF_ESC = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+function ackEsc(id, btn) {
+  const note = prompt("Optional note for the citizen (leave blank to skip)") ?? '';
+  const fd = new FormData();
+  fd.append('csrfmiddlewaretoken', CSRF_ESC());
+  fd.append('action', 'ack_escalation');
+  fd.append('escalation_id', id);
+  fd.append('note', note);
+  fetch('/mayor/escalations/', { method: 'POST', body: fd })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      const row = document.getElementById('esc-' + id);
+      if (row) {
+        row.style.opacity = '.4';
+        row.cells[5].innerHTML = '<span style="color:#3A7D50;font-weight:600;font-size:.8rem;">✓ Acknowledged</span>';
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

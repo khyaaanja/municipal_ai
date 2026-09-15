@@ -1,0 +1,109 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Complaints — CMS{% endblock %}
+
+{% block cms_extra_css %}
+<style>
+.filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.filter-bar input, .filter-bar select {
+  padding:7px 12px; border:var(--border); border-radius:4px;
+  font-size:.85rem; font-family:var(--font-body); background:var(--white);
+  color:var(--ink); outline:none;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color:var(--red); }
+.filter-bar input { flex:1; min-width:180px; }
+.btn-filter {
+  padding:7px 18px; background:var(--ink); color:var(--paper);
+  border:none; border-radius:4px; font-size:.85rem; font-weight:600;
+  cursor:pointer; white-space:nowrap;
+}
+.badge-status {
+  display:inline-block; padding:2px 9px; border-radius:20px;
+  font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+}
+.s-PENDING     { background:rgba(201,162,39,.12); color:#8B6E10; }
+.s-IN_REVIEW   { background:rgba(59,130,246,.1);  color:#1e4e8c; }
+.s-IN_PROGRESS { background:rgba(212,98,10,.1);   color:#a04800; }
+.s-RESOLVED    { background:rgba(34,197,94,.12);  color:#166534; }
+.s-REJECTED    { background:rgba(193,59,42,.08);  color:var(--red-dark); }
+.p-CRITICAL { color:var(--red); font-weight:700; }
+.p-HIGH     { color:#e07a2a; font-weight:600; }
+.p-MEDIUM   { color:var(--stone); }
+.p-LOW      { color:var(--stone); }
+</style>
+{% endblock %}
+
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Complaints <span style="font-size:1rem;color:var(--stone);font-weight:400;">({{ total }})</span></h1>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="text" name="q" placeholder="Search ID, title, submitter…" value="{{ q }}">
+  <select name="status">
+    <option value="">All Statuses</option>
+    {% for val,label in status_choices %}
+    <option value="{{ val }}" {% if status_f == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="category">
+    <option value="">All Categories</option>
+    {% for val,label in cat_choices %}
+    <option value="{{ val }}" {% if category_f == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-filter">Filter</button>
+  {% if q or status_f or category_f %}
+  <a href="{% url 'adminpanel:cms_complaints' %}" class="btn-filter" style="background:var(--stone);">Clear</a>
+  {% endif %}
+</form>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Submitted by</th>
+        <th>Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in page.object_list %}
+      <tr>
+        <td><code style="font-size:.78rem;color:var(--stone);">{{ c.complaint_id }}</code></td>
+        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.title }}</td>
+        <td>{{ c.get_category_display }}</td>
+        <td class="p-{{ c.priority }}">{{ c.priority }}</td>
+        <td><span class="badge-status s-{{ c.status }}">{{ c.get_status_display }}</span></td>
+        <td style="color:var(--stone);font-size:.82rem;">{{ c.submitter_name|truncatechars:20 }}</td>
+        <td style="color:var(--stone);font-size:.8rem;white-space:nowrap;">{{ c.created_at|date:"M j, Y" }}</td>
+        <td class="cms-actions">
+          <a href="{% url 'adminpanel:cms_complaint_detail' c.complaint_id %}" class="btn-edit">Manage</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--stone);">No complaints found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}&q={{ q }}&status={{ status_f }}&category={{ category_f }}" class="btn-edit">← Prev</a>
+  {% endif %}
+  {% for num in page.paginator.page_range %}
+  <a href="?page={{ num }}&q={{ q }}&status={{ status_f }}&category={{ category_f }}"
+     class="btn-edit" {% if num == page.number %}style="background:var(--red);"{% endif %}>{{ num }}</a>
+  {% endfor %}
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&status={{ status_f }}&category={{ category_f }}" class="btn-edit">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

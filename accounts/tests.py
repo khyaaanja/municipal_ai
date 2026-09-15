@@ -24,7 +24,7 @@ class RegistrationTests(TestCase):
             'password': 'StrongPass1!',
             'confirm_password': 'StrongPass1!',
         })
-        self.assertRedirects(r, '/', fetch_redirect_response=False)
+        self.assertRedirects(r, '/my/?welcome=1', fetch_redirect_response=False)
         self.assertTrue(User.objects.filter(email='ram@test.com').exists())
 
     def test_register_duplicate_email(self):
@@ -61,6 +61,11 @@ class RegistrationTests(TestCase):
 class LoginTests(TestCase):
     def setUp(self):
         self.user = make_user('login@test.com')
+        # tests expect a redirect on successful login; the app enforces email
+        # verification for citizen role.
+        self.user.is_email_verified = True
+        self.user.save(update_fields=['is_email_verified'])
+
 
     def test_login_page_loads(self):
         r = self.client.get('/login/')
@@ -68,7 +73,7 @@ class LoginTests(TestCase):
 
     def test_login_valid_credentials(self):
         r = self.client.post('/login/', {'email': 'login@test.com', 'password': 'TestPass1!'})
-        self.assertRedirects(r, '/', fetch_redirect_response=False)
+        self.assertRedirects(r, '/my/', fetch_redirect_response=False)
 
     def test_login_wrong_password(self):
         r = self.client.post('/login/', {'email': 'login@test.com', 'password': 'wrong'})

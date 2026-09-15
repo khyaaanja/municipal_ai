@@ -1,0 +1,105 @@
+{% extends "chairperson/base.html" %}
+{% block title %}Ward {{ ward }} Report — Bhaktapur{% endblock %}
+
+{% block extra_css %}
+<style>
+  .rpt-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem; flex-wrap:wrap; gap:12px; }
+  .rpt-title  { font-family:var(--chair-gold,#C9A227); font-size:1.5rem; font-weight:800; color:var(--ink); }
+  .rpt-sub    { font-size:.82rem; color:var(--stone); margin-top:4px; }
+  .kpi-grid   { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:1.5rem; }
+  .kpi        { background:#fff; border:1px solid #e8e1d6; border-radius:8px; padding:.9rem; text-align:center; }
+  .kpi-num    { font-family:var(--font-head); font-size:1.9rem; font-weight:800; line-height:1; }
+  .kpi-lbl    { font-size:.7rem; color:var(--stone); margin-top:5px; letter-spacing:.04em; text-transform:uppercase; }
+  .section-h  { font-family:var(--font-head); font-size:.88rem; font-weight:700; color:var(--ink); letter-spacing:.05em;
+                text-transform:uppercase; border-bottom:2px solid #C9A227; padding-bottom:5px; margin:1.5rem 0 .75rem; }
+  .rpt-table  { width:100%; border-collapse:collapse; font-size:.82rem; }
+  .rpt-table th { background:#f7f3ec; font-weight:700; font-size:.7rem; letter-spacing:.05em; text-transform:uppercase;
+                  padding:7px 10px; text-align:left; color:var(--stone); }
+  .rpt-table td { padding:7px 10px; border-bottom:1px solid #f0ece4; }
+  .cat-row    { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid #f0ece4; }
+  .cat-row:last-child { border-bottom:none; }
+  .foot-note  { font-size:.73rem; color:var(--stone); margin-top:2rem; padding-top:1rem; border-top:1px solid #e8e1d6; }
+
+  @media print {
+    .chair-sidebar, .chair-topbar, .rpt-actions { display:none !important; }
+    .chair-main { margin:0 !important; padding:0 !important; }
+    body { background:#fff !important; }
+    @page { margin:1.5cm; size:A4 portrait; }
+  }
+</style>
+{% endblock %}
+
+{% block chair_content %}
+<div class="rpt-header">
+  <div>
+    <div class="rpt-title">Ward {{ ward }} — Complaint Report</div>
+    <div class="rpt-sub">
+      Chairperson: {{ chairperson.get_full_name }}<br>
+      Generated: {{ generated_at|date:"F j, Y" }}
+    </div>
+  </div>
+  <div class="rpt-actions" style="display:flex;gap:.75rem;flex-wrap:wrap;">
+    <a href="/chairperson/complaints/export/csv/" class="chair-btn chair-btn-outline">⬇ CSV</a>
+    <button onclick="window.print()" class="chair-btn chair-btn-green">🖨 Print / Save PDF</button>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-num" style="color:var(--ink);">{{ total }}</div><div class="kpi-lbl">Total Filed</div></div>
+  <div class="kpi"><div class="kpi-num" style="color:#8B6E10;">{{ pending }}</div><div class="kpi-lbl">Pending</div></div>
+  <div class="kpi"><div class="kpi-num" style="color:#1e4e8c;">{{ in_review }}</div><div class="kpi-lbl">In Review</div></div>
+  <div class="kpi"><div class="kpi-num" style="color:#6b21a8;">{{ in_progress }}</div><div class="kpi-lbl">In Progress</div></div>
+  <div class="kpi"><div class="kpi-num" style="color:#166534;">{{ resolved }}</div><div class="kpi-lbl">Resolved</div></div>
+  <div class="kpi"><div class="kpi-num" style="color:#166534;">{{ resolution_rate }}%</div><div class="kpi-lbl">Resolution Rate</div></div>
+  <div class="kpi"><div class="kpi-num" style="color:{% if overdue_count %}var(--red){% else %}#166534{% endif %};">{{ overdue_count }}</div><div class="kpi-lbl">SLA Overdue</div></div>
+</div>
+
+<!-- Category Breakdown -->
+<div class="section-h">Category Breakdown</div>
+<div class="chair-card" style="padding:1rem 1.25rem;">
+  {% for row in by_category %}
+  <div class="cat-row">
+    <span style="font-size:.85rem;">{{ row.label }}</span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="height:6px;width:{{ row.n }}0px;max-width:160px;background:#C9A227;border-radius:3px;opacity:.7;min-width:4px;"></div>
+      <span style="font-weight:700;min-width:28px;text-align:right;font-size:.88rem;">{{ row.n }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Recent Complaints -->
+<div class="section-h">All Complaints (Recent)</div>
+<div class="chair-card" style="padding:0;overflow:auto;">
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th>Priority</th>
+        <th>Filed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in recent %}
+      <tr>
+        <td style="font-weight:700;font-family:var(--font-head);font-size:.8rem;">{{ c.complaint_id }}</td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.title }}</td>
+        <td>{{ c.get_category_display }}</td>
+        <td>{{ c.get_status_display }}</td>
+        <td>{{ c.priority }}</td>
+        <td>{{ c.created_at|date:"M j, Y" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="foot-note">
+  This report was generated automatically by the BhaktapurAI Municipal Management System for Ward {{ ward }} on {{ generated_at|date:"F j, Y" }}.
+  Chairperson: {{ chairperson.get_full_name }}. For official use only.
+</div>
+{% endblock chair_content %}

@@ -1,0 +1,133 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}Users — CMS{% endblock %}
+
+{% block cms_extra_css %}
+<style>
+.filter-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.filter-bar input, .filter-bar select {
+  padding:7px 12px; border:var(--border); border-radius:4px;
+  font-size:.85rem; font-family:var(--font-body); background:var(--white);
+  color:var(--ink); outline:none;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color:var(--red); }
+.filter-bar input { flex:1; min-width:180px; }
+.btn-filter {
+  padding:7px 18px; background:var(--ink); color:var(--paper);
+  border:none; border-radius:4px; font-size:.85rem; font-weight:600;
+  cursor:pointer; white-space:nowrap;
+}
+.role-form { display:inline-flex; gap:5px; align-items:center; }
+.role-form select {
+  padding:3px 8px; border:var(--border); border-radius:4px;
+  font-size:.78rem; background:var(--paper); color:var(--ink); outline:none;
+}
+.role-form button {
+  padding:3px 10px; background:var(--ink); color:var(--paper);
+  border:none; border-radius:4px; font-size:.78rem; font-weight:600; cursor:pointer;
+}
+.role-pill {
+  display:inline-block; padding:2px 9px; border-radius:20px;
+  font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+}
+.r-admin    { background:rgba(193,59,42,.12); color:var(--red-dark); }
+.r-official { background:rgba(201,162,39,.12); color:#8B6E10; }
+.r-staff    { background:rgba(59,130,246,.1);  color:#1e4e8c; }
+.r-citizen      { background:rgba(138,127,114,.1); color:var(--stone); }
+.r-vendor       { background:rgba(34,197,94,.12);  color:#166534; }
+.r-mayor        { background:rgba(201,162,39,.18); color:#7a5c00; }
+.r-chairperson  { background:rgba(34,197,94,.18);  color:#14532d; }
+.avatar {
+  width:30px; height:30px; border-radius:50%;
+  background:var(--red); color:#fff;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:var(--font-head); font-size:.78rem; font-weight:700;
+  flex-shrink:0;
+}
+</style>
+{% endblock %}
+
+{% block cms_content %}
+<div class="cms-page-header">
+  <h1 class="cms-page-title">Users <span style="font-size:1rem;color:var(--stone);font-weight:400;">({{ total }})</span></h1>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="text" name="q" placeholder="Search username, email, name…" value="{{ q }}">
+  <select name="role">
+    <option value="">All Roles</option>
+    {% for val,label in role_choices %}
+    <option value="{{ val }}" {% if role_f == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-filter">Filter</button>
+  {% if q or role_f %}
+  <a href="{% url 'adminpanel:cms_users' %}" class="btn-filter" style="background:var(--stone);">Clear</a>
+  {% endif %}
+</form>
+
+<div class="cms-table-wrap">
+  <table class="cms-table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Joined</th>
+        <th>Last Login</th>
+        <th>Change Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in page.object_list %}
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="avatar">{{ u.username|first|upper }}</div>
+            <div>
+              <div style="font-weight:600;font-size:.88rem;">{{ u.username }}</div>
+              {% if u.get_full_name %}<div style="color:var(--stone);font-size:.76rem;">{{ u.get_full_name }}</div>{% endif %}
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--stone);font-size:.82rem;">{{ u.email|default:"—" }}</td>
+        <td><span class="role-pill r-{{ u.role }}">{{ u.role }}</span></td>
+        <td style="color:var(--stone);font-size:.8rem;white-space:nowrap;">{{ u.date_joined|date:"M j, Y" }}</td>
+        <td style="color:var(--stone);font-size:.8rem;white-space:nowrap;">{{ u.last_login|date:"M j, Y"|default:"Never" }}</td>
+        <td>
+          <form method="post" action="{% url 'adminpanel:cms_user_role' u.pk %}" class="role-form" style="flex-wrap:wrap;gap:4px;">
+            {% csrf_token %}
+            <select name="role">
+              {% for val,label in role_choices %}
+              <option value="{{ val }}" {% if u.role == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <input type="number" name="ward_number" min="1" max="17"
+                   placeholder="Ward#" value="{{ u.ward_number|default:'' }}"
+                   style="width:62px;padding:3px 6px;border:var(--border);border-radius:4px;font-size:.78rem;"
+                   title="Ward number (for chairpersons, 1-17)">
+            <button type="submit">Save</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--stone);">No users found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page.has_other_pages %}
+<div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}&q={{ q }}&role={{ role_f }}" class="btn-edit">← Prev</a>
+  {% endif %}
+  {% for num in page.paginator.page_range %}
+  <a href="?page={{ num }}&q={{ q }}&role={{ role_f }}"
+     class="btn-edit" {% if num == page.number %}style="background:var(--red);"{% endif %}>{{ num }}</a>
+  {% endfor %}
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&role={{ role_f }}" class="btn-edit">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

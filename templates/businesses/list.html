@@ -13,7 +13,18 @@
 .search-row{display:flex;gap:12px;margin-bottom:24px;}
 .search-row input{flex:1;border:1.5px solid var(--border);background:var(--paper);padding:10px 16px;border-radius:6px;font-size:.9rem;}
 .search-row button{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:6px;font-weight:700;cursor:pointer;}
-.biz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;}
+@media(max-width:768px){
+  .biz-layout{padding:20px 14px;}
+  .search-row input{font-size:.9rem;}
+  .biz-filters{gap:6px;}
+  .filter-pill{padding:6px 12px;font-size:.78rem;}
+  .biz-grid{gap:14px;}
+  .biz-card-img{height:130px;}
+}
+@media(max-width:480px){
+  .biz-grid{grid-template-columns:1fr;}
+}
+.biz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;}
 .biz-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;overflow:hidden;transition:box-shadow .2s;text-decoration:none;color:var(--ink);display:block;}
 .biz-card:hover{box-shadow:4px 4px 0 var(--ink);}
 .biz-card-img{height:160px;background:linear-gradient(135deg,#2a2a2a,#1a1a1a);position:relative;overflow:hidden;}
@@ -89,6 +100,7 @@
       <p>No businesses found.</p>
     </div>
     {% endfor %}
+    {% include "includes/pagination.html" %}
   </div>
 </div>
 {% endblock %}

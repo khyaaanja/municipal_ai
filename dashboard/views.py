@@ -15,9 +15,13 @@ def dashboard_home(request):
     from datetime import timedelta
     week_ago = timezone.now() - timedelta(days=7)
 
+    import json as _json
     total       = Complaint.objects.count()
     pending     = Complaint.objects.filter(status='PENDING').count()
+    in_review   = Complaint.objects.filter(status='IN_REVIEW').count()
     in_progress = Complaint.objects.filter(status='IN_PROGRESS').count()
+    resolved    = Complaint.objects.filter(status='RESOLVED').count()
+    rejected    = Complaint.objects.filter(status='REJECTED').count()
     resolved_wk = Complaint.objects.filter(status='RESOLVED', resolved_at__gte=week_ago).count()
     recent      = Complaint.objects.select_related('user').order_by('-created_at')[:10]
 
@@ -33,19 +37,24 @@ def dashboard_home(request):
 
     return render(request, 'dashboard/home.html', {
         'total': total, 'pending': pending,
-        'in_progress': in_progress, 'resolved_wk': resolved_wk,
+        'in_review': in_review, 'in_progress': in_progress,
+        'resolved': resolved, 'rejected': rejected,
+        'resolved_wk': resolved_wk,
         'recent': recent, 'cat_data': cat_data,
+        'status_labels_json': _json.dumps(['Pending', 'In Review', 'In Progress', 'Resolved', 'Rejected']),
+        'status_values_json': _json.dumps([pending, in_review, in_progress, resolved, rejected]),
     })
 
 
 @staff_required
 def complaint_list_staff(request):
-    qs = Complaint.objects.select_related('user').order_by('-created_at')
+    qs = Complaint.objects.select_related('user', 'assigned_to').order_by('-created_at')
 
     status_filter   = request.GET.get('status', '')
     category_filter = request.GET.get('category', '')
     priority_filter = request.GET.get('priority', '')
     search          = request.GET.get('q', '').strip()
+    assigned_filter = request.GET.get('assigned', '')
 
     if status_filter:
         qs = qs.filter(status=status_filter)
@@ -59,9 +68,13 @@ def complaint_list_staff(request):
             Q(title__icontains=search) |
             Q(submitter_name__icontains=search)
         )
+    if assigned_filter == 'me':
+        qs = qs.filter(assigned_to=request.user)
 
     paginator = Paginator(qs, 20)
     page = paginator.get_page(request.GET.get('page'))
+
+    my_assigned_count = Complaint.objects.filter(assigned_to=request.user).count()
 
     return render(request, 'dashboard/complaints.html', {
         'page': page,
@@ -69,6 +82,8 @@ def complaint_list_staff(request):
         'category_filter': category_filter,
         'priority_filter': priority_filter,
         'search': search,
+        'assigned_filter': assigned_filter,
+        'my_assigned_count': my_assigned_count,
         'status_choices': Complaint.STATUS_CHOICES,
         'category_choices': Complaint.CATEGORY_CHOICES,
         'priority_choices': Complaint.PRIORITY_CHOICES,

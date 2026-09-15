@@ -1,0 +1,59 @@
+{% extends "base/base.html" %}
+{% block title %}Municipal Services{% endblock %}
+{% block content %}
+<style>
+.svc-wrap{max-width:1100px;margin:0 auto;padding:32px 20px}
+.svc-hero{background:linear-gradient(135deg,#1a1200,#2d2000);border-radius:12px;padding:36px 32px;margin-bottom:28px}
+.svc-hero h1{font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--gold);margin:0 0 6px}
+.svc-hero p{color:rgba(255,255,255,.6);margin:0 0 16px;font-size:.9rem}
+.track-link{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.4);color:var(--gold);border-radius:6px;font-family:var(--font-head);font-size:.85rem;font-weight:700;text-decoration:none;transition:all .15s}
+.track-link:hover{background:rgba(201,162,39,.25);color:var(--gold)}
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.svc-card{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:24px;transition:box-shadow .15s}
+.svc-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.svc-icon{font-size:2rem;margin-bottom:12px}
+.svc-name{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--ink);margin:0 0 8px}
+.svc-meta{display:flex;gap:16px;font-size:.78rem;color:var(--stone);margin-bottom:12px}
+.svc-docs{margin:0;padding:0 0 0 16px;font-size:.8rem;color:var(--stone)}
+.svc-docs li{margin-bottom:3px}
+.apply-btn{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:9px 20px;background:#C9A227;color:#fff;border-radius:5px;font-family:var(--font-head);font-size:.85rem;font-weight:700;text-decoration:none;transition:background .15s}
+.apply-btn:hover{background:#a88520;color:#fff}
+</style>
+<div class="svc-wrap">
+  <div class="svc-hero">
+    <h1>Municipal Services</h1>
+    <p>Apply for official documents and permits online. Track your application status in real time.</p>
+    {% if user.is_authenticated %}
+    <a href="/services/my/" class="track-link">📄 My Applications</a>
+    {% else %}
+    <a href="/login/?next=/services/my/" class="track-link">Login to Track Applications</a>
+    {% endif %}
+  </div>
+
+  <div class="svc-grid">
+    {% for code, info in catalog %}
+    <div class="svc-card">
+      <div class="svc-icon">
+        {% if 'BIRTH' in code %}🍼{% elif 'DEATH' in code %}🕊{% elif 'MARRIAGE' in code %}💍
+        {% elif 'PROPERTY' in code %}🏠{% elif 'BUILDING' in code %}🏗{% elif 'WATER' in code %}💧
+        {% else %}📋{% endif %}
+      </div>
+      <div class="svc-name">{{ info.label }}</div>
+      <div class="svc-meta">
+        <span>⏱ {{ info.days }} working day{% if info.days != 1 %}s{% endif %}</span>
+        <span>💳 {{ info.fee }}</span>
+      </div>
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:6px">Required Documents</div>
+      <ul class="svc-docs">
+        {% for doc in info.docs %}<li>{{ doc }}</li>{% endfor %}
+      </ul>
+      {% if user.is_authenticated %}
+      <a href="/services/apply/{{ code }}/" class="apply-btn">Apply Now →</a>
+      {% else %}
+      <a href="/login/?next=/services/apply/{{ code }}/" class="apply-btn">Login to Apply</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

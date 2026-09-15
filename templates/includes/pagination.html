@@ -1,0 +1,62 @@
+{% if page_obj.has_other_pages %}
+<nav class="pagination-wrap" aria-label="Pagination">
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="page-btn page-prev" aria-label="Previous">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    {% else %}
+    <span class="page-btn page-prev disabled" aria-disabled="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </span>
+    {% endif %}
+
+    {% for i in page_obj.paginator.page_range %}
+      {% if page_obj.number == i %}
+        <span class="page-btn active" aria-current="page">{{ i }}</span>
+      {% elif i == 1 or i == page_obj.paginator.num_pages %}
+        <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ i }}" class="page-btn">{{ i }}</a>
+      {% elif i >= page_obj.number|add:"-2" and i <= page_obj.number|add:"2" %}
+        <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ i }}" class="page-btn">{{ i }}</a>
+      {% elif i == page_obj.number|add:"-3" or i == page_obj.number|add:"3" %}
+        <span class="page-ellipsis">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="page-btn page-next" aria-label="Next">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    {% else %}
+    <span class="page-btn page-next disabled" aria-disabled="true">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </span>
+    {% endif %}
+  </div>
+  <div class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &middot; {{ page_obj.paginator.count }} total</div>
+</nav>
+
+<style>
+.pagination-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; padding:32px 0 16px; }
+.pagination { display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center; }
+.page-btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:36px; height:36px; padding:0 10px;
+  border-radius:8px; font-size:0.84rem; font-weight:600;
+  text-decoration:none; transition:all 0.15s;
+  background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.6);
+  border:1px solid rgba(255,255,255,0.08);
+}
+.page-btn:hover:not(.disabled):not(.active) {
+  background:rgba(255,255,255,0.1); color:var(--paper);
+  border-color:rgba(255,255,255,0.15);
+}
+.page-btn.active {
+  background:var(--red); color:#fff; border-color:var(--red);
+  box-shadow:0 2px 8px rgba(193,59,42,0.35);
+}
+.page-btn.disabled { opacity:0.3; cursor:not-allowed; pointer-events:none; }
+.page-ellipsis { display:inline-flex; align-items:center; justify-content:center; width:28px; height:36px; color:rgba(255,255,255,0.35); font-size:0.9rem; }
+.page-info { font-size:0.78rem; color:rgba(255,255,255,0.3); }
+</style>
+{% endif %}

@@ -1,0 +1,88 @@
+{% extends "chairperson/base.html" %}
+{% block title %}Ward {{ ward }} Complaints{% endblock %}
+
+{% block chair_content %}
+<div class="chair-page-header">
+  <div>
+    <h1 class="chair-page-title">Ward {{ ward }} Complaints</h1>
+    <p style="color:var(--stone);font-size:.85rem;margin:4px 0 0;">{{ total }} complaint{{ total|pluralize }} in your ward</p>
+  </div>
+  <a href="/chairperson/complaints/export/csv/?status={{ status_f }}&category={{ category_f }}" class="chair-btn chair-btn-outline" style="font-size:.8rem;">⬇ Export CSV</a>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="text" name="q" placeholder="Search ID, title, location…" value="{{ q }}">
+  <select name="status">
+    <option value="">All Statuses</option>
+    {% for val,lbl in status_choices %}
+    <option value="{{ val }}" {% if status_f == val %}selected{% endif %}>{{ lbl }}</option>
+    {% endfor %}
+  </select>
+  <select name="category">
+    <option value="">All Categories</option>
+    {% for val,lbl in category_choices %}
+    <option value="{{ val }}" {% if category_f == val %}selected{% endif %}>{{ lbl }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="chair-btn chair-btn-dark">Filter</button>
+  {% if q or status_f or category_f %}
+  <a href="/chairperson/complaints/" class="chair-btn chair-btn-outline">Clear</a>
+  {% endif %}
+</form>
+
+<div class="chair-card">
+  <div style="overflow-x:auto;">
+    <table class="chair-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Priority</th>
+          <th>Submitted</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page.object_list %}
+        <tr{% if c.is_overdue %} style="border-left:3px solid #C13B2A;"{% endif %}>
+          <td style="font-family:var(--font-head);font-weight:700;font-size:.82rem;">
+            {{ c.complaint_id }}
+            {% if c.is_overdue %}<span title="SLA overdue" style="color:#C13B2A;font-size:.7rem;margin-left:4px;">⚠ OVERDUE</span>{% endif %}
+          </td>
+          <td style="max-width:200px;">
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.88rem;">{{ c.title }}</div>
+            <div style="font-size:.74rem;color:var(--stone);">{{ c.location|truncatechars:40 }}</div>
+          </td>
+          <td style="font-size:.82rem;">{{ c.get_category_display }}</td>
+          <td><span class="pill pill-{{ c.status|lower }}">{{ c.status }}</span></td>
+          <td><span class="pill pill-{{ c.priority|lower }}">{{ c.priority }}</span></td>
+          <td style="font-size:.8rem;color:var(--stone);white-space:nowrap;">{{ c.created_at|date:"M j, Y" }}</td>
+          <td>
+            <a href="/chairperson/complaints/{{ c.complaint_id }}/" class="chair-btn chair-btn-outline" style="padding:4px 12px;font-size:.76rem;">Manage</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--stone);">No complaints found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if page.has_other_pages %}
+<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}&q={{ q }}&status={{ status_f }}&category={{ category_f }}" class="chair-btn chair-btn-outline">← Prev</a>
+  {% endif %}
+  {% for num in page.paginator.page_range %}
+  <a href="?page={{ num }}&q={{ q }}&status={{ status_f }}&category={{ category_f }}"
+     class="chair-btn {% if num == page.number %}chair-btn-green{% else %}chair-btn-outline{% endif %}">{{ num }}</a>
+  {% endfor %}
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&status={{ status_f }}&category={{ category_f }}" class="chair-btn chair-btn-outline">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "chairperson/base.html" %}
+{% block title %}{{ complaint.complaint_id }} — Ward {{ ward }}{% endblock %}
+
+{% block chair_extra_css %}
+<style>
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px; }
+@media(max-width:600px){ .detail-grid { grid-template-columns:1fr; } }
+.detail-box { background:#fff; border:1px solid #e8e3da; border-radius:6px; padding:16px; }
+.detail-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--stone); margin-bottom:4px; }
+.detail-val { font-size:.9rem; color:var(--ink); line-height:1.5; }
+.manage-card { background:#fff; border:1px solid #e8e3da; border-radius:8px; padding:24px; max-width:480px; }
+.manage-card h3 { font-family:var(--font-head); font-size:.95rem; margin:0 0 18px; }
+</style>
+{% endblock %}
+
+{% block chair_content %}
+<div class="chair-page-header">
+  <div>
+    <a href="/chairperson/complaints/" style="font-size:.82rem;color:var(--stone);">← Ward {{ ward }} Complaints</a>
+    <h1 class="chair-page-title" style="margin-top:4px;">{{ complaint.complaint_id }}</h1>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span class="pill pill-{{ complaint.status|lower }}">{{ complaint.status }}</span>
+    <span class="pill pill-{{ complaint.priority|lower }}">{{ complaint.priority }}</span>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-box" style="grid-column:1/-1">
+    <div class="detail-label">Title</div>
+    <div class="detail-val" style="font-size:1rem;font-weight:600;">{{ complaint.title }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Category</div>
+    <div class="detail-val">{{ complaint.get_category_display }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Location</div>
+    <div class="detail-val">{{ complaint.location }}</div>
+  </div>
+  <div class="detail-box" style="grid-column:1/-1">
+    <div class="detail-label">Description</div>
+    <div class="detail-val">{{ complaint.description }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Submitted by</div>
+    <div class="detail-val">
+      {{ complaint.submitter_name }}<br>
+      {% if complaint.submitter_email %}<span style="color:var(--stone);font-size:.82rem;">{{ complaint.submitter_email }}</span>{% endif %}
+      {% if complaint.submitter_phone %}<br><span style="color:var(--stone);font-size:.82rem;">{{ complaint.submitter_phone }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Timeline</div>
+    <div class="detail-val" style="font-size:.85rem;">
+      Submitted: {{ complaint.created_at|date:"M j, Y H:i" }}<br>
+      Updated: {{ complaint.updated_at|date:"M j, Y H:i" }}<br>
+      {% if complaint.resolved_at %}Resolved: {{ complaint.resolved_at|date:"M j, Y" }}{% endif %}
+    </div>
+  </div>
+  {% if complaint.admin_notes %}
+  <div class="detail-box" style="grid-column:1/-1">
+    <div class="detail-label">Current Notes</div>
+    <div class="detail-val" style="white-space:pre-line;">{{ complaint.admin_notes }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="manage-card">
+  <h3>✏️ Update Complaint</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Status</label>
+      <select name="status">
+        {% for val,lbl in status_choices %}
+        <option value="{{ val }}" {% if complaint.status == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Priority</label>
+      <select name="priority">
+        {% for val,lbl in priority_choices %}
+        <option value="{{ val }}" {% if complaint.priority == val %}selected{% endif %}>{{ lbl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Response / Notes (visible to citizen)</label>
+      <textarea name="admin_notes">{{ complaint.admin_notes }}</textarea>
+    </div>
+    <button type="submit" class="chair-btn chair-btn-green">Save Changes</button>
+  </form>
+</div>
+{% endblock %}

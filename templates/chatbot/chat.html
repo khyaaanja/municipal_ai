@@ -298,6 +298,38 @@
 }
 .send-btn:hover { background: var(--red-dark); }
 .send-btn:disabled { background: var(--stone-light); cursor: not-allowed; }
+.mic-btn {
+  width: 36px; height: 36px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--stone);
+  border: 1.5px solid var(--stone-light);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.mic-btn:hover { border-color: var(--red); color: var(--red); }
+.mic-btn.recording { background: var(--red); color: white; border-color: var(--red); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+.lang-toggle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-head);
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1.5px solid var(--stone-light);
+  background: transparent;
+  color: var(--stone);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.lang-toggle:hover { border-color: var(--red); color: var(--red); }
+.lang-toggle.ne-active { border-color: var(--gold); color: var(--gold); background: rgba(201,162,39,0.08); }
 .chat-input-hint { font-size: 0.72rem; color: var(--stone); margin-top: 6px; text-align: center; }
 
 /* ── LOADING ── */
@@ -365,6 +397,7 @@
 {% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <!-- Mobile overlay -->
 <div id="chatOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:899;" onclick="closeChatSidebar()"></div>
 
@@ -414,10 +447,13 @@
           <span>Online · Powered by city data</span>
         </div>
       </div>
+      <div style="margin-left:auto;">
+        <button class="lang-toggle" id="langToggle" onclick="toggleLanguage()" title="Switch language">🇬🇧 EN</button>
+      </div>
     </div>
 
     <!-- Messages -->
-    <div class="messages-area" id="messagesArea">
+    <div class="messages-area" id="messagesArea" role="log" aria-live="polite" aria-label="Conversation messages">
       <!-- Welcome state (shown when no messages) -->
       <div class="chat-welcome" id="welcomeState">
         <div class="chat-welcome-icon">✦</div>
@@ -442,6 +478,18 @@
           <div class="quick-prompt" onclick="sendQuick('How to get to {{ CITY_NAME }} from Kathmandu?')">
             <span class="quick-prompt-icon">🚌</span> Getting here
           </div>
+          <div class="quick-prompt" onclick="sendQuick('there is a pothole on the road near my house')">
+            <span class="quick-prompt-icon">🕳</span> Report road / pothole
+          </div>
+          <div class="quick-prompt" onclick="sendQuick('garbage is not being collected in my area')">
+            <span class="quick-prompt-icon">🗑</span> Report garbage issue
+          </div>
+          <div class="quick-prompt" onclick="window.location='/complaint/'">
+            <span class="quick-prompt-icon">🏛</span> File an official complaint
+          </div>
+          <div class="quick-prompt" onclick="sendQuick('check status of my complaint')">
+            <span class="quick-prompt-icon">📋</span> Check complaint status
+          </div>
         </div>
       </div>
     </div>
@@ -457,6 +505,7 @@
           onkeydown="handleKey(event)"
           oninput="autoResize(this)"
         ></textarea>
+        <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Voice input" style="display:none;">🎙️</button>
         <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">➤</button>
       </div>
       <div class="chat-input-hint">
@@ -661,8 +710,16 @@ async function sendFeedback(btn, rating) {
   }
 }
 
-// Focus input on load
-chatInput.focus();
+// Pre-fill from ?q= — user can review and press Enter to send
+const initialQuery = '{{ initial_query|escapejs }}';
+if (initialQuery) {
+  chatInput.value = initialQuery;
+  autoResize(chatInput);
+  chatInput.focus();
+  chatInput.setSelectionRange(chatInput.value.length, chatInput.value.length);
+} else {
+  chatInput.focus();
+}
 
 // Mobile sidebar
 function openChatSidebar() {
@@ -679,5 +736,87 @@ function updateChatMobile() {
 }
 updateChatMobile();
 window.addEventListener('resize', updateChatMobile);
+
+// ── VOICE INPUT ──
+let recognition = null;
+let isRecording = false;
+
+function initVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return;
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = currentLang === 'ne' ? 'ne-NP' : 'en-US';
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micBtn').textContent = '⏹️';
+  };
+  recognition.onresult = (e) => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+    chatInput.value = transcript;
+    autoResize(chatInput);
+  };
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent = '🎙️';
+  };
+  recognition.onerror = () => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent = '🎙️';
+  };
+  document.getElementById('micBtn').style.display = 'flex';
+}
+
+function toggleMic() {
+  if (!recognition) return;
+  if (isRecording) {
+    recognition.stop();
+  } else {
+    recognition.lang = currentLang === 'ne' ? 'ne-NP' : 'en-US';
+    recognition.start();
+  }
+}
+
+// ── LANGUAGE TOGGLE ──
+let currentLang = '{{ user.ai_profile.preferred_language|default:"en" }}';
+
+function updateLangButton() {
+  const btn = document.getElementById('langToggle');
+  if (!btn) return;
+  if (currentLang === 'ne') {
+    btn.textContent = '🇳🇵 नेपाली';
+    btn.classList.add('ne-active');
+    chatInput.placeholder = 'भक्तपुरका आकर्षण, घटनाहरू, ढाबाहरूको बारेमा सोध्नुहोस्...';
+  } else {
+    btn.textContent = '🇬🇧 EN';
+    btn.classList.remove('ne-active');
+    chatInput.placeholder = 'Ask about attractions, events, restaurants, transport...';
+  }
+}
+
+async function toggleLanguage() {
+  {% if user.is_authenticated %}
+  currentLang = currentLang === 'en' ? 'ne' : 'en';
+  updateLangButton();
+  if (recognition) recognition.lang = currentLang === 'ne' ? 'ne-NP' : 'en-US';
+  try {
+    await fetch('/chat/set-language/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ language: currentLang }),
+    });
+  } catch(e) {}
+  {% else %}
+  alert('Please login to save your language preference.');
+  {% endif %}
+}
+
+// Init
+updateLangButton();
+initVoice();
 </script>
 {% endblock %}

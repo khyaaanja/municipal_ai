@@ -1,0 +1,35 @@
+{% extends "mayor/base.html" %}
+{% block mayor_content %}
+<div class="mayor-page-header">
+  <h1 class="mayor-page-title">Civic Polls</h1>
+  <a href="/civic/mayor/polls/create/" class="mayor-btn mayor-btn-gold">+ Create Poll</a>
+</div>
+<div class="mayor-card">
+  <div class="mayor-card-head">All Polls</div>
+  <table class="mayor-table">
+    <thead><tr><th>Question</th><th>Scope</th><th>Votes</th><th>Status</th><th>Closes</th><th></th></tr></thead>
+    <tbody>
+      {% for p in polls %}
+      <tr>
+        <td style="font-weight:600">{{ p.question|truncatechars:60 }}</td>
+        <td>{% if p.ward_number %}Ward {{ p.ward_number }}{% else %}City-wide{% endif %}</td>
+        <td>{{ p.votes.count }}</td>
+        <td><span class="pill pill-{{ p.status|lower }}">{{ p.get_status_display }}</span></td>
+        <td>{{ p.closes_at|date:"M d, Y"|default:"—" }}</td>
+        <td>
+          <a href="/civic/polls/{{ p.pk }}/" class="mayor-btn mayor-btn-outline" style="padding:4px 12px;font-size:.78rem">View</a>
+          {% if p.status == 'ACTIVE' %}
+          <form method="post" action="/civic/mayor/polls/{{ p.pk }}/close/" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="mayor-btn" style="padding:4px 12px;font-size:.78rem;background:#C13B2A;color:#fff;border:none;cursor:pointer;border-radius:4px">Close</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--stone);padding:30px">No polls yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

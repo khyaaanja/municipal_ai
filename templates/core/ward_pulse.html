@@ -1,0 +1,301 @@
+{% extends "base/base.html" %}
+{% block title %}Ward {{ ward_number }} — Bhaktapur Municipality{% endblock %}
+{% block content %}
+<div style="max-width:1100px;margin:0 auto;padding:40px 24px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:32px;">
+    <div>
+      {% if is_my_ward %}
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,162,39,0.12);border:1px solid rgba(201,162,39,0.35);border-radius:20px;padding:4px 12px;font-size:0.75rem;color:#C9A227;font-weight:700;margin-bottom:10px;letter-spacing:0.04em;">
+        ★ YOUR WARD
+      </div>
+      {% endif %}
+      <h1 style="font-family:var(--font-head);font-size:2.2rem;font-weight:800;color:var(--ink);margin:0 0 6px;">
+        Ward {{ ward_number }} Pulse
+      </h1>
+      <p style="color:#666;margin:0;">
+        Live civic dashboard for Ward {{ ward_number }}, Bhaktapur Municipality.
+        {% if chairperson %}Chaired by <strong>{{ chairperson.get_full_name }}</strong>.{% endif %}
+      </p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a href="/complaint/?ward={{ ward_number }}" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--red,#C13B2A);color:#fff;border-radius:6px;font-weight:700;font-size:0.85rem;text-decoration:none;">
+        + Report Issue
+      </a>
+      <a href="/ward/{{ ward_number }}/chairperson/" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:#f5f5f5;color:#333;border-radius:6px;font-weight:600;font-size:0.85rem;text-decoration:none;border:1px solid #ddd;">
+        Chairperson Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- Ward nav -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px;">
+    <span style="font-size:0.8rem;color:#999;padding:6px 0;align-self:center;">Jump to ward:</span>
+    {% for w in wards %}
+    <a href="/ward/{{ w }}/" style="padding:5px 11px;border-radius:16px;font-size:0.78rem;font-weight:600;text-decoration:none;
+      {% if w == ward_number %}background:var(--ink,#0D0D0D);color:#fff;{% else %}background:#f0f0f0;color:#555;{% endif %}">{{ w }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- Stat cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:32px;">
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:var(--ink,#0D0D0D);">{{ total_complaints }}</div>
+      <div style="font-size:0.75rem;color:#999;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em;">Total Filed</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#4ade80;">{{ resolved_count }}</div>
+      <div style="font-size:0.75rem;color:#999;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em;">Resolved</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#D4620A;">{{ in_progress_count }}</div>
+      <div style="font-size:0.75rem;color:#999;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em;">In Progress</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#C9A227;">{{ pending_count }}</div>
+      <div style="font-size:0.75rem;color:#999;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em;">Pending</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:{% if resolution_rate >= 70 %}#2d8a4a{% elif resolution_rate >= 40 %}#C9A227{% else %}#C13B2A{% endif %};">{{ resolution_rate }}%</div>
+      <div style="font-size:0.75rem;color:#999;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em;">Resolution Rate</div>
+    </div>
+    {% if avg_rating %}
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:18px 20px;text-align:center;">
+      <div style="font-size:2rem;font-weight:800;color:#C9A227;">{{ avg_rating }}★</div>
+      <div style="font-size:0.75rem;color:#999;margin-top:3px;text-transform:uppercase;letter-spacing:0.05em;">Avg Service Rating</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+    <!-- Left column -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <!-- Top Issues -->
+      {% if top_issues %}
+      <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:22px;">
+        <h2 style="font-family:var(--font-head);font-size:1.05rem;font-weight:800;margin:0 0 16px;color:var(--ink,#0D0D0D);">🔥 Top Issues Needing Attention</h2>
+        {% for c in top_issues %}
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;{% if not forloop.last %}border-bottom:1px solid #f0f0f0;{% endif %}">
+          <div style="background:#FFF3CD;color:#C9A227;border-radius:6px;padding:4px 8px;font-size:0.75rem;font-weight:800;min-width:32px;text-align:center;flex-shrink:0;">{{ c.vote_count }}</div>
+          <div style="flex:1;min-width:0;">
+            <a href="/complaint/status/{{ c.complaint_id }}/" style="font-weight:600;font-size:0.9rem;color:var(--ink,#0D0D0D);text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.title }}</a>
+            <div style="display:flex;gap:8px;margin-top:3px;">
+              <span style="font-size:0.72rem;color:#999;">{{ c.get_category_display }}</span>
+              <span style="font-size:0.72rem;padding:1px 7px;border-radius:10px;
+                {% if c.status == 'PENDING' %}background:#FFF3CD;color:#C9A227;
+                {% elif c.status == 'IN_REVIEW' %}background:#dbeafe;color:#1d4ed8;
+                {% elif c.status == 'IN_PROGRESS' %}background:#FDEBD0;color:#D4620A;
+                {% endif %}">{{ c.get_status_display }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        <a href="/transparency/?ward={{ ward_number }}" style="display:block;text-align:center;margin-top:12px;font-size:0.82rem;color:var(--red,#C13B2A);font-weight:600;text-decoration:none;">View all complaints &rarr;</a>
+      </div>
+      {% endif %}
+
+      <!-- Category breakdown -->
+      {% if top_categories %}
+      <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:22px;">
+        <h2 style="font-family:var(--font-head);font-size:1.05rem;font-weight:800;margin:0 0 16px;color:var(--ink,#0D0D0D);">📊 Top Issues by Category</h2>
+        {% for cat in top_categories %}
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:0.85rem;color:#333;font-weight:500;">{{ cat.label }}</span>
+            <span style="font-size:0.8rem;color:#666;font-weight:600;">{{ cat.n }}</span>
+          </div>
+          <div style="background:#f0f0f0;border-radius:4px;height:6px;overflow:hidden;">
+            <div style="background:var(--red,#C13B2A);height:100%;width:{% widthratio cat.n total_complaints 100 %}%;border-radius:4px;"></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Budget -->
+      {% if budget %}
+      <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:22px;">
+        <h2 style="font-family:var(--font-head);font-size:1.05rem;font-weight:800;margin:0 0 4px;color:var(--ink,#0D0D0D);">💰 Ward Budget ({{ budget.fiscal_year }})</h2>
+        <p style="font-size:0.78rem;color:#999;margin:0 0 16px;">Read-only — managed by your Ward Chairperson</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div style="text-align:center;">
+            <div style="font-size:1.1rem;font-weight:800;color:#333;">NPR {{ budget.total_allocation|floatformat:0 }}</div>
+            <div style="font-size:0.72rem;color:#999;margin-top:2px;">Allocated</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.1rem;font-weight:800;color:#D4620A;">NPR {{ budget.spent|floatformat:0 }}</div>
+            <div style="font-size:0.72rem;color:#999;margin-top:2px;">Spent</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:1.1rem;font-weight:800;color:#2d8a4a;">NPR {{ budget.remaining|floatformat:0 }}</div>
+            <div style="font-size:0.72rem;color:#999;margin-top:2px;">Remaining</div>
+          </div>
+        </div>
+        <div style="background:#f0f0f0;border-radius:6px;height:10px;overflow:hidden;">
+          <div style="background:{% if budget.spend_pct > 90 %}#C13B2A{% elif budget.spend_pct > 70 %}#C9A227{% else %}#2d8a4a{% endif %};height:100%;width:{{ budget.spend_pct }}%;transition:width 0.5s;"></div>
+        </div>
+        <div style="font-size:0.75rem;color:#999;margin-top:6px;text-align:right;">{{ budget.spend_pct }}% utilised</div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- Right column -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <!-- Projects -->
+      <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:22px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="font-family:var(--font-head);font-size:1.05rem;font-weight:800;margin:0;color:var(--ink,#0D0D0D);">🏗 Ward Projects</h2>
+          <span style="font-size:0.78rem;color:#D4620A;font-weight:600;">{{ active_project_count }} active</span>
+        </div>
+        {% if projects %}
+        {% for p in projects %}
+        <div style="padding:12px 0;{% if not forloop.last %}border-bottom:1px solid #f5f5f5;{% endif %}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:0.88rem;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.title }}</div>
+              <div style="font-size:0.75rem;color:#999;margin-top:1px;">
+                {{ p.get_status_display }}
+                {% if p.end_date %} · Due {{ p.end_date }}{% endif %}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              {% if user.is_authenticated %}
+              <button onclick="toggleFollow(this, {{ p.pk }})" data-pk="{{ p.pk }}"
+                style="border:1px solid {% if p.pk in followed_project_ids %}#C9A227{% else %}#ddd{% endif %};background:{% if p.pk in followed_project_ids %}#FFF3CD{% else %}#f9f9f9{% endif %};color:{% if p.pk in followed_project_ids %}#C9A227{% else %}#666{% endif %};border-radius:5px;padding:4px 10px;font-size:0.75rem;cursor:pointer;font-weight:600;"
+                data-following="{% if p.pk in followed_project_ids %}1{% else %}0{% endif %}">
+                {% if p.pk in followed_project_ids %}★ Following{% else %}☆ Follow{% endif %}
+              </button>
+              {% endif %}
+              <span style="font-size:0.8rem;font-weight:700;color:{% if p.status == 'COMPLETED' %}#2d8a4a{% elif p.status == 'IN_PROGRESS' %}#D4620A{% elif p.status == 'ON_HOLD' %}#888{% else %}#C9A227{% endif %};">{{ p.progress_pct }}%</span>
+            </div>
+          </div>
+          <div style="background:#f0f0f0;border-radius:4px;height:5px;overflow:hidden;">
+            <div style="background:{% if p.status == 'COMPLETED' %}#4ade80{% elif p.status == 'IN_PROGRESS' %}#D4620A{% else %}#C9A227{% endif %};height:100%;width:{{ p.progress_pct }}%;"></div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:#999;font-size:0.85rem;text-align:center;padding:20px 0;">No projects recorded for this ward yet.</p>
+        {% endif %}
+        <a href="/ward-projects/?ward={{ ward_number }}" style="display:block;text-align:center;margin-top:14px;font-size:0.82rem;color:var(--red,#C13B2A);font-weight:600;text-decoration:none;">View all ward projects &rarr;</a>
+      </div>
+
+      <!-- Announcements -->
+      <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:22px;">
+        <h2 style="font-family:var(--font-head);font-size:1.05rem;font-weight:800;margin:0 0 16px;color:var(--ink,#0D0D0D);">📢 Recent Announcements</h2>
+        {% if announcements %}
+        {% for ann in announcements %}
+        <div style="padding:12px 0;{% if not forloop.last %}border-bottom:1px solid #f5f5f5;{% endif %}">
+          <div style="font-weight:600;font-size:0.88rem;color:#222;margin-bottom:3px;">{{ ann.title }}</div>
+          <div style="font-size:0.8rem;color:#666;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ ann.body }}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.72rem;color:#999;">{{ ann.created_at|date:"M d, Y" }}{% if ann.ward_number %} · Ward {{ ann.ward_number }}{% else %} · City-wide{% endif %}</span>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:0.72rem;color:#aaa;">{{ ann.comments.count }} comment{{ ann.comments.count|pluralize }}</span>
+              <a href="/announcements/#ann-{{ ann.pk }}" style="font-size:0.75rem;color:var(--red,#C13B2A);font-weight:600;text-decoration:none;">Read &rarr;</a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p style="color:#999;font-size:0.85rem;text-align:center;padding:20px 0;">No recent announcements for Ward {{ ward_number }}.</p>
+        {% endif %}
+        <a href="/announcements/?ward={{ ward_number }}" style="display:block;text-align:center;margin-top:14px;font-size:0.82rem;color:var(--red,#C13B2A);font-weight:600;text-decoration:none;">View all announcements &rarr;</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Participate Section ── -->
+{% if upcoming_meeting or open_proposals_count or ward_active_polls or ward_open_petitions %}
+<div style="max-width:1100px;margin:0 auto;padding:0 20px 32px;">
+  <div style="background:#fff;border:1px solid #e8e3da;border-radius:10px;overflow:hidden;">
+    <div style="padding:16px 24px;border-bottom:1px solid #e8e3da;display:flex;align-items:center;justify-content:space-between;">
+      <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--ink);margin:0;">🏛 Participate in Ward {{ ward_number }}</h2>
+      <a href="/civic/proposals/?ward={{ ward_number }}" style="font-size:.8rem;color:#16a34a;font-weight:700;text-decoration:none;">All participation →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0;">
+
+      {% if upcoming_meeting %}
+      <div style="padding:20px 24px;border-right:1px solid #f0ece4;">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin-bottom:8px;">📅 Next Meeting</div>
+        <div style="font-weight:700;color:var(--ink);font-size:.95rem;margin-bottom:4px;">{{ upcoming_meeting.title }}</div>
+        <div style="font-size:.8rem;color:var(--stone);margin-bottom:4px;">{{ upcoming_meeting.meeting_date|date:"M d, Y · g:i A" }}</div>
+        <div style="font-size:.78rem;color:var(--stone);margin-bottom:12px;">📍 {{ upcoming_meeting.venue }}</div>
+        <a href="/civic/meetings/{{ upcoming_meeting.pk }}/" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:#16a34a;color:#fff;border-radius:5px;font-size:.8rem;font-weight:700;text-decoration:none;">RSVP Now</a>
+      </div>
+      {% endif %}
+
+      {% if open_proposals_count %}
+      <div style="padding:20px 24px;border-right:1px solid #f0ece4;">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin-bottom:8px;">💡 Proposals</div>
+        <div style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--ink);line-height:1;margin-bottom:4px;">{{ open_proposals_count }}</div>
+        <div style="font-size:.82rem;color:var(--stone);margin-bottom:12px;">open proposal{{ open_proposals_count|pluralize }} need community support</div>
+        <a href="/civic/proposals/?ward={{ ward_number }}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border:1px solid #16a34a;color:#16a34a;border-radius:5px;font-size:.8rem;font-weight:700;text-decoration:none;">View Proposals</a>
+        <a href="/civic/proposals/submit/" style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:#16a34a;color:#fff;border-radius:5px;font-size:.8rem;font-weight:700;text-decoration:none;margin-left:6px;">+ Submit Yours</a>
+      </div>
+      {% endif %}
+
+      {% if ward_active_polls %}
+      <div style="padding:20px 24px;border-right:1px solid #f0ece4;">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin-bottom:8px;">🗳 Active Polls</div>
+        {% for poll in ward_active_polls %}
+        <a href="/civic/polls/{{ poll.pk }}/" style="display:block;padding:8px 12px;background:#f5f0e8;border-radius:5px;text-decoration:none;color:var(--ink);font-size:.85rem;font-weight:600;margin-bottom:6px;">{{ poll.question|truncatechars:50 }} →</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if ward_open_petitions %}
+      <div style="padding:20px 24px;">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin-bottom:8px;">📜 Petitions</div>
+        {% for pet in ward_open_petitions %}
+        <div style="margin-bottom:10px;">
+          <a href="/civic/petitions/{{ pet.pk }}/" style="font-size:.85rem;font-weight:600;color:var(--ink);text-decoration:none;display:block;margin-bottom:4px;">{{ pet.title|truncatechars:45 }}</a>
+          <div style="height:6px;background:#e8e3da;border-radius:3px;overflow:hidden;margin-bottom:2px;">
+            <div style="height:100%;background:#16a34a;border-radius:3px;width:{{ pet.progress_pct }}%;"></div>
+          </div>
+          <div style="font-size:.72rem;color:var(--stone);">{{ pet.signature_count }} / {{ pet.goal_signatures }} signatures</div>
+        </div>
+        {% endfor %}
+        <a href="/civic/petitions/" style="font-size:.78rem;color:#16a34a;font-weight:700;text-decoration:none;">All petitions →</a>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if user.is_authenticated %}
+<script>
+function toggleFollow(btn, pk) {
+  const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+  fetch(`/ward-projects/${pk}/follow/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': csrfToken, 'Content-Type': 'application/json'},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.following) {
+      btn.textContent = '★ Following';
+      btn.style.borderColor = '#C9A227';
+      btn.style.background = '#FFF3CD';
+      btn.style.color = '#C9A227';
+    } else {
+      btn.textContent = '☆ Follow';
+      btn.style.borderColor = '#ddd';
+      btn.style.background = '#f9f9f9';
+      btn.style.color = '#666';
+    }
+  })
+  .catch(() => {});
+}
+</script>
+{% endif %}
+{% endblock %}

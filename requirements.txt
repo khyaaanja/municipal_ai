@@ -34,3 +34,8 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.7.0
 wheel==0.47.0
+celery==5.6.3
+django-celery-beat==2.9.0
+redis==8.0.0
+gunicorn==23.0.0
+sentry-sdk[django]==2.29.1

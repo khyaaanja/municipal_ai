@@ -1,0 +1,718 @@
+{% extends "base/base.html" %}
+{% block title %}My Dashboard — {{ CITY_NAME }} Municipality{% endblock %}
+
+{% block extra_css %}
+<style>
+body { background: var(--ink) !important; color: var(--paper) !important; }
+
+.cd { max-width: 980px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+
+/* ── HEADER ── */
+.cd-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.cd-greeting-name {
+  font-family: var(--font-head); font-size: 1.65rem; font-weight: 800;
+  letter-spacing: -.025em; line-height: 1;
+  background: linear-gradient(135deg, var(--paper) 0%, rgba(245,241,233,.6) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.cd-greeting-sub { font-size: .83rem; color: rgba(255,255,255,.32); margin-top: 5px; }
+.cd-badge-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 30px; font-size: .78rem; font-weight: 700;
+  border: 1px solid currentColor; opacity: .9;
+}
+
+/* ── WELCOME BANNER ── */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(217,119,6,.1) 0%, rgba(220,38,38,.06) 100%);
+  border: 1px solid rgba(217,119,6,.25); border-radius: 12px;
+  padding: 1.25rem 1.4rem; margin-bottom: 1.5rem; position: relative;
+  overflow: hidden;
+}
+.welcome-banner::before {
+  content: '🎉'; position: absolute; right: 1.5rem; top: 50%;
+  transform: translateY(-50%); font-size: 4rem; opacity: .07;
+  pointer-events: none;
+}
+.welcome-dismiss {
+  position: absolute; top: .75rem; right: .75rem;
+  background: none; border: none; color: rgba(255,255,255,.3);
+  cursor: pointer; font-size: 1rem; line-height: 1;
+  transition: color .15s;
+}
+.welcome-dismiss:hover { color: var(--paper); }
+.welcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: .85rem 0 1.1rem; }
+@media(max-width:480px){ .welcome-grid { grid-template-columns: 1fr; } }
+.welcome-feature { display: flex; gap: .55rem; align-items: flex-start; font-size: .8rem; color: rgba(245,241,233,.75); }
+
+/* ── QUICK ACTIONS ── */
+.qa-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .55rem; }
+@media(max-width:480px){ .qa-grid { grid-template-columns: 1fr 1fr; } }
+.qa-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: .9rem .5rem; border-radius: 10px;
+  border: 1.5px solid transparent; text-decoration: none; color: var(--paper);
+  font-size: .75rem; font-weight: 600; font-family: var(--font-head);
+  text-align: center; transition: all .22s cubic-bezier(.34,1.56,.64,1);
+  position: relative; overflow: hidden;
+}
+.qa-btn:hover { transform: translateY(-3px); color: var(--paper); }
+.qa-btn-icon { font-size: 1.45rem; line-height: 1; display: inline-block; transition: transform .2s var(--spring,0.4s); }
+.qa-btn:hover .qa-btn-icon { transform: scale(1.18); }
+
+.qa-red    { background: rgba(220,38,38,.1);  border-color: rgba(220,38,38,.25); }
+.qa-red:hover    { background: rgba(220,38,38,.18); border-color: rgba(220,38,38,.5); box-shadow: 0 8px 24px rgba(220,38,38,.15); }
+.qa-gold   { background: rgba(217,119,6,.08); border-color: rgba(217,119,6,.22); }
+.qa-gold:hover   { background: rgba(217,119,6,.16); border-color: rgba(217,119,6,.45); box-shadow: 0 8px 24px rgba(217,119,6,.12); }
+.qa-blue   { background: rgba(37,99,235,.08); border-color: rgba(37,99,235,.22); }
+.qa-blue:hover   { background: rgba(37,99,235,.15); border-color: rgba(37,99,235,.45); box-shadow: 0 8px 24px rgba(37,99,235,.12); }
+.qa-green  { background: rgba(5,150,105,.08); border-color: rgba(5,150,105,.22); }
+.qa-green:hover  { background: rgba(5,150,105,.15); border-color: rgba(5,150,105,.45); box-shadow: 0 8px 24px rgba(5,150,105,.12); }
+.qa-purple { background: rgba(124,58,237,.08); border-color: rgba(124,58,237,.22); }
+.qa-purple:hover { background: rgba(124,58,237,.15); border-color: rgba(124,58,237,.45); box-shadow: 0 8px 24px rgba(124,58,237,.12); }
+.qa-white  { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.1); }
+.qa-white:hover  { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.22); }
+
+/* ── STAT CARDS ── */
+.stat-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: .65rem; margin-bottom: 1rem; }
+@media(max-width:480px){ .stat-cards { grid-template-columns: 1fr 1fr; gap: .4rem; } }
+@media(max-width:360px){ .stat-cards { grid-template-columns: 1fr; } }
+.stat-card {
+  border-radius: 10px; padding: 1rem .6rem; text-align: center;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  transition: all var(--spring,.4s);
+}
+.stat-card:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.13); transform: translateY(-2px); }
+.stat-num { font-family: var(--font-head); font-size: 2.1rem; font-weight: 800; line-height: 1; }
+.stat-lbl { font-size: .68rem; color: rgba(255,255,255,.38); text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
+
+/* ── GLASS CARD ── */
+.gcard {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 1.25rem;
+  transition: border-color var(--t,.25s);
+}
+.gcard:hover { border-color: rgba(255,255,255,.13); }
+.gcard-title {
+  font-family: var(--font-head); font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.35);
+  margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;
+}
+
+/* ── COMPLAINT ROWS ── */
+.c-row {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .6rem 0; border-bottom: 1px solid rgba(255,255,255,.05);
+  text-decoration: none; color: inherit; transition: color .12s;
+}
+.c-row:last-child { border-bottom: none; }
+.c-row:hover { color: var(--gold-light); }
+.c-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.c-dot.s-PENDING     { background: var(--gold); box-shadow: 0 0 6px rgba(217,119,6,.4); }
+.c-dot.s-IN_REVIEW   { background: #60a5fa; box-shadow: 0 0 6px rgba(96,165,250,.4); }
+.c-dot.s-IN_PROGRESS { background: #FB923C; box-shadow: 0 0 6px rgba(251,146,60,.4); }
+.c-dot.s-RESOLVED    { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,.4); }
+.c-dot.s-REJECTED    { background: var(--red); box-shadow: 0 0 6px rgba(220,38,38,.4); }
+.c-title { font-size: .85rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-id    { font-size: .71rem; color: var(--gold-light); font-family: var(--font-head); font-weight: 600; flex-shrink: 0; }
+.c-badge {
+  font-size: .67rem; font-weight: 700; padding: 2px 9px; border-radius: 20px; flex-shrink: 0; white-space: nowrap;
+}
+
+/* ── CIVIC SCORE RING ── */
+.score-ring-wrap { display: flex; justify-content: center; margin: .5rem 0 1.25rem; }
+.score-ring { position: relative; width: 110px; height: 110px; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring-bg { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 8; }
+.score-ring-fill { fill: none; stroke-width: 8; stroke-linecap: round;
+  transition: stroke-dashoffset 1.2s cubic-bezier(.17,.67,.42,1.3); }
+.score-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-num { font-family: var(--font-head); font-size: 1.8rem; font-weight: 800; line-height: 1; }
+.score-lbl { font-size: .65rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+
+/* ── SCORE BREAKDOWN ── */
+.score-breakdown { display: flex; flex-direction: column; gap: 5px; font-size: .78rem; }
+.score-line { display: flex; justify-content: space-between; align-items: center; color: rgba(255,255,255,.45); }
+.score-line-val { color: var(--paper); font-weight: 600; }
+
+/* ── PROGRESS BAR ── */
+.prog-bar { background: rgba(255,255,255,.07); border-radius: 20px; height: 6px; overflow: hidden; margin: .65rem 0; }
+.prog-fill { height: 100%; border-radius: 20px; transition: width .7s ease; }
+
+/* ── NOTIFICATIONS ── */
+.notif-row { display: flex; gap: .65rem; padding: .6rem 0; border-bottom: 1px solid rgba(255,255,255,.05); font-size: .82rem; align-items: flex-start; }
+.notif-row:last-child { border-bottom: none; }
+.notif-dot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; margin-top: 5px; flex-shrink: 0; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+.notif-meta { font-size: .71rem; color: rgba(255,255,255,.28); margin-top: 2px; }
+
+/* ── TAB BUTTONS ── */
+.tab-btns { display: flex; gap: 6px; }
+.tab-btn {
+  font-size: .7rem; padding: 3px 10px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.15); background: transparent;
+  color: rgba(255,255,255,.38); cursor: pointer; font-weight: 600;
+  transition: all .15s; font-family: var(--font-head);
+}
+.tab-btn.active { background: rgba(217,119,6,.15); color: var(--gold-light); border-color: rgba(217,119,6,.4); }
+
+/* ── WARD SECTION ── */
+.ward-mini-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: .45rem; }
+.ward-mini-stat { background: rgba(255,255,255,.04); border-radius: 8px; padding: .65rem .5rem; text-align: center; }
+.ward-mini-num { font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; }
+.ward-mini-lbl { font-size: .62rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
+
+/* ── LINK CHIPS ── */
+.chip-row { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 11px; border-radius: 6px; font-size: .74rem; font-weight: 600;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.5); text-decoration: none; transition: all .15s;
+}
+.chip:hover { background: rgba(255,255,255,.1); color: var(--paper); }
+
+/* ── POLL/PROPOSAL ROWS ── */
+.list-row {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  padding: .65rem .8rem; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px; text-decoration: none; color: inherit; font-size: .85rem;
+  transition: background .14s, border-color .14s; margin-bottom: .45rem;
+}
+.list-row:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14); }
+
+/* ── SERVICE REQUEST ── */
+.sr-row { display: flex; align-items: center; gap: .75rem; padding: .65rem .8rem; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 8px; text-decoration: none; color: inherit; margin-bottom: .45rem; transition: background .14s; }
+.sr-row:hover { background: rgba(255,255,255,.08); }
+
+/* ── ESCALATION CARD ── */
+.esc-card { background: rgba(220,38,38,.07); border: 1px solid rgba(220,38,38,.2); border-left: 3px solid rgba(220,38,38,.6); border-radius: 10px; }
+
+/* ── EMPTY ── */
+.cd-empty { text-align: center; color: rgba(255,255,255,.28); font-size: .82rem; padding: 1.2rem 0; }
+
+/* ── GRID LAYOUT ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media(max-width:640px){ .two-col { grid-template-columns: 1fr; } }
+
+/* ── CIVIC CARD MODAL ── */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.82);
+  z-index: 9999; align-items: center; justify-content: center; padding: 1rem;
+  backdrop-filter: blur(8px);
+}
+.civic-card-inner { background: linear-gradient(145deg,var(--ink-soft),var(--ink)); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; max-width: 380px; width: 100%; overflow: hidden; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cd">
+
+  <!-- ══ WELCOME BANNER ══ -->
+  {% if request.GET.welcome %}
+  <div class="welcome-banner">
+    <button class="welcome-dismiss" onclick="this.parentElement.style.display='none'" aria-label="Dismiss">✕</button>
+    <div style="font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--gold-light);margin-bottom:.35rem;">
+      Welcome to {{ CITY_NAME }} Municipality!
+    </div>
+    <div style="font-size:.83rem;color:rgba(255,255,255,.4);">You're now a registered citizen. Here's what you've unlocked:</div>
+    <div class="welcome-grid">
+      <div class="welcome-feature"><span style="color:var(--gold);">🤖</span><span><strong style="color:var(--paper);">AI writing assistant</strong> — live suggestions as you file complaints</span></div>
+      <div class="welcome-feature"><span style="color:var(--red-soft);">⚡</span><span><strong style="color:var(--paper);">Mayor escalation</strong> — one click when officials stall</span></div>
+      <div class="welcome-feature"><span style="color:#6EE7B7;">🙋</span><span><strong style="color:var(--paper);">Co-sign complaints</strong> — amplify community pressure</span></div>
+      <div class="welcome-feature"><span style="color:#93C5FD;">📊</span><span><strong style="color:var(--paper);">Civic impact tracking</strong> — see residents helped by you</span></div>
+    </div>
+    <div style="display:flex;gap:.65rem;flex-wrap:wrap;">
+      <a href="/complaint/" style="background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#111;border-radius:7px;padding:8px 18px;font-weight:700;font-size:.82rem;text-decoration:none;">Report Your First Issue →</a>
+      {% if not request.user.ward_number %}
+      <a href="/profile/" style="background:rgba(255,255,255,.08);color:var(--paper);border:1px solid rgba(255,255,255,.15);border-radius:7px;padding:8px 16px;font-weight:600;font-size:.82rem;text-decoration:none;">Set Your Ward</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ══ HEADER ══ -->
+  <div class="cd-header">
+    <div>
+      <div class="cd-greeting-name">
+        {% if request.GET.welcome %}Welcome, {{ request.user.first_name|default:request.user.username }}!{% else %}{{ request.user.first_name|default:request.user.username }}{% endif %}
+      </div>
+      <div class="cd-greeting-sub">
+        {% if not request.GET.welcome %}Here's your civic activity at a glance{% endif %}{% if request.user.ward_number %} · Ward {{ request.user.ward_number }}{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+      <div class="cd-badge-pill" style="color:{{ badge_color }};">★ {{ badge }}</div>
+      <a href="/profile/" style="display:inline-flex;align-items:center;gap:5px;font-size:.78rem;color:rgba(255,255,255,.35);text-decoration:none;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 12px;transition:all .15s;" onmouseover="this.style.borderColor='rgba(255,255,255,.25)';this.style.color='var(--paper)'" onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.35)'">
+        ⚙ Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- ══ QUICK ACTIONS ══ -->
+  <div class="gcard" style="margin-bottom:1rem;">
+    <div class="gcard-title">Quick Actions</div>
+    <div class="qa-grid">
+      <a href="/complaint/" class="qa-btn qa-red"><span class="qa-btn-icon">📝</span>Report Issue</a>
+      <a href="/complaint/track/" class="qa-btn qa-gold"><span class="qa-btn-icon">🔍</span>Track Complaint</a>
+      <a href="/complaint/my/" class="qa-btn qa-blue"><span class="qa-btn-icon">📋</span>My Reports</a>
+      <a href="/announcements/" class="qa-btn qa-gold"><span class="qa-btn-icon">📢</span>Announcements</a>
+      <a href="/ward-projects/" class="qa-btn qa-green"><span class="qa-btn-icon">🏗</span>Ward Projects</a>
+      <a href="/transparency/" class="qa-btn qa-purple"><span class="qa-btn-icon">📊</span>Transparency</a>
+      <a href="/civic/proposals/submit/" class="qa-btn qa-blue"><span class="qa-btn-icon">💡</span>Submit Proposal</a>
+      <a href="/services/" class="qa-btn qa-green"><span class="qa-btn-icon">🏛</span>Apply for Service</a>
+      <a href="/civic/petitions/" class="qa-btn qa-white"><span class="qa-btn-icon">✍</span>Sign a Petition</a>
+    </div>
+  </div>
+
+  <!-- ══ TWO-COL ══ -->
+  <div class="two-col" style="margin-bottom:1rem;">
+
+    <!-- Complaints -->
+    <div class="gcard">
+      <div class="gcard-title">Your Complaints</div>
+      <div class="stat-cards" style="margin-bottom:1rem;">
+        <div class="stat-card">
+          <div class="stat-num">{{ total_filed }}</div>
+          <div class="stat-lbl">Filed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--gold-light);">{{ open_count }}</div>
+          <div class="stat-lbl">Open</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:#4ade80;">{{ total_resolved }}</div>
+          <div class="stat-lbl">Resolved</div>
+        </div>
+      </div>
+
+      {% if my_complaints %}
+        {% for c in my_complaints %}
+        <a class="c-row" href="/complaint/status/{{ c.complaint_id }}/">
+          <div class="c-dot s-{{ c.status }}"></div>
+          <div class="c-title">{{ c.title }}</div>
+          <div class="c-id">{{ c.complaint_id }}</div>
+        </a>
+        {% endfor %}
+        {% if total_filed > 5 %}
+        <a href="/complaint/my/" style="display:block;text-align:center;font-size:.77rem;color:rgba(255,255,255,.3);margin-top:.75rem;text-decoration:none;transition:color .12s;" onmouseover="this.style.color='var(--gold-light)'" onmouseout="this.style.color='rgba(255,255,255,.3)'">View all {{ total_filed }} complaints →</a>
+        {% endif %}
+      {% else %}
+      <div style="padding:.25rem 0;">
+        <div style="font-size:.81rem;color:rgba(255,255,255,.35);margin-bottom:.85rem;">You haven't filed any complaints yet.</div>
+        <a href="/complaint/" style="display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);border-radius:8px;text-decoration:none;color:var(--paper);margin-bottom:.5rem;transition:background .14s;" onmouseover="this.style.background='rgba(217,119,6,.14)'" onmouseout="this.style.background='rgba(217,119,6,.08)'">
+          <span style="font-size:1.3rem;">📝</span>
+          <div><div style="font-weight:700;font-size:.85rem;color:var(--gold-light);">Report an issue in your ward</div><div style="font-size:.74rem;color:rgba(255,255,255,.35);margin-top:1px;">AI writes with you — takes 2 minutes</div></div>
+          <span style="margin-left:auto;color:var(--gold-light);">→</span>
+        </a>
+        <a href="/transparency/" style="display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;text-decoration:none;color:var(--paper);margin-bottom:.5rem;transition:background .14s;" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
+          <span style="font-size:1.3rem;">📊</span>
+          <div><div style="font-weight:600;font-size:.85rem;">See what's being fixed</div><div style="font-size:.74rem;color:rgba(255,255,255,.35);margin-top:1px;">Live transparency dashboard</div></div>
+          <span style="margin-left:auto;color:rgba(255,255,255,.3);">→</span>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Civic Score -->
+    <div class="gcard">
+      <div class="gcard-title">
+        Civic Score
+        <button onclick="shareCard()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.45);border-radius:6px;padding:3px 10px;font-size:.7rem;cursor:pointer;font-family:var(--font-head);transition:all .15s;" onmouseover="this.style.color='var(--paper)'" onmouseout="this.style.color='rgba(255,255,255,.45)'">📤 Share</button>
+      </div>
+
+      <!-- SVG Ring -->
+      <div class="score-ring-wrap">
+        <div class="score-ring">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle class="score-ring-bg" cx="55" cy="55" r="46"/>
+            <circle class="score-ring-fill" cx="55" cy="55" r="46"
+              stroke="{{ badge_color }}"
+              stroke-dasharray="289"
+              id="scoreRingFill"
+              stroke-dashoffset="289"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-num" style="color:{{ badge_color }};">{{ civic_score }}</div>
+            <div class="score-lbl">Points</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-bottom:1rem;">
+        <div style="display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:20px;font-size:.79rem;font-weight:700;background:{{ badge_color }}1a;color:{{ badge_color }};border:1px solid {{ badge_color }}44;">
+          ★ {{ badge }}
+        </div>
+      </div>
+
+      {% if next_badge %}
+      <div style="font-size:.74rem;color:rgba(255,255,255,.35);margin-bottom:4px;">{{ pts_needed }} pts to <strong style="color:var(--paper);">{{ next_badge }}</strong></div>
+      <div class="prog-bar">
+        {% if next_badge == 'Bronze' %}
+        <div class="prog-fill" style="width:{% widthratio civic_score 20 100 %}%;background:{{ badge_color }};"></div>
+        {% elif next_badge == 'Silver' %}
+        <div class="prog-fill" style="width:{% widthratio civic_score 80 100 %}%;background:{{ badge_color }};"></div>
+        {% elif next_badge == 'Gold' %}
+        <div class="prog-fill" style="width:{% widthratio civic_score 200 100 %}%;background:{{ badge_color }};"></div>
+        {% elif next_badge == 'Platinum' %}
+        <div class="prog-fill" style="width:{% widthratio civic_score 500 100 %}%;background:{{ badge_color }};"></div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="score-breakdown" style="margin-top:.9rem;">
+        <div class="score-line"><span>📝 Complaints filed</span><span class="score-line-val">{{ total_filed }} × 10</span></div>
+        <div class="score-line"><span>✅ Resolved</span><span class="score-line-val">{{ total_resolved }} × 50</span></div>
+        <div class="score-line"><span>👍 Votes cast</span><span class="score-line-val">{{ votes_cast }} × 2</span></div>
+        <div class="score-line"><span>🙋 Co-signed</span><span style="color:#4ade80;font-weight:600;">{{ supported_count }} × 5</span></div>
+      </div>
+
+      {% if total_impact %}
+      <div style="margin-top:1rem;padding:.85rem;border:1px solid rgba(74,222,128,.15);border-radius:8px;background:rgba(74,222,128,.05);text-align:center;">
+        <div style="font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(74,222,128,.5);margin-bottom:3px;">Civic Impact</div>
+        <div style="font-family:var(--font-head);font-size:1.7rem;font-weight:800;color:#4ade80;">~{{ total_impact }}</div>
+        <div style="font-size:.71rem;color:rgba(74,222,128,.5);">residents helped by your reports</div>
+      </div>
+      {% endif %}
+
+      <!-- Profile Completion -->
+      {% if not request.user.ward_number or total_filed == 0 %}
+      <div style="margin-top:.9rem;padding-top:.85rem;border-top:1px solid rgba(255,255,255,.06);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;">
+          <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.28);">Profile Completion</div>
+          <div style="font-size:.72rem;color:var(--gold-light);font-weight:700;">
+            {% if request.user.ward_number and total_filed > 0 %}100%{% elif request.user.ward_number or total_filed > 0 %}66%{% else %}33%{% endif %}
+          </div>
+        </div>
+        <div class="prog-bar" style="margin-bottom:.55rem;">
+          <div class="prog-fill" style="background:var(--gold);width:{% if request.user.ward_number and total_filed > 0 %}100{% elif request.user.ward_number or total_filed > 0 %}66{% else %}33{% endif %}%;"></div>
+        </div>
+        {% if not request.user.ward_number %}
+        <a href="/profile/" style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--gold-light);text-decoration:none;">⚪ Set your ward number <span style="margin-left:auto;">→</span></a>
+        {% endif %}
+        {% if total_filed == 0 %}
+        <a href="/complaint/" style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:rgba(255,255,255,.35);text-decoration:none;margin-top:.3rem;">⚪ File your first complaint <span style="margin-left:auto;">→</span></a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <a href="/transparency/" style="display:block;text-align:center;font-size:.74rem;color:rgba(255,255,255,.28);margin-top:.85rem;text-decoration:none;transition:color .12s;" onmouseover="this.style.color='rgba(255,255,255,.55)'" onmouseout="this.style.color='rgba(255,255,255,.28)'">View leaderboard →</a>
+    </div>
+
+  </div>
+
+  <!-- ══ NOTIFICATIONS + TRACKING ══ -->
+  <div class="two-col" style="margin-bottom:1rem;">
+
+    <!-- Notifications -->
+    <div class="gcard">
+      <div class="gcard-title">
+        Notifications
+        {% if unread_count %}<span style="background:var(--red);color:#fff;border-radius:20px;padding:1px 9px;font-size:.67rem;font-weight:700;">{{ unread_count }} new</span>{% endif %}
+      </div>
+      {% if unread_notifications %}
+        {% for n in unread_notifications %}
+        <div class="notif-row">
+          <div class="notif-dot"></div>
+          <div>
+            {% if n.url %}
+            <a href="{{ n.url }}" style="color:var(--paper);text-decoration:none;font-size:.83rem;">{{ n.message }}</a>
+            {% else %}
+            <span style="font-size:.83rem;">{{ n.message }}</span>
+            {% endif %}
+            <div class="notif-meta">{{ n.created_at|timesince }} ago</div>
+          </div>
+        </div>
+        {% endfor %}
+        <a href="/notifications/" style="display:block;text-align:center;font-size:.77rem;color:rgba(255,255,255,.3);margin-top:.65rem;text-decoration:none;transition:color .12s;" onmouseover="this.style.color='rgba(255,255,255,.55)'" onmouseout="this.style.color='rgba(255,255,255,.3)'">View all notifications →</a>
+      {% else %}
+      <div class="cd-empty">🔔 No new notifications</div>
+      {% endif %}
+    </div>
+
+    <!-- Following + Co-signed -->
+    <div class="gcard">
+      <div class="gcard-title">
+        Tracking
+        <div class="tab-btns">
+          <button class="tab-btn active" id="btn-follow" onclick="showTab('tab-follow')">🔔 Following</button>
+          <button class="tab-btn" id="btn-support" onclick="showTab('tab-support')">🙋 Co-signed</button>
+        </div>
+      </div>
+
+      <div id="tab-follow">
+        {% if followed %}
+          {% for f in followed %}
+          <a class="c-row" href="/complaint/status/{{ f.complaint.complaint_id }}/">
+            <div class="c-dot s-{{ f.complaint.status }}"></div>
+            <div class="c-title">{{ f.complaint.title }}</div>
+            <div class="c-id">{{ f.complaint.complaint_id }}</div>
+          </a>
+          {% endfor %}
+        {% else %}
+        <div class="cd-empty">No followed complaints yet.<br><span style="font-size:.77rem;margin-top:4px;display:block;">Follow any complaint to get updates.</span></div>
+        {% endif %}
+      </div>
+
+      <div id="tab-support" style="display:none;">
+        {% if supported %}
+          {% for s in supported %}
+          <a class="c-row" href="/complaint/status/{{ s.complaint.complaint_id }}/">
+            <div class="c-dot s-{{ s.complaint.status }}"></div>
+            <div class="c-title">{{ s.complaint.title }}</div>
+            <div class="c-id" style="color:#4ade80;">co-signed</div>
+          </a>
+          {% endfor %}
+        {% else %}
+        <div class="cd-empty">You haven't co-signed any complaints.<br><span style="font-size:.77rem;margin-top:4px;display:block;">Hit "I'm Affected Too" on any complaint.</span></div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ ESCALATIONS ══ -->
+  {% if my_escalations %}
+  <div class="gcard esc-card" style="margin-bottom:1rem;">
+    <div class="gcard-title" style="color:rgba(248,113,113,.7);">⚡ Escalations — Awaiting Mayor Response</div>
+    {% for esc in my_escalations %}
+    <a class="c-row" href="/complaint/status/{{ esc.complaint.complaint_id }}/">
+      <div class="c-dot" style="background:var(--red);box-shadow:0 0 6px rgba(220,38,38,.5);"></div>
+      <div class="c-title">{{ esc.complaint.title }}</div>
+      <div style="font-size:.7rem;color:rgba(248,113,113,.7);flex-shrink:0;">{{ esc.escalated_at|date:"M j" }}</div>
+    </a>
+    {% endfor %}
+    <div style="font-size:.74rem;color:rgba(255,255,255,.3);margin-top:.5rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.06);">The Mayor's office has been notified.</div>
+  </div>
+  {% endif %}
+
+  <!-- ══ WARD ══ -->
+  {% if request.user.ward_number %}
+  <div class="gcard" style="margin-bottom:1rem;">
+    <div class="gcard-title">
+      Ward {{ request.user.ward_number }} — Your Neighbourhood
+      <a href="/ward/{{ request.user.ward_number }}/" style="font-size:.72rem;color:var(--gold-light);font-weight:700;text-decoration:none;">Ward Pulse →</a>
+    </div>
+
+    <div class="ward-mini-stats" style="margin-bottom:.9rem;">
+      <div class="ward-mini-stat">
+        <div class="ward-mini-num">{{ ward_total }}</div>
+        <div class="ward-mini-lbl">Filed</div>
+      </div>
+      <div class="ward-mini-stat">
+        <div class="ward-mini-num" style="color:#4ade80;">{{ ward_resolved }}</div>
+        <div class="ward-mini-lbl">Resolved</div>
+      </div>
+      <div class="ward-mini-stat">
+        <div class="ward-mini-num" style="color:#FB923C;">{{ ward_in_progress }}</div>
+        <div class="ward-mini-lbl">Active</div>
+      </div>
+    </div>
+
+    <div class="chip-row" style="margin-bottom:.9rem;">
+      <a href="/ward/{{ request.user.ward_number }}/" class="chip">🏗 {{ ward_active_projects }} Project{{ ward_active_projects|pluralize }}</a>
+      <a href="/announcements/?ward={{ request.user.ward_number }}" class="chip">📢 Announcements</a>
+      <a href="/ward/{{ request.user.ward_number }}/chairperson/" class="chip">👤 Chairperson</a>
+    </div>
+
+    {% if ward_latest_announcement %}
+    <div style="background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.18);border-radius:8px;padding:.7rem .9rem;margin-bottom:.9rem;">
+      <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(217,119,6,.6);margin-bottom:.25rem;">Latest Announcement</div>
+      <div style="font-weight:700;color:var(--paper);font-size:.84rem;margin-bottom:.2rem;">{{ ward_latest_announcement.title }}</div>
+      <div style="font-size:.74rem;color:rgba(255,255,255,.3);">{{ ward_latest_announcement.created_at|date:"M j, Y" }}</div>
+    </div>
+    {% endif %}
+
+    {% if ward_feed %}
+    <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.28);margin-bottom:.5rem;">Recent Ward Complaints</div>
+    {% for c in ward_feed %}
+    <a class="c-row" href="/complaint/status/{{ c.complaint_id }}/">
+      <div class="c-dot s-{{ c.status }}"></div>
+      <div class="c-title">{{ c.title }}</div>
+      <div style="font-size:.71rem;color:rgba(255,255,255,.3);flex-shrink:0;">{{ c.updated_at|date:"M j" }}</div>
+    </a>
+    {% endfor %}
+    {% else %}
+    <div class="cd-empty">No recent complaints in Ward {{ request.user.ward_number }}</div>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <div class="gcard" style="text-align:center;padding:2rem;margin-bottom:1rem;background:rgba(217,119,6,.05);border-color:rgba(217,119,6,.18);">
+    <div style="font-size:2rem;margin-bottom:.6rem;">🏘</div>
+    <div style="font-family:var(--font-head);font-weight:700;color:var(--gold-light);margin-bottom:.4rem;">Set your ward to unlock your neighbourhood</div>
+    <div style="font-size:.82rem;color:rgba(255,255,255,.35);margin-bottom:1rem;">See complaint stats, active projects, announcements and chairperson contact for your area.</div>
+    <a href="/profile/" style="background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#111;border-radius:8px;padding:9px 22px;font-weight:700;font-size:.85rem;text-decoration:none;">Update Profile →</a>
+  </div>
+  {% endif %}
+
+  <!-- ══ POLLS ══ -->
+  <div class="gcard" style="margin-bottom:1rem;">
+    <div class="gcard-title">
+      🗳 Active Polls
+      <a href="/civic/polls/" style="font-size:.72rem;color:var(--gold-light);font-weight:700;text-decoration:none;">All Polls →</a>
+    </div>
+    {% if active_polls %}
+      {% for poll in active_polls %}
+      <a href="/civic/polls/{{ poll.pk }}/" class="list-row">
+        <span style="font-weight:500;flex:1;margin-right:.75rem;">{{ poll.question|truncatechars:60 }}</span>
+        {% if poll.pk in voted_poll_ids %}
+        <span style="font-size:.68rem;font-weight:700;background:rgba(74,222,128,.15);color:#4ade80;border-radius:10px;padding:2px 9px;white-space:nowrap;">✓ Voted</span>
+        {% else %}
+        <span style="font-size:.68rem;font-weight:700;background:rgba(217,119,6,.14);color:var(--gold-light);border-radius:10px;padding:2px 9px;white-space:nowrap;">Vote →</span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    {% else %}
+    <div class="cd-empty">No active polls right now.</div>
+    {% endif %}
+  </div>
+
+  <!-- ══ MY PROPOSALS ══ -->
+  <div class="gcard" style="margin-bottom:1rem;">
+    <div class="gcard-title">
+      💡 My Proposals
+      <a href="/civic/proposals/submit/" style="font-size:.72rem;color:var(--gold-light);font-weight:700;text-decoration:none;">+ Submit →</a>
+    </div>
+    {% if my_proposals %}
+      {% for p in my_proposals %}
+      <a href="/civic/proposals/{{ p.pk }}/" class="list-row">
+        <span style="font-weight:500;flex:1;margin-right:.75rem;">{{ p.title|truncatechars:55 }}</span>
+        <span style="font-size:.68rem;font-weight:700;border-radius:10px;padding:2px 9px;white-space:nowrap;
+          {% if p.status == 'ACCEPTED' or p.status == 'IMPLEMENTED' %}background:rgba(74,222,128,.15);color:#4ade80;
+          {% elif p.status == 'REJECTED' %}background:rgba(220,38,38,.12);color:#f87171;
+          {% elif p.status == 'REVIEWING' %}background:rgba(59,130,246,.12);color:#60a5fa;
+          {% else %}background:rgba(217,119,6,.12);color:var(--gold-light);{% endif %}">
+          {{ p.get_status_display }}
+        </span>
+      </a>
+      {% endfor %}
+      {% if my_proposal_count > 3 %}
+      <div style="font-size:.75rem;color:rgba(255,255,255,.28);text-align:center;margin-top:.35rem;">+{{ my_proposal_count|add:"-3" }} more proposals</div>
+      {% endif %}
+    {% else %}
+    <div class="cd-empty">You haven't submitted any proposals yet. <a href="/civic/proposals/submit/" style="color:var(--gold-light);">Start one →</a></div>
+    {% endif %}
+  </div>
+
+  <!-- ══ MY SERVICE REQUESTS ══ -->
+  <div class="gcard">
+    <div class="gcard-title">
+      📋 My Applications
+      {% if pending_sr_count %}<span style="font-size:.67rem;font-weight:700;background:rgba(217,119,6,.18);color:var(--gold-light);border-radius:10px;padding:1px 8px;margin-left:4px;">{{ pending_sr_count }} pending</span>{% endif %}
+      <a href="/services/my/" style="font-size:.72rem;color:var(--gold-light);font-weight:700;text-decoration:none;">View All →</a>
+    </div>
+    {% if my_sr %}
+      {% for sr in my_sr %}
+      <a href="/services/my/{{ sr.reference_number }}/" class="sr-row">
+        <div style="flex:1;">
+          <div style="font-size:.85rem;font-weight:600;">{{ sr.get_service_type_display }}</div>
+          <div style="font-size:.71rem;color:rgba(255,255,255,.35);margin-top:1px;">{{ sr.reference_number }}</div>
+        </div>
+        <span style="font-size:.68rem;font-weight:700;border-radius:10px;padding:2px 9px;white-space:nowrap;
+          {% if sr.status == 'COMPLETED' %}background:rgba(74,222,128,.15);color:#4ade80;
+          {% elif sr.status == 'REJECTED' %}background:rgba(220,38,38,.12);color:#f87171;
+          {% elif sr.status == 'READY' %}background:rgba(74,222,128,.2);color:#4ade80;
+          {% else %}background:rgba(217,119,6,.12);color:var(--gold-light);{% endif %}">
+          {{ sr.get_status_display }}
+        </span>
+      </a>
+      {% endfor %}
+    {% else %}
+    <div class="cd-empty">No service applications yet. <a href="/services/" style="color:var(--gold-light);">Browse services →</a></div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ══ CIVIC CARD MODAL ══ -->
+<div id="civic-card-modal" class="modal-backdrop">
+  <div class="civic-card-inner">
+    <div id="civic-card" style="padding:2rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.07);">
+      <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(217,119,6,.55);margin-bottom:.7rem;">{{ CITY_NAME }} Municipality</div>
+      <div style="font-family:var(--font-head);font-size:1.35rem;font-weight:800;color:var(--paper);margin-bottom:.3rem;">{{ request.user.get_full_name|default:request.user.username }}</div>
+      <div style="display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:20px;font-size:.78rem;font-weight:700;background:{{ badge_color }}1a;color:{{ badge_color }};border:1px solid {{ badge_color }}44;margin-bottom:1.1rem;">★ {{ badge }}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr{% if total_impact %} 1fr{% endif %};gap:.6rem;margin-bottom:.9rem;">
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.7rem .5rem;">
+          <div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--paper);">{{ civic_score }}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.35);">Civic Score</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:.7rem .5rem;">
+          <div style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--gold-light);">{{ total_filed }}</div>
+          <div style="font-size:.62rem;color:rgba(255,255,255,.35);">Complaints Filed</div>
+        </div>
+        {% if total_impact %}
+        <div style="background:rgba(74,222,128,.06);border-radius:8px;padding:.7rem .5rem;">
+          <div style="font-family:var(--font-head);font-size:1.3rem;font-weight:800;color:#4ade80;">~{{ total_impact }}</div>
+          <div style="font-size:.62rem;color:rgba(74,222,128,.45);">Residents Helped</div>
+        </div>
+        {% endif %}
+      </div>
+      <div style="font-size:.67rem;color:rgba(255,255,255,.2);">bhaktapur.gov.np · Civic Platform</div>
+    </div>
+    <div style="padding:.85rem 1rem;display:flex;gap:.5rem;">
+      <button onclick="copyCivicLink()" style="flex:1;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#111;border:none;border-radius:7px;padding:.6rem;font-weight:700;font-size:.82rem;cursor:pointer;">Copy Profile Link</button>
+      <button onclick="document.getElementById('civic-card-modal').style.display='none'" style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);color:var(--paper);border-radius:7px;padding:.6rem;font-size:.82rem;cursor:pointer;">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Civic Score Ring */
+(function(){
+  const score = {{ civic_score|default:0 }};
+  const maxScore = 500;
+  const pct = Math.min(score / maxScore, 1);
+  const circ = 2 * Math.PI * 46;
+  const fill = document.getElementById('scoreRingFill');
+  if (fill) {
+    setTimeout(() => {
+      fill.style.strokeDashoffset = circ * (1 - pct);
+    }, 200);
+  }
+})();
+
+function shareCard() {
+  document.getElementById('civic-card-modal').style.display = 'flex';
+}
+function copyCivicLink() {
+  navigator.clipboard.writeText(window.location.origin + '/my/').then(() => {
+    const btn = event.target;
+    btn.textContent = 'Link Copied ✓';
+    setTimeout(() => btn.textContent = 'Copy Profile Link', 2000);
+  });
+}
+
+function showTab(id) {
+  ['tab-follow', 'tab-support'].forEach(t => {
+    document.getElementById(t).style.display = t === id ? 'block' : 'none';
+  });
+  const bFollow  = document.getElementById('btn-follow');
+  const bSupport = document.getElementById('btn-support');
+  bFollow.className  = 'tab-btn' + (id === 'tab-follow' ? ' active' : '');
+  bSupport.className = 'tab-btn' + (id === 'tab-support' ? ' active' : '');
+  if (id === 'tab-support') {
+    bSupport.style.background = 'rgba(74,222,128,.12)';
+    bSupport.style.color = '#4ade80';
+    bSupport.style.borderColor = 'rgba(74,222,128,.35)';
+  } else {
+    bSupport.style.background = '';
+    bSupport.style.color = '';
+    bSupport.style.borderColor = '';
+  }
+}
+
+/* Close modal on backdrop click */
+document.getElementById('civic-card-modal').addEventListener('click', function(e){
+  if (e.target === this) this.style.display = 'none';
+});
+</script>
+{% endblock %}

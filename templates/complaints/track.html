@@ -1,145 +1,292 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Track Complaint — Bhaktapur Municipal</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root{--bg:#060810;--gold:#c9a84c;--red:#C1440E;--surface:#111009;--card:#1A1710;
-      --border:rgba(201,168,76,0.18);--text:#E8DFC8;--muted:#7A7060;--font-h:'Cinzel',serif;--font-b:'Inter',sans-serif;}
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;
-      position:relative;overflow:hidden;}
-    #particles-js{position:fixed;inset:0;z-index:0;}
-    .card{position:relative;z-index:1;background:var(--card);border:1px solid var(--border);
-      border-radius:14px;padding:2.5rem 2rem;width:100%;max-width:480px;will-change:transform;}
-    h1{font-family:var(--font-h);font-size:1.6rem;color:var(--gold);margin-bottom:0.4rem;letter-spacing:0.04em;}
-    p{color:var(--muted);font-size:0.875rem;margin-bottom:1.75rem;}
-    .form-group{position:relative;margin-bottom:1rem;}
-    .form-group input{
-      width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;
-      padding:1rem 1rem 0.5rem;font-size:1rem;color:var(--text);font-family:var(--font-b);
-      outline:none;transition:border-color 0.3s,box-shadow 0.3s;min-height:44px;letter-spacing:0.05em;}
-    .form-group input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,0.2);}
-    .form-group input.error-input{border-color:var(--red);}
-    .form-group label{position:absolute;left:1rem;top:50%;transform:translateY(-50%);
-      font-size:0.9rem;color:var(--muted);pointer-events:none;transition:top 0.2s,font-size 0.2s,color 0.2s;}
-    .form-group input:focus ~ label,.form-group input:not(:placeholder-shown) ~ label{top:0.45rem;font-size:0.72rem;color:var(--gold);}
-    .error-msg{color:var(--red);font-size:0.82rem;margin-top:0.4rem;margin-bottom:0.5rem;}
-    .btn-track{
-      width:100%;padding:0.9rem;background:linear-gradient(135deg,#c9a84c,#a07830);
-      color:#060810;font-family:var(--font-h);font-size:0.95rem;font-weight:700;
-      border:none;border-radius:6px;cursor:pointer;position:relative;overflow:hidden;
-      transition:box-shadow 0.3s;min-height:44px;}
-    .btn-track:hover{box-shadow:0 0 20px rgba(201,168,76,0.3);}
-    .recent-chips{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;}
-    .chip{
-      padding:0.3rem 0.75rem;background:rgba(201,168,76,0.08);border:1px solid var(--border);
-      border-radius:20px;color:var(--gold);font-size:0.78rem;cursor:pointer;transition:background 0.2s;min-height:44px;display:flex;align-items:center;}
-    .chip:hover{background:rgba(201,168,76,0.18);}
-    .chip-label{font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;}
-    .back-link{color:var(--muted);font-size:0.82rem;text-decoration:none;display:block;text-align:center;margin-top:1.25rem;}
-    .back-link:hover{color:var(--gold);}
-    @media(max-width:480px){.card{padding:1.5rem 1rem;}}
-  </style>
-</head>
-<body>
-<div id="particles-js"></div>
+{% extends "base/base.html" %}
+{% block title %}Track Complaint — Bhaktapur Municipality{% endblock %}
 
-<div class="card" id="track-card">
-  <h1>Track Your Complaint</h1>
-  <p>Enter your BK-XXXXX reference number to check the status of your complaint.</p>
+{% block extra_css %}
+<style>
+/* dark page override */
+body {
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(193,59,42,.15) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 80% 90%, rgba(201,162,39,.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
 
-  {% if error %}
-  <div class="error-msg" id="error-msg">{{ error }}</div>
-  {% endif %}
+.track-page {
+  min-height: calc(100vh - 67px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+}
 
-  <form method="post" id="track-form">
-    {% csrf_token %}
-    <div class="form-group">
-      <input type="text" name="complaint_id" id="complaint-id" placeholder=" "
-        value="{{ query|default:'' }}" maxlength="10" autocomplete="off" spellcheck="false"
-        class="{% if error %}error-input{% endif %}">
-      <label for="complaint-id">Complaint ID (BK-XXXXX)</label>
+.track-card {
+  position: relative; z-index: 1;
+  background: #1C1C1C;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-top: 3px solid var(--red);
+  border-radius: 6px;
+  padding: 2.5rem 2.25rem 2.25rem;
+  width: 100%; max-width: 460px;
+  animation: cardIn .4s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .track-card { animation: none; } }
+
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 2rem;
+}
+.brand-icon {
+  width: 32px; height: 32px;
+  background: var(--red); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head); font-weight: 800;
+  font-size: .88rem; color: #fff; flex-shrink: 0;
+}
+.brand-name {
+  font-family: var(--font-head); font-weight: 800;
+  font-size: .95rem; color: var(--paper); letter-spacing: -.01em;
+}
+.brand-name span { color: var(--red); }
+
+.track-heading {
+  font-family: var(--font-head);
+  font-size: 1.75rem; font-weight: 800;
+  color: var(--paper); line-height: 1.1;
+  letter-spacing: -.02em; margin-bottom: .4rem;
+}
+.track-sub {
+  font-size: .875rem; color: var(--stone-light);
+  margin-bottom: 1.75rem; line-height: 1.55;
+}
+
+.error-box {
+  background: rgba(193,59,42,.1);
+  border: 1px solid rgba(193,59,42,.3);
+  border-radius: 4px;
+  padding: .75rem 1rem;
+  font-size: .85rem; color: #ff8060;
+  margin-bottom: 1.25rem;
+}
+
+.form-group { position: relative; margin-bottom: 1.25rem; }
+.form-group input {
+  width: 100%;
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 4px;
+  padding: 1.05rem 1rem .45rem;
+  font-size: 1rem; font-family: var(--font-body);
+  color: var(--paper); letter-spacing: .06em;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+  min-height: 52px;
+}
+.form-group input::placeholder { color: transparent; }
+.form-group input:hover { border-color: rgba(255,255,255,.18); }
+.form-group input:focus {
+  border-color: var(--red);
+  background: rgba(193,59,42,.04);
+  box-shadow: 0 0 0 3px rgba(193,59,42,.12);
+}
+.form-group input.is-error {
+  border-color: rgba(193,59,42,.6);
+  box-shadow: 0 0 0 3px rgba(193,59,42,.08);
+}
+.form-group label {
+  position: absolute; left: 1rem; top: 50%;
+  transform: translateY(-50%);
+  font-size: .9rem; color: var(--stone);
+  pointer-events: none;
+  transition: top .18s, font-size .18s, color .18s;
+}
+.form-group input:focus ~ label,
+.form-group input:not(:placeholder-shown) ~ label {
+  top: .38rem; font-size: .68rem;
+  color: var(--red); letter-spacing: .04em;
+}
+
+.btn-track {
+  width: 100%; padding: .9rem 1rem;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--font-head); font-size: .95rem; font-weight: 700;
+  letter-spacing: .02em;
+  border: none; border-radius: 4px;
+  cursor: pointer; min-height: 48px;
+  position: relative; overflow: hidden;
+  transition: background .15s, transform .1s, box-shadow .15s;
+}
+.btn-track::before {
+  content: '';
+  position: absolute; top: 0; left: -80%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+  transition: left .4s;
+}
+.btn-track:hover::before { left: 130%; }
+.btn-track:hover {
+  background: var(--red-dark);
+  box-shadow: 0 6px 20px rgba(193,59,42,.35);
+  transform: translateY(-1px);
+}
+.btn-track:active { transform: scale(.985); }
+
+.chip-label {
+  font-size: .7rem; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--stone); margin: 1.25rem 0 .6rem;
+}
+.recent-chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip {
+  padding: .3rem .8rem;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 100px;
+  color: var(--stone-light); font-size: .78rem;
+  font-family: var(--font-body); letter-spacing: .04em;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+  min-height: 32px; display: inline-flex; align-items: center;
+}
+.chip:hover {
+  border-color: var(--red);
+  background: rgba(193,59,42,.08);
+  color: var(--paper);
+}
+
+.track-divider {
+  border: none; border-top: 1px solid rgba(255,255,255,0.08);
+  margin: 1.5rem 0 1.25rem;
+}
+
+.back-link {
+  display: block; text-align: center;
+  font-size: .82rem; color: var(--stone);
+  text-decoration: none;
+  transition: color .15s;
+}
+.back-link:hover { color: var(--paper); }
+
+.trust {
+  display: flex; justify-content: center; gap: 1.25rem;
+  flex-wrap: wrap; margin-top: 1.5rem;
+}
+.trust-item {
+  display: flex; align-items: center; gap: .35rem;
+  font-size: .7rem; color: var(--stone);
+}
+.trust-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--red); flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .track-card { padding: 1.75rem 1.25rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="track-page">
+  <div class="track-card" id="track-card">
+
+    <div class="brand">
+      <div class="brand-icon">B</div>
+      <div class="brand-name">Bhaktapur<span>AI</span></div>
     </div>
-    <button type="submit" class="btn-track">Track Status</button>
-  </form>
 
-  <div id="recent-section" style="display:none;">
-    <p class="chip-label" style="margin-top:1rem;margin-bottom:0;">Recent</p>
-    <div class="recent-chips" id="recent-chips"></div>
+    <h1 class="track-heading">Track Your<br>Complaint</h1>
+    <p class="track-sub">Enter your BK-XXXXX reference number to check status, priority, and municipality notes.</p>
+
+    {% if error %}
+    <div class="error-box" id="error-box">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" id="track-form">
+      {% csrf_token %}
+      <div class="form-group">
+        <input type="text" name="complaint_id" id="complaint-id"
+               placeholder=" "
+               value="{{ query|default:'' }}"
+               maxlength="10" autocomplete="off" spellcheck="false"
+               class="{% if error %}is-error{% endif %}">
+        <label for="complaint-id">Complaint ID (BK-XXXXX)</label>
+      </div>
+      <button type="submit" class="btn-track">Track Status →</button>
+    </form>
+
+    <div id="recent-section" style="display:none;">
+      <p class="chip-label">Recent</p>
+      <div class="recent-chips" id="recent-chips"></div>
+    </div>
+
+    <hr class="track-divider">
+    <a class="back-link" href="{% url 'complaints:complaint_submit' %}">+ Submit a new complaint</a>
+
+    <div class="trust">
+      <div class="trust-item"><span class="trust-dot"></span>Real-time status</div>
+      <div class="trust-item"><span class="trust-dot"></span>5-day response commitment</div>
+      <div class="trust-item"><span class="trust-dot"></span>Secure lookup</div>
+    </div>
+
   </div>
-
-  <a class="back-link" href="{% url 'complaints:complaint_submit' %}">← Submit a New Complaint</a>
 </div>
+{% endblock %}
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+{% block extra_js %}
 <script>
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (window.innerWidth >= 768 && typeof particlesJS !== 'undefined') {
-    particlesJS('particles-js', {
-      particles:{number:{value:25},color:{value:'#c9a84c'},opacity:{value:0.1,random:true},
-        size:{value:2,random:true},move:{enable:true,speed:0.4,out_mode:'out'},
-        line_linked:{enable:true,distance:100,color:'#c9a84c',opacity:0.05,width:1}},
-      interactivity:{events:{onhover:{enable:false}}},retina_detect:true});
-  }
-
-  if (!prefersReducedMotion) {
-    gsap.fromTo('#track-card',{y:40,opacity:0},{y:0,opacity:1,duration:0.5,ease:'power2.out'});
-  }
-
-  // Error shake
-  {% if error %}
-  if (!prefersReducedMotion) {
-    gsap.fromTo('#track-card',{x:0},{x:8,duration:0.07,repeat:5,yoyo:true,ease:'none',clearProps:'x'});
-  }
-  {% endif %}
-
-  // Auto-uppercase + auto-prefix BK-
-  const cidInput = document.getElementById('complaint-id');
-  cidInput.addEventListener('input', () => {
-    let val = cidInput.value.toUpperCase().replace(/\s/g,'');
-    if (val && !val.startsWith('BK-') && val.length <= 7) {
-      val = 'BK-' + val.replace(/^BK-?/,'');
-    }
-    cidInput.value = val.slice(0, 8);
+  const input = document.getElementById('complaint-id');
+  input.addEventListener('input', () => {
+    let v = input.value.toUpperCase().replace(/\s/g, '');
+    if (v && !v.startsWith('BK-') && v.length <= 7)
+      v = 'BK-' + v.replace(/^BK-?/, '');
+    input.value = v.slice(0, 9);
   });
+  input.focus();
 
-  // localStorage recent IDs
-  const STORAGE_KEY = 'bk_recent_ids';
-  function getRecent() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
-  }
-
+  const KEY = 'bk_recent_ids';
+  const getRecent = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
   const recent = getRecent();
   if (recent.length) {
     document.getElementById('recent-section').style.display = 'block';
-    const chips = document.getElementById('recent-chips');
+    const wrap = document.getElementById('recent-chips');
     recent.forEach(id => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'chip';
-      chip.textContent = id;
-      chip.onclick = () => { cidInput.value = id; };
-      chips.appendChild(chip);
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'chip'; btn.textContent = id;
+      btn.onclick = () => { input.value = id; input.focus(); };
+      wrap.appendChild(btn);
     });
   }
 
-  // Save on submit
   document.getElementById('track-form').addEventListener('submit', () => {
-    const val = cidInput.value.trim();
-    if (val) {
-      const recent = getRecent().filter(x => x !== val);
-      recent.unshift(val);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(recent.slice(0, 3)));
+    const v = input.value.trim();
+    if (v) {
+      const r = getRecent().filter(x => x !== v);
+      r.unshift(v);
+      localStorage.setItem(KEY, JSON.stringify(r.slice(0, 3)));
     }
   });
+
+  {% if error %}
+  let s = 0;
+  const shake = () => {
+    const el = document.getElementById('track-card');
+    const frames = [0,8,-8,6,-6,4,-4,0];
+    if (s < frames.length) { el.style.transform = `translateX(${frames[s++]}px)`; setTimeout(shake, 55); }
+    else el.style.transform = '';
+  };
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) shake();
+  {% endif %}
 </script>
-</body>
-</html>
+{% endblock %}

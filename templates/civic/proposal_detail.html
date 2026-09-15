@@ -1,0 +1,96 @@
+{% extends "base/base.html" %}
+{% block title %}{{ proposal.title }}{% endblock %}
+{% block content %}
+<style>
+.prop-wrap{max-width:800px;margin:0 auto;padding:32px 20px}
+.breadcrumb{font-size:.8rem;color:var(--stone);margin-bottom:20px}
+.breadcrumb a{color:var(--stone);text-decoration:none}
+.breadcrumb a:hover{color:var(--ink)}
+.prop-header{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:28px;margin-bottom:20px}
+.prop-cat-badge{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin-bottom:8px}
+.prop-header h1{font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--ink);margin:0 0 12px}
+.prop-meta-row{display:flex;gap:16px;flex-wrap:wrap;font-size:.82rem;color:var(--stone);margin-bottom:16px}
+.prop-section{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:24px;margin-bottom:16px}
+.prop-section h3{font-family:var(--font-head);font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin:0 0 12px}
+.prop-section p{margin:0;line-height:1.7;color:var(--ink)}
+.pill{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase}
+.pill-pending{background:rgba(201,162,39,.12);color:#8B6E10}
+.pill-reviewing{background:rgba(59,130,246,.1);color:#1e4e8c}
+.pill-accepted{background:rgba(34,197,94,.12);color:#166534}
+.pill-rejected{background:rgba(193,59,42,.1);color:var(--red-dark)}
+.pill-implemented{background:rgba(168,85,247,.1);color:#6b21a8}
+.support-cta{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.support-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border:2px solid #16a34a;border-radius:6px;background:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:var(--font-head)}
+.support-btn:hover,.support-btn.active{background:#16a34a;color:#fff}
+.cp-reply{background:#f0fdf4;border:1px solid rgba(34,197,94,.25);border-radius:8px;padding:16px 20px}
+.cp-reply-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#166534;margin-bottom:6px}
+</style>
+<div class="prop-wrap">
+  <div class="breadcrumb">
+    <a href="/civic/proposals/">Proposals</a> / {{ proposal.title|truncatechars:40 }}
+  </div>
+
+  <div class="prop-header">
+    <div class="prop-cat-badge">{{ proposal.get_category_display }} · Ward {{ proposal.ward_number }}</div>
+    <h1>{{ proposal.title }}</h1>
+    <div class="prop-meta-row">
+      <span>By <strong>{{ proposal.submitted_by.get_full_name|default:proposal.submitted_by.username }}</strong></span>
+      <span>Submitted {{ proposal.created_at|date:"M d, Y" }}</span>
+      <span class="pill pill-{{ proposal.status|lower }}">{{ proposal.get_status_display }}</span>
+    </div>
+    <div class="support-cta">
+      {% if user.is_authenticated %}
+      <button id="supportBtn" class="support-btn {% if user_supported %}active{% endif %}"
+              onclick="toggleSupport()">
+        👍 <span id="supportCount">{{ proposal.support_count }}</span> Support{% if proposal.support_count != 1 %}s{% endif %}
+      </button>
+      {% else %}
+      <a href="/login/?next={{ request.path }}" class="support-btn">👍 {{ proposal.support_count }} — Login to Support</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="prop-section">
+    <h3>Description</h3>
+    <p>{{ proposal.description }}</p>
+  </div>
+
+  {% if proposal.expected_benefit %}
+  <div class="prop-section">
+    <h3>Expected Benefit</h3>
+    <p>{{ proposal.expected_benefit }}</p>
+  </div>
+  {% endif %}
+
+  {% if proposal.estimated_cost %}
+  <div class="prop-section">
+    <h3>Estimated Cost</h3>
+    <p>NPR {{ proposal.estimated_cost }}</p>
+  </div>
+  {% endif %}
+
+  {% if proposal.chairperson_note %}
+  <div class="cp-reply">
+    <div class="cp-reply-label">Chairperson Response
+      {% if proposal.reviewed_at %}· {{ proposal.reviewed_at|date:"M d, Y" }}{% endif %}
+    </div>
+    <p style="margin:0;line-height:1.6">{{ proposal.chairperson_note }}</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleSupport() {
+  fetch('/civic/proposals/{{ proposal.pk }}/support/', {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+  })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('supportCount').textContent = d.count;
+    const btn = document.getElementById('supportBtn');
+    if (d.supported) btn.classList.add('active');
+  });
+}
+</script>
+{% endblock %}

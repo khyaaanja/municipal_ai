@@ -60,4 +60,12 @@ urlpatterns = [
     path('cms/map/',                             views.cms_map,                     name='cms_map'),
     path('cms/map/update-location/',             views.cms_map_update_location,     name='cms_map_update_location'),
     path('cms/map/clear-location/',              views.cms_map_clear_location,      name='cms_map_clear_location'),
+
+    # Complaints
+    path('cms/complaints/',                      views.cms_complaints,              name='cms_complaints'),
+    path('cms/complaints/<str:complaint_id>/',   views.cms_complaint_detail,        name='cms_complaint_detail'),
+
+    # Users
+    path('cms/users/',                           views.cms_users,                   name='cms_users'),
+    path('cms/users/<int:pk>/role/',             views.cms_user_role,               name='cms_user_role'),
 ]

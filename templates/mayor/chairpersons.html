@@ -1,0 +1,80 @@
+{% extends "mayor/base.html" %}
+{% block title %}Ward Chairpersons — Mayor's Office{% endblock %}
+
+{% block mayor_content %}
+<div class="mayor-page-header">
+  <h1 class="mayor-page-title">Ward Chairpersons</h1>
+</div>
+
+<div class="mayor-card">
+  <div style="overflow-x:auto;">
+    <table class="mayor-table">
+      <thead>
+        <tr>
+          <th>Ward</th>
+          <th>Chairperson</th>
+          <th>Email</th>
+          <th>Total</th>
+          <th>Pending</th>
+          <th>Resolved</th>
+          <th>Resolution %</th>
+          <th>Complaints</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in chairs_data %}
+        <tr>
+          <td style="font-family:var(--font-head);font-weight:700;">Ward {{ row.user.ward_number }}</td>
+          <td>
+            <div style="font-weight:600;">{{ row.user.get_full_name }}</div>
+            <div style="font-size:.74rem;color:var(--stone);">{{ row.user.username }}</div>
+          </td>
+          <td style="font-size:.82rem;color:var(--stone);">{{ row.user.email }}</td>
+          <td style="font-weight:600;">{{ row.total }}</td>
+          <td>
+            {% if row.pending %}<span class="pill pill-pending">{{ row.pending }}</span>{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if row.resolved %}<span class="pill pill-resolved">{{ row.resolved }}</span>{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if row.total %}
+              {% widthratio row.resolved row.total 100 %}%
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="/mayor/complaints/?ward={{ row.user.ward_number }}" class="mayor-btn mayor-btn-outline" style="padding:4px 12px;font-size:.76rem;">View</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:2rem;color:var(--stone);">
+            No ward chairpersons have been assigned yet.<br>
+            <a href="/admin/cms/users/" style="color:var(--mayor-gold);">Manage users in CMS →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Unassigned Wards -->
+{% if unassigned_wards %}
+<div style="margin-top:20px;background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:20px;">
+  <h3 style="font-family:var(--font-head);font-size:.95rem;margin:0 0 12px;color:var(--ink);">Wards without a Chairperson</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+    {% for w in unassigned_wards %}
+    <span style="background:rgba(193,59,42,0.08);color:var(--red-dark);padding:4px 12px;border-radius:20px;font-size:.8rem;font-weight:600;">Ward {{ w }}</span>
+    {% endfor %}
+  </div>
+  <p style="font-size:.84rem;color:var(--stone);margin:0;">
+    Use the <a href="/admin/cms/users/" style="color:var(--mayor-gold);">CMS Users panel</a> to assign the <strong>Ward Chairperson</strong> role and set the ward number.
+  </p>
+</div>
+{% elif chairs_data %}
+<div style="margin-top:16px;padding:14px 18px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:8px;font-size:.85rem;color:#166534;">
+  ✓ All wards with assigned chairpersons are covered.
+</div>
+{% endif %}
+{% endblock %}

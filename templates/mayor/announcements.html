@@ -1,0 +1,76 @@
+{% extends "mayor/base.html" %}
+{% block mayor_content %}
+<div style="padding:24px 32px;">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--ink);margin:0 0 4px;">
+      📢 Broadcast Announcements
+    </h1>
+    <p style="color:#666;margin:0;">Post city-wide or ward-specific announcements visible to all citizens.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;">
+    <div>
+      {% for ann in announcements %}
+      <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              {% if ann.ward_number %}
+                <span style="background:#e3f0ff;color:#4A7AB5;padding:2px 8px;border-radius:4px;font-size:0.72rem;font-weight:700;">Ward {{ ann.ward_number }}</span>
+              {% else %}
+                <span style="background:#fef3c7;color:#C9A227;padding:2px 8px;border-radius:4px;font-size:0.72rem;font-weight:700;">City-wide</span>
+              {% endif %}
+              <span style="font-size:0.75rem;color:#aaa;">{{ ann.created_at|date:"M d, Y H:i" }}</span>
+              {% if ann.posted_by %}<span style="font-size:0.75rem;color:#aaa;">by {{ ann.posted_by.get_full_name|default:ann.posted_by.email }}</span>{% endif %}
+            </div>
+            <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin:0 0 6px;">{{ ann.title }}</h3>
+            <p style="margin:0;font-size:0.875rem;color:#444;line-height:1.5;">{{ ann.body }}</p>
+          </div>
+          <form method="post" action="/mayor/announcements/{{ ann.pk }}/delete/" onsubmit="return confirm('Delete this announcement?')">
+            {% csrf_token %}
+            <button type="submit" style="background:none;border:none;color:#C13B2A;cursor:pointer;font-size:0.8rem;padding:4px 8px;border-radius:4px;white-space:nowrap;">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <div style="background:#fff;border:1px dashed #ddd;border-radius:12px;padding:40px;text-align:center;color:#999;">
+        No announcements yet. Post one using the form.
+      </div>
+      {% endfor %}
+    </div>
+
+    <div style="position:sticky;top:88px;">
+      <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:24px;">
+        <h2 style="font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin:0 0 16px;">Post Announcement</h2>
+        <form method="post">
+          {% csrf_token %}
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;color:#444;">Scope</label>
+            <select name="ward_number" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;">
+              <option value="">City-wide (all wards)</option>
+              {% for w in wards %}
+              <option value="{{ w }}">Ward {{ w }} only</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;color:#444;">Title *</label>
+            <input type="text" name="title" required maxlength="200"
+              style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;"
+              placeholder="Announcement headline">
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;color:#444;">Message *</label>
+            <textarea name="body" required rows="5"
+              style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;resize:vertical;"
+              placeholder="Full announcement text..."></textarea>
+          </div>
+          <button type="submit" style="width:100%;background:var(--mayor-gold,#C9A227);color:#000;border:none;padding:12px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">
+            Post Announcement
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

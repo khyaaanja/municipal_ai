@@ -100,7 +100,7 @@
       <button class="share-btn" onclick="navigator.share && navigator.share({title:'{{ event.name }}',url:window.location.href})">
         📤 Share Event
       </button>
-      <a href="/chat/?q=Tell me about the {{ event.name }} event" class="share-btn">
+      <a href="/chat/?q=Tell+me+about+the+{{ event.name|urlencode }}+event" class="share-btn">
         🤖 Ask AI
       </a>
     </div>

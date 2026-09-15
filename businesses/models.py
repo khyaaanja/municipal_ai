@@ -40,7 +40,19 @@ class Business(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def is_open(self):
-        return True  # Placeholder
+        """Parse opening_hours "HH:MM-HH:MM" and compare against local time."""
+        if not self.opening_hours:
+            return None
+        import re
+        from django.utils import timezone as _tz
+        m = re.match(r'(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})', self.opening_hours)
+        if not m:
+            return None
+        now = _tz.localtime(_tz.now()).time()
+        import datetime
+        open_t  = datetime.time(int(m.group(1)), int(m.group(2)))
+        close_t = datetime.time(int(m.group(3)), int(m.group(4)))
+        return open_t <= now <= close_t
 
     def __str__(self):
         return self.name

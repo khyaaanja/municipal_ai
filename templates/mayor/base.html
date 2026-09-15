@@ -1,0 +1,391 @@
+{% extends "base/base.html" %}
+{% block extra_css %}
+<style>
+/* ═══ MAYOR'S OFFICE SHELL ═══ */
+:root {
+  --mayor-gold: #C9A227;
+  --mayor-gold-light: #F0D06A;
+  --mayor-gold-dim: rgba(201,162,39,0.12);
+  --mayor-sidebar-bg: #0e0900;
+}
+
+.mayor-layout {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-height: calc(100vh - 60px);
+}
+
+/* ── SIDEBAR ── */
+.mayor-sidebar {
+  background: linear-gradient(180deg, #0e0900 0%, #080500 100%);
+  padding: 20px 0 40px;
+  position: sticky;
+  top: 60px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  border-right: 1px solid rgba(201,162,39,.12);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,162,39,.15) transparent;
+}
+.mayor-sidebar::-webkit-scrollbar { width: 3px; }
+.mayor-sidebar::-webkit-scrollbar-thumb { background: rgba(201,162,39,.2); border-radius: 3px; }
+
+.mayor-sidebar-brand {
+  padding: 0 18px 18px;
+  border-bottom: 1px solid rgba(201,162,39,.12);
+  margin-bottom: 8px;
+}
+.mayor-brand-icon {
+  width: 38px; height: 38px; border-radius: 9px; margin-bottom: 10px;
+  background: linear-gradient(135deg, #92400e, var(--mayor-gold));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 14px rgba(201,162,39,.25);
+}
+.mayor-sidebar-brand h2 {
+  font-family: var(--font-head);
+  font-size: .88rem;
+  font-weight: 800;
+  color: var(--mayor-gold);
+  margin: 0 0 2px;
+  letter-spacing: -.01em;
+}
+.mayor-sidebar-brand p {
+  font-size: .7rem;
+  color: rgba(255,255,255,.3);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mayor-sidebar-label {
+  font-size: .62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: rgba(201,162,39,.4);
+  padding: 0 18px;
+  margin: 18px 0 4px;
+}
+
+.mayor-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 18px;
+  color: rgba(255,255,255,.48);
+  font-size: .84rem;
+  font-weight: 500;
+  transition: all .15s;
+  border-left: 2px solid transparent;
+  text-decoration: none;
+}
+.mayor-nav-link:hover {
+  background: rgba(201,162,39,.07);
+  color: rgba(240,208,106,.9);
+}
+.mayor-nav-link.active {
+  background: linear-gradient(90deg, rgba(201,162,39,.14), rgba(201,162,39,.04));
+  color: var(--mayor-gold);
+  border-left-color: var(--mayor-gold);
+  font-weight: 600;
+}
+
+/* ── MAIN ── */
+.mayor-main {
+  background: #f5f1eb;
+  padding: 32px 36px;
+  min-height: calc(100vh - 60px);
+}
+
+/* ── PAGE HEADER ── */
+.mayor-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1.5px solid #e5dfd5;
+}
+.mayor-page-title {
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -.02em;
+}
+
+/* ── STAT GRID ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid #e5dfd5;
+  border-radius: 10px;
+  padding: 18px 14px;
+  text-align: center;
+  transition: all .2s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.stat-num {
+  font-family: var(--font-head);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.stat-lbl {
+  font-size: .69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #7a7468;
+}
+
+/* ── CARDS ── */
+.mayor-card {
+  background: #fff;
+  border: 1px solid #e5dfd5;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+.mayor-card-head {
+  padding: 13px 18px;
+  border-bottom: 1px solid #ede7dc;
+  font-family: var(--font-head);
+  font-size: .87rem;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #faf8f4, #fff);
+}
+
+/* ── TABLE ── */
+.mayor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .84rem;
+}
+.mayor-table th {
+  background: #f5f0e8;
+  padding: 9px 16px;
+  text-align: left;
+  font-family: var(--font-head);
+  font-size: .67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: #7a7468;
+  border-bottom: 1px solid #e5dfd5;
+}
+.mayor-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid #f0ebe2;
+  vertical-align: middle;
+}
+.mayor-table tr:last-child td { border-bottom: none; }
+.mayor-table tr:hover td { background: rgba(245,240,232,.7); }
+
+/* ── PILLS ── */
+.pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: .67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.pill-pending    { background: rgba(201,162,39,.12); color: #7c5e0c; }
+.pill-in_review  { background: rgba(59,130,246,.1);  color: #1d4ed8; }
+.pill-in_progress{ background: rgba(168,85,247,.1);  color: #7c3aed; }
+.pill-resolved   { background: rgba(34,197,94,.12);  color: #15803d; }
+.pill-rejected   { background: rgba(220,38,38,.1);   color: #b91c1c; }
+.pill-critical   { background: rgba(220,38,38,.12);  color: #991b1b; }
+.pill-high       { background: rgba(234,88,12,.12);  color: #9a3412; }
+.pill-medium     { background: rgba(201,162,39,.12); color: #7c5e0c; }
+.pill-low        { background: rgba(34,197,94,.08);  color: #15803d; }
+
+/* ── BUTTONS ── */
+.mayor-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 7px;
+  font-size: .82rem;
+  font-weight: 700;
+  font-family: var(--font-head);
+  cursor: pointer;
+  transition: all .15s;
+  border: none;
+  text-decoration: none;
+}
+.mayor-btn-gold {
+  background: linear-gradient(135deg, #92400e, var(--mayor-gold));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(201,162,39,.25);
+}
+.mayor-btn-gold:hover { box-shadow: 0 4px 14px rgba(201,162,39,.35); transform: translateY(-1px); color: #fff; }
+.mayor-btn-dark   { background: var(--ink); color: #fff; }
+.mayor-btn-dark:hover { opacity: .85; color: #fff; }
+.mayor-btn-outline { background: transparent; border: 1.5px solid #c8c0b4; color: var(--ink); }
+.mayor-btn-outline:hover { background: #f0ebe2; border-color: #b0a898; }
+
+/* ── FILTER BAR ── */
+.filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.filter-bar input, .filter-bar select {
+  padding: 8px 12px; border: 1.5px solid #d5cfc6; border-radius: 7px;
+  font-size: .85rem; font-family: var(--font-body); background: #fff;
+  color: var(--ink); outline: none; transition: border-color .15s;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color: var(--mayor-gold); box-shadow: 0 0 0 3px rgba(201,162,39,.1); }
+.filter-bar input { flex: 1; min-width: 180px; }
+
+/* ── FORM GROUPS ── */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: .71rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #7a7468; margin-bottom: 6px; }
+.form-group select, .form-group textarea, .form-group input[type=text] {
+  width: 100%; padding: 9px 12px; border: 1.5px solid #d5cfc6; border-radius: 7px;
+  font-size: .9rem; font-family: var(--font-body); color: var(--ink);
+  background: #fff; outline: none; transition: border-color .15s;
+}
+.form-group select:focus, .form-group textarea:focus { border-color: var(--mayor-gold); box-shadow: 0 0 0 3px rgba(201,162,39,.1); }
+.form-group textarea { resize: vertical; min-height: 90px; }
+
+/* ── MESSAGES ── */
+.msg-success { background: #f0fdf4; border: 1px solid rgba(34,197,94,.3); color: #15803d; border-radius: 8px; padding: 11px 16px; margin-bottom: 18px; font-size: .88rem; }
+.msg-error   { background: #fef2f2; border: 1px solid rgba(220,38,38,.25); color: #b91c1c; border-radius: 8px; padding: 11px 16px; margin-bottom: 18px; font-size: .88rem; }
+
+/* ── MOBILE BAR ── */
+.mayor-mob-bar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  background: #0e0900;
+  border-bottom: 1px solid rgba(201,162,39,.2);
+  position: sticky;
+  top: 60px;
+  z-index: 500;
+}
+.mayor-mob-toggle {
+  background: rgba(201,162,39,.1); border: 1px solid rgba(201,162,39,.22); color: var(--mayor-gold);
+  font-size: 1.1rem; cursor: pointer; padding: 5px 10px; line-height: 1; border-radius: 6px;
+}
+.mayor-mob-title { font-family: var(--font-head); font-weight: 700; font-size: .9rem; color: var(--mayor-gold); }
+.mayor-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 998; backdrop-filter: blur(3px); }
+.mayor-overlay.open { display: block; }
+
+@media (max-width: 900px) {
+  .mayor-layout { grid-template-columns: 1fr; }
+  .mayor-sidebar {
+    display: block; position: fixed; top: 0; left: 0; height: 100vh;
+    width: 260px; z-index: 999; transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1); overflow-y: auto; padding-top: 16px;
+  }
+  .mayor-sidebar.open { transform: translateX(0); }
+  .mayor-mob-bar { display: flex; }
+  .mayor-main { padding: 20px 16px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .mayor-main { padding: 14px 12px; }
+  .mayor-page-title { font-size: 1.2rem; }
+  .stat-num { font-size: 1.6rem; }
+}
+@media (max-width: 768px) {
+  .mayor-card { overflow-x: auto; }
+  .mayor-table { min-width: 600px; }
+  .mayor-btn { min-height: 44px; padding: 10px 14px; }
+  .filter-bar input, .filter-bar select { min-height: 44px; }
+}
+</style>
+{% block mayor_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="mayor-mob-bar" id="mayorMobBar">
+  <button class="mayor-mob-toggle" onclick="toggleMayorSidebar()">☰</button>
+  <span class="mayor-mob-title">🏛 Mayor's Office</span>
+</div>
+<div class="mayor-overlay" id="mayorOverlay" onclick="toggleMayorSidebar()"></div>
+
+<div class="mayor-layout">
+  <nav class="mayor-sidebar" id="mayorSidebar">
+    <div class="mayor-sidebar-brand">
+      <div class="mayor-brand-icon">🏛</div>
+      <h2>Mayor's Office</h2>
+      <p>{{ request.user.get_full_name }}</p>
+    </div>
+
+    <div class="mayor-sidebar-label">Overview</div>
+    <a href="/mayor/" class="mayor-nav-link {% if request.resolver_match.url_name == 'dashboard' and 'mayor' in request.path %}active{% endif %}">
+      📊 Dashboard
+    </a>
+
+    <div class="mayor-sidebar-label">Complaints</div>
+    <a href="/mayor/complaints/" class="mayor-nav-link {% if 'complaint' in request.resolver_match.url_name %}active{% endif %}" style="justify-content:space-between;">
+      <span>📋 All Complaints</span>
+      {% if overdue_count %}<span style="background:rgba(220,38,38,.85);color:#fff;border-radius:10px;padding:1px 7px;font-size:.63rem;font-weight:700;">{{ overdue_count }} overdue</span>{% endif %}
+    </a>
+
+    <div class="mayor-sidebar-label">Governance</div>
+    <a href="/mayor/chairpersons/" class="mayor-nav-link {% if 'chairperson' in request.resolver_match.url_name %}active{% endif %}">
+      👥 Ward Chairpersons
+    </a>
+
+    <div class="mayor-sidebar-label">Intelligence</div>
+    <a href="/mayor/briefing/"     class="mayor-nav-link {% if 'briefing'    in request.resolver_match.url_name %}active{% endif %}">🤖 AI Weekly Briefing</a>
+    <a href="/mayor/escalations/"  class="mayor-nav-link {% if 'escalation'  in request.resolver_match.url_name %}active{% endif %}">🚨 Escalation Inbox</a>
+    <a href="/mayor/announcements/" class="mayor-nav-link {% if 'announcement' in request.resolver_match.url_name %}active{% endif %}">📢 Announcements</a>
+
+    <div class="mayor-sidebar-label">Civic Engagement</div>
+    <a href="/civic/mayor/polls/"       class="mayor-nav-link {% if '/civic/mayor/polls'   in request.path %}active{% endif %}">🗳 Civic Polls</a>
+    <a href="/services/mayor/notices/"  class="mayor-nav-link {% if 'mayor/notices'        in request.path %}active{% endif %}">📢 Public Notices</a>
+    <a href="/services/mayor/requests/" class="mayor-nav-link {% if 'mayor/requests'       in request.path %}active{% endif %}">📋 Service Requests</a>
+
+    <div class="mayor-sidebar-label">Reports</div>
+    <a href="/mayor/report/"             class="mayor-nav-link {% if request.resolver_match.url_name == 'report' %}active{% endif %}">🖨 Print Report</a>
+    <a href="/mayor/complaints/export/csv/" class="mayor-nav-link">⬇ Export CSV</a>
+
+    <div class="mayor-sidebar-label">Other</div>
+    <a href="/admin/dashboard/" class="mayor-nav-link">⚙ CMS</a>
+    <a href="/"                 class="mayor-nav-link">← Back to Site</a>
+  </nav>
+
+  <main class="mayor-main">
+    {% if messages %}
+      {% for message in messages %}
+      <div class="{% if 'error' in message.tags %}msg-error{% else %}msg-success{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    {% endif %}
+    {% block mayor_content %}{% endblock %}
+  </main>
+</div>
+
+<script>
+function toggleMayorSidebar() {
+  document.getElementById('mayorSidebar').classList.toggle('open');
+  document.getElementById('mayorOverlay').classList.toggle('open');
+}
+document.querySelectorAll('.mayor-nav-link').forEach(a => {
+  a.addEventListener('click', () => { if (window.innerWidth <= 900) toggleMayorSidebar(); });
+});
+</script>
+{% block mayor_extra_js %}{% endblock %}
+{% endblock %}

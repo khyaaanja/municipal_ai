@@ -1,0 +1,123 @@
+{% extends "base/base.html" %}
+{% block title %}Citizen Proposals{% endblock %}
+{% block content %}
+<style>
+.civic-wrap{max-width:1100px;margin:0 auto;padding:32px 20px}
+.civic-hero{background:linear-gradient(135deg,#0c1a10,#1a3320);border-radius:12px;padding:36px 32px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.civic-hero h1{font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:#4ade80;margin:0 0 6px}
+.civic-hero p{color:rgba(255,255,255,0.6);margin:0;font-size:.9rem}
+.btn-green{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;background:#16a34a;color:#fff;border-radius:6px;font-family:var(--font-head);font-size:.85rem;font-weight:700;text-decoration:none;transition:background .15s}
+.btn-green:hover{background:#15803d;color:#fff}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.filter-row select{padding:8px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.85rem;font-family:var(--font-body);background:#fff;color:var(--ink);outline:none}
+.filter-row select:focus{border-color:#16a34a}
+.proposal-grid{display:grid;gap:16px}
+.prop-card{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:20px;display:flex;gap:16px;align-items:flex-start}
+.prop-card-body{flex:1}
+.prop-cat{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#16a34a;margin-bottom:4px}
+.prop-title{font-family:var(--font-head);font-size:1.05rem;font-weight:700;color:var(--ink);margin:0 0 8px;text-decoration:none}
+.prop-title:hover{color:#16a34a}
+.prop-meta{font-size:.78rem;color:var(--stone)}
+.prop-actions{display:flex;align-items:center;gap:10px;margin-top:12px}
+.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.68rem;font-weight:700;text-transform:uppercase}
+.pill-pending{background:rgba(201,162,39,.12);color:#8B6E10}
+.pill-reviewing{background:rgba(59,130,246,.1);color:#1e4e8c}
+.pill-accepted{background:rgba(34,197,94,.12);color:#166534}
+.pill-rejected{background:rgba(193,59,42,.1);color:var(--red-dark)}
+.pill-implemented{background:rgba(168,85,247,.1);color:#6b21a8}
+.support-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #d5cfc6;border-radius:20px;background:#fff;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-body)}
+.support-btn:hover,.support-btn.active{background:#dcfce7;border-color:#16a34a;color:#166534}
+.empty-state{text-align:center;padding:60px 20px;color:var(--stone)}
+</style>
+<div class="civic-wrap">
+  <div class="civic-hero">
+    <div>
+      <h1>Citizen Proposals</h1>
+      <p>Submit ideas and improvements for your ward. Chairpersons review every proposal.</p>
+    </div>
+    {% if user.is_authenticated %}
+    <a href="/civic/proposals/submit/" class="btn-green">+ Submit Proposal</a>
+    {% else %}
+    <a href="/login/?next=/civic/proposals/submit/" class="btn-green">Login to Submit</a>
+    {% endif %}
+  </div>
+
+  <form method="get" class="filter-row">
+    <select name="ward" onchange="this.form.submit()">
+      <option value="">All Wards</option>
+      <option value="1" {% if ward_filter == "1" %}selected{% endif %}>Ward 1</option>
+      <option value="2" {% if ward_filter == "2" %}selected{% endif %}>Ward 2</option>
+      <option value="3" {% if ward_filter == "3" %}selected{% endif %}>Ward 3</option>
+      <option value="4" {% if ward_filter == "4" %}selected{% endif %}>Ward 4</option>
+      <option value="5" {% if ward_filter == "5" %}selected{% endif %}>Ward 5</option>
+      <option value="6" {% if ward_filter == "6" %}selected{% endif %}>Ward 6</option>
+      <option value="7" {% if ward_filter == "7" %}selected{% endif %}>Ward 7</option>
+      <option value="8" {% if ward_filter == "8" %}selected{% endif %}>Ward 8</option>
+      <option value="9" {% if ward_filter == "9" %}selected{% endif %}>Ward 9</option>
+      <option value="10" {% if ward_filter == "10" %}selected{% endif %}>Ward 10</option>
+      <option value="11" {% if ward_filter == "11" %}selected{% endif %}>Ward 11</option>
+      <option value="12" {% if ward_filter == "12" %}selected{% endif %}>Ward 12</option>
+      <option value="13" {% if ward_filter == "13" %}selected{% endif %}>Ward 13</option>
+      <option value="14" {% if ward_filter == "14" %}selected{% endif %}>Ward 14</option>
+      <option value="15" {% if ward_filter == "15" %}selected{% endif %}>Ward 15</option>
+      <option value="16" {% if ward_filter == "16" %}selected{% endif %}>Ward 16</option>
+      <option value="17" {% if ward_filter == "17" %}selected{% endif %}>Ward 17</option>
+    </select>
+    <select name="status" onchange="this.form.submit()">
+      <option value="">All Statuses</option>
+      {% for val,label in status_choices %}
+      <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="category" onchange="this.form.submit()">
+      <option value="">All Categories</option>
+      {% for val,label in category_choices %}
+      <option value="{{ val }}" {% if category_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <div class="proposal-grid">
+    {% for p in proposals %}
+    <div class="prop-card">
+      <div class="prop-card-body">
+        <div class="prop-cat">{{ p.get_category_display }} · Ward {{ p.ward_number }}</div>
+        <a href="/civic/proposals/{{ p.pk }}/" class="prop-title">{{ p.title }}</a>
+        <div class="prop-meta">By {{ p.submitted_by.get_full_name|default:p.submitted_by.username }} · {{ p.created_at|date:"M d, Y" }}</div>
+        <div class="prop-actions">
+          <span class="pill pill-{{ p.status|lower }}">{{ p.get_status_display }}</span>
+          {% if user.is_authenticated %}
+          <button class="support-btn {% if p.pk in supported_ids %}active{% endif %}"
+                  data-pk="{{ p.pk }}" onclick="toggleSupport(this)">
+            👍 <span class="cnt">{{ p.support_count }}</span>
+          </button>
+          {% else %}
+          <span style="font-size:.78rem;color:var(--stone)">👍 {{ p.support_count }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+      <p style="font-size:2rem">💡</p>
+      <p>No proposals yet. Be the first to submit one!</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+function toggleSupport(btn) {
+  const pk = btn.dataset.pk;
+  fetch(`/civic/proposals/${pk}/support/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+  })
+  .then(r => r.json())
+  .then(d => {
+    btn.querySelector('.cnt').textContent = d.count;
+    if (d.supported) btn.classList.add('active');
+  });
+}
+</script>
+{% endblock %}

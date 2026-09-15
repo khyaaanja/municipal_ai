@@ -1,0 +1,86 @@
+{% extends "base/base.html" %}
+{% block title %}{{ poll.question|truncatechars:60 }}{% endblock %}
+{% block content %}
+<style>
+.poll-wrap{max-width:680px;margin:0 auto;padding:32px 20px}
+.breadcrumb{font-size:.8rem;color:var(--stone);margin-bottom:20px}
+.breadcrumb a{color:var(--stone);text-decoration:none}
+.poll-card{background:#fff;border:1px solid #e8e3da;border-radius:10px;padding:32px}
+.poll-card h1{font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--ink);margin:0 0 8px}
+.poll-meta{font-size:.8rem;color:var(--stone);margin-bottom:20px}
+.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.68rem;font-weight:700;text-transform:uppercase}
+.pill-active{background:rgba(34,197,94,.12);color:#166534}
+.pill-closed{background:rgba(100,116,139,.1);color:#475569}
+.option-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0ece4;cursor:pointer}
+.option-row:last-of-type{border-bottom:none}
+.option-radio{width:18px;height:18px;accent-color:#16a34a;flex-shrink:0}
+.option-label{flex:1;font-size:.92rem;color:var(--ink)}
+.option-bar-wrap{flex:1;background:#f0ece4;border-radius:4px;height:8px;overflow:hidden}
+.option-bar-fill{height:100%;background:#16a34a;border-radius:4px;transition:width .4s}
+.option-pct{font-size:.8rem;font-weight:700;color:var(--stone);min-width:36px;text-align:right}
+.vote-btn{width:100%;margin-top:20px;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-family:var(--font-head);font-size:1rem;font-weight:700;cursor:pointer;transition:background .15s}
+.vote-btn:hover{background:#15803d}
+.already-voted{background:#dcfce7;border-radius:6px;padding:12px 16px;font-size:.88rem;color:#166534;margin-top:16px}
+</style>
+<div class="poll-wrap">
+  <div class="breadcrumb"><a href="/civic/polls/">Polls</a> / Poll</div>
+  <div class="poll-card">
+    <h1>{{ poll.question }}</h1>
+    <div class="poll-meta">
+      {% if poll.ward_number %}Ward {{ poll.ward_number }}{% else %}City-wide{% endif %}
+      {% if poll.closes_at %}· Closes {{ poll.closes_at|date:"M d, Y" }}{% endif %}
+      · {{ total_votes }} vote{{ total_votes|pluralize }}
+      <span class="pill pill-{{ poll.status|lower }}" style="margin-left:8px">{{ poll.get_status_display }}</span>
+    </div>
+    {% if poll.description %}<p style="color:var(--stone);font-size:.88rem;margin-bottom:20px">{{ poll.description }}</p>{% endif %}
+
+    {% if not user_voted and poll.status == 'ACTIVE' and user.is_authenticated %}
+    <form id="voteForm">
+      {% csrf_token %}
+      {% for item in options_with_pct %}
+      <label class="option-row" for="opt{{ item.option.pk }}">
+        <input class="option-radio" type="radio" name="option_id" id="opt{{ item.option.pk }}" value="{{ item.option.pk }}">
+        <span class="option-label">{{ item.option.text }}</span>
+        <span class="option-pct">{{ item.pct }}%</span>
+      </label>
+      {% endfor %}
+      <button type="button" class="vote-btn" onclick="submitVote()">Cast My Vote</button>
+    </form>
+    {% elif not user.is_authenticated and poll.status == 'ACTIVE' %}
+    <p><a href="/login/?next={{ request.path }}" style="color:#16a34a">Login to vote</a></p>
+    {% else %}
+    {% if user_voted %}<div class="already-voted">✓ You have already voted in this poll.</div>{% endif %}
+    <div id="results">
+      {% for item in options_with_pct %}
+      <div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:4px">
+          <span>{{ item.option.text }}</span>
+          <span style="font-weight:700">{{ item.pct }}% ({{ item.option.vote_count }})</span>
+        </div>
+        <div class="option-bar-wrap"><div class="option-bar-fill" style="width:{{ item.pct }}%"></div></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script>
+function submitVote() {
+  const opt = document.querySelector('input[name=option_id]:checked');
+  if (!opt) { alert('Please select an option.'); return; }
+  fetch('/civic/polls/{{ poll.pk }}/vote/', {
+    method:'POST',
+    headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},
+    body:'option_id='+opt.value
+  }).then(r=>r.json()).then(d=>{
+    if (d.error) { alert(d.error); return; }
+    let html = '<div class="already-voted">✓ Vote recorded! Results:</div><div id="results" style="margin-top:16px">';
+    d.results.forEach(r=>{
+      html += `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:4px"><span>${r.text}</span><span style="font-weight:700">${r.pct}% (${r.count})</span></div><div class="option-bar-wrap"><div class="option-bar-fill" style="width:${r.pct}%"></div></div></div>`;
+    });
+    html += '</div>';
+    document.getElementById('voteForm').outerHTML = html;
+  });
+}
+</script>
+{% endblock %}

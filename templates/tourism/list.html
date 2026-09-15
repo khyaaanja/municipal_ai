@@ -1,6 +1,9 @@
 {% extends "base/base.html" %}
 {% block extra_css %}
 <style>
+/* Heritage color overrides for cultural content */
+.card-category { color: var(--gold-dark) !important; }
+.page-hero-tag { background: rgba(217,119,6,0.14); border-color: rgba(217,119,6,0.28); }
 .filter-bar {
   background: var(--white);
   border-bottom: var(--border);
@@ -40,6 +43,12 @@
   margin-left: auto;
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
+}
+@media(max-width:480px){
+  .filter-search { margin-left: 0; width: 100%; }
+  .filter-search form { width: 100%; }
+  .filter-search input { flex: 1; width: auto !important; }
 }
 .card-img {
   width: 100%;
@@ -98,7 +107,7 @@
     <div class="filter-search">
       <form action="/attractions/" method="get" style="display:flex;gap:6px;">
         {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
-        <input type="text" name="q" value="{{ query }}" placeholder="Search attractions..." class="form-control" style="width:200px;padding:6px 12px;font-size:0.85rem;">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search attractions..." class="form-control" style="width:clamp(120px,30vw,200px);padding:6px 12px;font-size:0.85rem;min-width:0;">
         <button type="submit" class="btn btn-primary btn-sm">Search</button>
       </form>
     </div>
@@ -142,19 +151,16 @@
         <div class="card-body">
           <div class="card-category">{{ attraction.category.name|default:"Attraction" }}</div>
           <div class="card-title">{{ attraction.name }}</div>
-          <div class="card-desc">{{ attraction.short_description|default:attraction.description|truncatewords:20 }}</div>
+          <div class="card-desc">{{ attraction.description|truncatewords:20 }}</div>
           <div class="card-meta">
-            <span class="stars">★★★★★</span>
-            <span>{{ attraction.avg_rating }}</span>
-            <span>·</span>
-            <span>{% if attraction.entry_fee == 0 %}Free{% else %}NPR {{ attraction.entry_fee }}{% endif %}</span>
-            <span>·</span>
-            <span>~{{ attraction.visit_duration_minutes }} min</span>
+            <span>{% if attraction.is_free or not attraction.entry_fee %}Free Entry{% else %}NPR {{ attraction.entry_fee }}{% endif %}</span>
+            {% if attraction.opening_hours %}<span>·</span><span>{{ attraction.opening_hours|truncatechars:30 }}</span>{% endif %}
           </div>
         </div>
       </a>
       {% endfor %}
     </div>
+    {% include "includes/pagination.html" %}
     {% else %}
     <div style="text-align:center;padding:80px 20px;color:var(--stone);">
       <div style="font-size:3rem;margin-bottom:16px;">🏛️</div>

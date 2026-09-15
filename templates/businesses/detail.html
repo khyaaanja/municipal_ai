@@ -39,7 +39,50 @@ section p{color:var(--ink-light);line-height:1.8;font-size:.95rem;}
 .rating-num{font-size:3rem;font-weight:900;color:var(--accent);}
 .breadcrumb{max-width:1100px;margin:20px auto 0;padding:0 20px;font-size:.82rem;color:var(--ink-light);}
 .breadcrumb a{color:var(--accent);text-decoration:none;}
+/* ── STAR PICKER ── */
+.star-picker { display:flex; flex-direction:row-reverse; justify-content:flex-end; gap:4px; }
+.star-label { cursor:pointer; font-size:1.6rem; color:var(--stone-light); transition:color 0.1s; line-height:1; }
+.star-label input { position:absolute; opacity:0; width:0; height:0; }
+.star-label span { display:block; transition:transform 0.1s; }
+.star-label.selected { color:#f59e0b; }
+.star-label:hover span { transform: scale(1.2); }
+@keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 </style>
+<script>
+function submitReview(e, formId) {
+  const form = document.getElementById(formId);
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Submitting…';
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.star-picker').forEach(picker => {
+    const labels = Array.from(picker.querySelectorAll('.star-label')).reverse();
+    labels.forEach((label, idx) => {
+      const input = label.querySelector('input');
+      const updateVisual = () => {
+        const checked = picker.querySelector('input:checked');
+        const val = checked ? parseInt(checked.value) : 0;
+        labels.forEach((l, i) => l.classList.toggle('selected', i < val));
+      };
+      input.addEventListener('change', updateVisual);
+      label.addEventListener('mouseenter', () => labels.forEach((l, i) => l.classList.toggle('selected', i <= idx)));
+      label.addEventListener('mouseleave', () => {
+        const checked = picker.querySelector('input:checked');
+        const val = checked ? parseInt(checked.value) : 0;
+        labels.forEach((l, i) => l.classList.toggle('selected', i < val));
+      });
+      if (input.checked) updateVisual();
+    });
+    picker.closest('form').querySelectorAll('input[name="rating"]').forEach(r => {
+      if (r.checked) {
+        const val = parseInt(r.value);
+        labels.forEach((l, i) => l.classList.toggle('selected', i < val));
+      }
+    });
+  });
+});
+</script>
 
 <div class="breadcrumb">
   <a href="/">Home</a> › <a href="/businesses/">Businesses</a> › {{ business.name }}
@@ -100,8 +143,38 @@ section p{color:var(--ink-light);line-height:1.8;font-size:.95rem;}
         <p class="comment">{{ review.comment }}</p>
       </div>
       {% empty %}
-        <p style="color:var(--ink-light);font-size:.9rem;">No reviews yet.</p>
+        <p style="color:var(--ink-light);font-size:.9rem;">No reviews yet. Be the first!</p>
       {% endfor %}
+
+      {% if user.is_authenticated %}
+      <div style="margin-top:24px;padding:20px;background:var(--paper);border-radius:8px;border:1.5px solid var(--border);">
+        <h3 style="font-size:1rem;margin-bottom:14px;">Write a Review</h3>
+        <form method="post" action="/reviews/submit/" id="review-form-b" onsubmit="submitReview(event,'review-form-b')">
+          {% csrf_token %}
+          <input type="hidden" name="content_type" value="business">
+          <input type="hidden" name="object_id" value="{{ business.pk }}">
+          <input type="hidden" name="next" value="/businesses/{{ business.slug }}/">
+          <div style="margin-bottom:14px;">
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:8px;">Rating</label>
+            <div class="star-picker" role="radiogroup" aria-label="Rating">
+              {% for val in "12345" %}
+              <label class="star-label" title="{{ val }} star{% if val != '1' %}s{% endif %}">
+                <input type="radio" name="rating" value="{{ val }}" {% if forloop.last %}checked{% endif %}>
+                <span>★</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="font-size:.82rem;font-weight:700;display:block;margin-bottom:6px;">Your Review</label>
+            <textarea name="comment" class="form-control" rows="3" placeholder="Share your experience..." required style="resize:vertical;min-height:80px;"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" id="review-submit-b">Submit Review</button>
+        </form>
+      </div>
+      {% else %}
+      <p style="margin-top:16px;font-size:.85rem;color:var(--stone);"><a href="/login/?next=/businesses/{{ business.slug }}/" style="color:var(--red);">Login</a> to write a review.</p>
+      {% endif %}
     </section>
   </div>
 
@@ -141,7 +214,7 @@ section p{color:var(--ink-light);line-height:1.8;font-size:.95rem;}
     <div class="info-card">
       <h3>Ask AI</h3>
       <p style="font-size:.84rem;color:var(--ink-light);margin-bottom:14px;">Ask about this place, nearby options, or tips.</p>
-      <a href="/chat/?q=Tell me about {{ business.name }} in {{ CITY_NAME }}" class="btn-full btn-ink">Ask AI Assistant</a>
+      <a href="/chat/?q=Tell+me+about+{{ business.name|urlencode }}+in+{{ CITY_NAME|urlencode }}" class="btn-full btn-ink">Ask AI Assistant</a>
     </div>
   </aside>
 </div>

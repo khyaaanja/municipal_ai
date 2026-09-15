@@ -121,14 +121,14 @@ class ComplaintStatusTests(TestCase):
         self.assertNotContains(resp, '9800000000')
         self.assertNotContains(resp, 'secret@test.com')
 
-    def test_admin_notes_hidden_pending(self):
-        """admin_notes must not appear when status is PENDING."""
+    def test_admin_notes_shown_always(self):
+        """admin_notes appear whenever they are set, regardless of status (improvement plan 1.2)."""
         self.complaint.status = 'PENDING'
         self.complaint.save()
         resp = self.client.get(
             reverse('complaints:complaint_status', args=[self.complaint.complaint_id])
         )
-        self.assertNotContains(resp, 'Resolved after inspection.')
+        self.assertContains(resp, 'Resolved after inspection.')
 
     def test_admin_notes_shown_resolved(self):
         """admin_notes must appear when status is RESOLVED."""

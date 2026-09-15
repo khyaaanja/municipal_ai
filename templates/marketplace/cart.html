@@ -1,6 +1,37 @@
 {% extends "base/base.html" %}
 {% block title %}Cart — {{ CITY_NAME }} AI{% endblock %}
 {% block content %}
+<!-- ── UNDER CONSTRUCTION OVERLAY ── -->
+<style>
+.uc-overlay{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background:rgba(13,13,13,.72);}
+.uc-card{background:var(--paper);border:3px solid var(--ink);border-top:6px solid var(--red);max-width:480px;width:calc(100% - 40px);padding:48px 40px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.45);}
+.uc-icon{font-size:3.5rem;margin-bottom:16px;display:block;}
+.uc-title{font-family:var(--font-head);font-size:1.9rem;font-weight:800;color:var(--ink);margin-bottom:10px;}
+.uc-sub{color:var(--stone);font-size:.95rem;line-height:1.7;margin-bottom:28px;}
+.uc-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(193,59,42,.08);border:1.5px solid rgba(193,59,42,.25);color:var(--red);border-radius:50px;padding:6px 18px;font-size:.8rem;font-weight:700;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.06em;margin-bottom:24px;}
+.uc-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:ucpulse 1.4s ease-in-out infinite;}
+@keyframes ucpulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+.uc-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.uc-btn{padding:11px 22px;border-radius:4px;font-family:var(--font-head);font-weight:700;font-size:.85rem;text-decoration:none;border:none;cursor:pointer;transition:all .15s;}
+.uc-btn-primary{background:var(--ink);color:var(--paper);}
+.uc-btn-primary:hover{background:var(--red);}
+.uc-btn-ghost{background:transparent;color:var(--stone);border:1.5px solid var(--stone-light);}
+.uc-btn-ghost:hover{border-color:var(--ink);color:var(--ink);}
+</style>
+<div class="uc-overlay" id="ucOverlay">
+  <div class="uc-card">
+    <span class="uc-icon">🛒</span>
+    <div class="uc-badge"><span class="uc-badge-dot"></span>Coming Soon</div>
+    <div class="uc-title">Cart Under Construction</div>
+    <p class="uc-sub">Our checkout system is being finalized. You'll be able to purchase local Bhaktapur products and pay via Khalti or Cash on Delivery very soon.</p>
+    <div class="uc-actions">
+      <a href="/marketplace/" class="uc-btn uc-btn-primary">← Back to Shop</a>
+      <a href="/" class="uc-btn uc-btn-primary" style="background:var(--red);">Go Home</a>
+      <button class="uc-btn uc-btn-ghost" onclick="document.getElementById('ucOverlay').style.display='none'">View Cart Anyway</button>
+    </div>
+  </div>
+</div>
+<!-- ── END OVERLAY ── -->
 <style>
 .cart-page{max-width:1000px;margin:0 auto;padding:40px 20px;}
 .cart-page h1{font-size:2rem;margin:0 0 32px;display:flex;align-items:center;gap:12px;}
@@ -121,20 +152,36 @@ async function updateQty(itemId, delta) {
   }
 }
 async function removeItem(itemId) {
-  if (!confirm('Remove this item?')) return;
-  const res = await fetch('/marketplace/api/cart/remove/', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
-    body: JSON.stringify({item_id: itemId})
-  });
-  const data = await res.json();
-  if (data.success) {
-    document.getElementById('item-' + itemId).remove();
-    if (data.cart_count === 0) location.reload();
-    else {
-      document.getElementById('cart-subtotal').textContent = 'NPR ' + data.cart_subtotal;
-      document.getElementById('cart-total').textContent = 'NPR ' + data.cart_total;
+  const row = document.getElementById('item-' + itemId);
+  const name = row?.querySelector('.item-name')?.textContent?.trim() || 'item';
+  row.style.opacity = '0.4';
+  row.style.pointerEvents = 'none';
+  try {
+    const res = await fetch('/marketplace/api/cart/remove/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+      body: JSON.stringify({item_id: itemId})
+    });
+    const data = await res.json();
+    if (data.success) {
+      row.style.transition = 'all .3s';
+      row.style.opacity = '0';
+      row.style.maxHeight = '0';
+      row.style.overflow = 'hidden';
+      setTimeout(() => {
+        row.remove();
+        if (data.cart_count === 0) location.reload();
+        else {
+          document.getElementById('cart-subtotal').textContent = 'NPR ' + data.cart_subtotal;
+          document.getElementById('cart-total').textContent = 'NPR ' + data.cart_total;
+        }
+      }, 300);
+      if (window.showToast) showToast(`Removed "${name}" from cart`, 'info');
     }
+  } catch(e) {
+    row.style.opacity = '1';
+    row.style.pointerEvents = '';
+    if (window.showToast) showToast('Could not remove item. Try again.', 'error');
   }
 }
 function getCookie(name) {

@@ -1,0 +1,75 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div class="chair-page-header">
+  <h1 class="chair-page-title">Application {{ sr.reference_number }}</h1>
+  <a href="/services/manage/requests/" class="chair-btn chair-btn-outline">← Back</a>
+</div>
+
+<div class="chair-card" style="margin-bottom:16px">
+  <div class="chair-card-head">Applicant Details</div>
+  <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:.88rem">
+    <div><label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);display:block;margin-bottom:2px">Name</label>{{ sr.applicant_name }}</div>
+    <div><label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);display:block;margin-bottom:2px">Phone</label>{{ sr.applicant_phone }}</div>
+    <div><label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);display:block;margin-bottom:2px">Service</label>{{ sr.get_service_type_display }}</div>
+    <div><label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);display:block;margin-bottom:2px">Submitted</label>{{ sr.created_at|date:"M d, Y" }}</div>
+    <div style="grid-column:1/-1"><label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);display:block;margin-bottom:2px">Address</label>{{ sr.applicant_address }}</div>
+    {% if sr.details %}<div style="grid-column:1/-1"><label style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);display:block;margin-bottom:2px">Additional Details</label>{{ sr.details }}</div>{% endif %}
+  </div>
+</div>
+
+{% if sr.document_1 or sr.document_2 or sr.document_3 %}
+<div class="chair-card" style="margin-bottom:16px">
+  <div class="chair-card-head">Documents</div>
+  <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap">
+    {% if sr.document_1 %}<a href="{{ sr.document_1.url }}" target="_blank" class="chair-btn chair-btn-outline">📄 Document 1</a>{% endif %}
+    {% if sr.document_2 %}<a href="{{ sr.document_2.url }}" target="_blank" class="chair-btn chair-btn-outline">📄 Document 2</a>{% endif %}
+    {% if sr.document_3 %}<a href="{{ sr.document_3.url }}" target="_blank" class="chair-btn chair-btn-outline">📄 Document 3</a>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="chair-card" style="margin-bottom:16px">
+  <div class="chair-card-head">Update Status</div>
+  <div style="padding:20px">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+          {% for val,lbl in status_choices %}
+          <option value="{{ val }}" {% if sr.status == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Note to Applicant</label>
+        <textarea name="note" rows="3" placeholder="Status update note for the citizen..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Documents Requested (if any)</label>
+        <textarea name="documents_requested" rows="2" placeholder="List any missing documents...">{{ sr.documents_requested }}</textarea>
+      </div>
+      <button type="submit" class="chair-btn chair-btn-green">Update Application</button>
+    </form>
+  </div>
+</div>
+
+{% if history %}
+<div class="chair-card">
+  <div class="chair-card-head">Status History</div>
+  <table class="chair-table">
+    <thead><tr><th>Change</th><th>Note</th><th>By</th><th>Date</th></tr></thead>
+    <tbody>
+      {% for h in history %}
+      <tr>
+        <td>{% if h.old_status %}{{ h.old_status }} → {% endif %}{{ h.new_status }}</td>
+        <td>{{ h.note|default:"—" }}</td>
+        <td>{{ h.changed_by.get_full_name|default:h.changed_by.username|default:"—" }}</td>
+        <td>{{ h.changed_at|date:"M d, Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

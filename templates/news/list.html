@@ -96,6 +96,7 @@
       <p>No articles found.</p>
     </div>
     {% endfor %}
+    {% include "includes/pagination.html" %}
   </main>
 
   <aside>
@@ -107,7 +108,7 @@
         <span class="date">{{ art.published_at|date:"M d" }}</span>
       </div>
       {% endfor %}
-      {% for art in articles|slice:":5" %}
+      {% for art in sidebar_articles %}
       <div class="sidebar-news-item">
         <a href="/news/{{ art.slug }}/">{{ art.title }}</a>
         <span class="date">{{ art.published_at|date:"M d" }}</span>
@@ -118,7 +119,7 @@
     <div class="sidebar-box">
       <h3>Ask AI</h3>
       <p style="font-size:.84rem;color:var(--ink-light);margin-bottom:14px;">Get the latest city information from our AI assistant.</p>
-      <a href="/chat/?q=What are the latest news and announcements in {{ CITY_NAME }}?" style="display:block;text-align:center;background:var(--ink);color:#fff;padding:10px;border-radius:6px;text-decoration:none;font-size:.84rem;font-weight:700;">Ask AI Assistant</a>
+      <a href="/chat/?q=What+are+the+latest+news+and+announcements+in+{{ CITY_NAME|urlencode }}%3F" style="display:block;text-align:center;background:var(--ink);color:#fff;padding:10px;border-radius:6px;text-decoration:none;font-size:.84rem;font-weight:700;">Ask AI Assistant</a>
     </div>
   </aside>
 </div>

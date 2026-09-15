@@ -1,0 +1,34 @@
+{% extends "mayor/base.html" %}
+{% block mayor_content %}
+<div class="mayor-page-header">
+  <h1 class="mayor-page-title">Public Notices</h1>
+  <a href="/services/mayor/notices/create/" class="mayor-btn mayor-btn-gold">+ Publish Notice</a>
+</div>
+<div class="mayor-card">
+  <div class="mayor-card-head">All Notices</div>
+  <table class="mayor-table">
+    <thead><tr><th>Title</th><th>Type</th><th>Ward</th><th>Date</th><th>Deadline</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for n in notices %}
+      <tr>
+        <td style="font-weight:600">{{ n.title|truncatechars:50 }}</td>
+        <td>{{ n.get_notice_type_display }}</td>
+        <td>{% if n.ward_number %}Ward {{ n.ward_number }}{% else %}All{% endif %}</td>
+        <td>{{ n.created_at|date:"M d, Y" }}</td>
+        <td>{{ n.deadline|date:"M d, Y"|default:"—" }}</td>
+        <td>{% if n.is_active %}<span class="pill" style="background:rgba(34,197,94,.12);color:#166534">Active</span>{% else %}<span class="pill" style="background:rgba(100,116,139,.1);color:#475569">Inactive</span>{% endif %}</td>
+        <td style="display:flex;gap:6px">
+          <a href="/services/mayor/notices/{{ n.pk }}/edit/" class="mayor-btn mayor-btn-outline" style="padding:4px 12px;font-size:.78rem">Edit</a>
+          <form method="post" action="/services/mayor/notices/{{ n.pk }}/delete/" style="display:inline" onsubmit="return confirm('Delete this notice?')">
+            {% csrf_token %}
+            <button type="submit" class="mayor-btn" style="padding:4px 12px;font-size:.78rem;background:#C13B2A;color:#fff;border:none;cursor:pointer;border-radius:4px">Del</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:var(--stone);padding:30px">No notices published yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

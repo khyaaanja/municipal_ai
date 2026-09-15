@@ -1,0 +1,168 @@
+{% extends "mayor/base.html" %}
+{% block title %}{{ complaint.complaint_id }} — Mayor's Office{% endblock %}
+
+{% block mayor_extra_css %}
+<style>
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px; }
+@media(max-width:600px){ .detail-grid { grid-template-columns:1fr; } }
+.detail-box { background:#fff; border:1px solid #e8e3da; border-radius:6px; padding:16px; }
+.detail-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--stone); margin-bottom:4px; }
+.detail-val { font-size:.9rem; color:var(--ink); line-height:1.5; }
+.action-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media(max-width:700px){ .action-grid { grid-template-columns:1fr; } }
+.action-card { background:#fff; border:1px solid #e8e3da; border-radius:8px; padding:22px; }
+.action-card h3 { font-family:var(--font-head); font-size:.95rem; margin:0 0 16px; }
+</style>
+{% endblock %}
+
+{% block mayor_content %}
+<div class="mayor-page-header">
+  <div>
+    <a href="/mayor/complaints/" style="font-size:.82rem;color:var(--stone);">← All Complaints</a>
+    <h1 class="mayor-page-title" style="margin-top:4px;">{{ complaint.complaint_id }}</h1>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span class="pill pill-{{ complaint.status|lower }}">{{ complaint.status }}</span>
+    <span class="pill pill-{{ complaint.priority|lower }}">{{ complaint.priority }}</span>
+    {% if complaint.ward_number %}
+      <span style="background:rgba(201,162,39,.12);color:#8B6E10;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700;">Ward {{ complaint.ward_number }}</span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Complaint Info -->
+<div class="detail-grid">
+  <div class="detail-box" style="grid-column:1/-1">
+    <div class="detail-label">Title</div>
+    <div class="detail-val" style="font-size:1rem;font-weight:600;">{{ complaint.title }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Category</div>
+    <div class="detail-val">{{ complaint.get_category_display }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Location</div>
+    <div class="detail-val">{{ complaint.location }}</div>
+  </div>
+  <div class="detail-box" style="grid-column:1/-1">
+    <div class="detail-label">Description</div>
+    <div class="detail-val">{{ complaint.description }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Submitted by</div>
+    <div class="detail-val">
+      {{ complaint.submitter_name }}<br>
+      {% if complaint.submitter_email %}<span style="color:var(--stone);font-size:.82rem;">{{ complaint.submitter_email }}</span>{% endif %}
+      {% if complaint.submitter_phone %}<br><span style="color:var(--stone);font-size:.82rem;">{{ complaint.submitter_phone }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Dates</div>
+    <div class="detail-val" style="font-size:.85rem;">
+      Submitted: {{ complaint.created_at|date:"M j, Y H:i" }}<br>
+      Updated: {{ complaint.updated_at|date:"M j, Y H:i" }}<br>
+      {% if complaint.resolved_at %}Resolved: {{ complaint.resolved_at|date:"M j, Y" }}{% endif %}
+    </div>
+  </div>
+  {% if complaint.admin_notes %}
+  <div class="detail-box" style="grid-column:1/-1">
+    <div class="detail-label">Current Notes</div>
+    <div class="detail-val" style="white-space:pre-line;">{{ complaint.admin_notes }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Action Cards -->
+<div class="action-grid">
+
+  <!-- Update -->
+  <div class="action-card">
+    <h3>✏️ Update Complaint</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update">
+      <div class="form-group">
+        <label>Ward</label>
+        <select name="ward_number">
+          <option value="">— No ward —</option>
+          {% for w in wards %}
+          <option value="{{ w }}" {% if complaint.ward_number == w %}selected{% endif %}>Ward {{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+          {% for val,lbl in status_choices %}
+          <option value="{{ val }}" {% if complaint.status == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <select name="priority">
+          {% for val,lbl in priority_choices %}
+          <option value="{{ val }}" {% if complaint.priority == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Assign to Staff</label>
+        <select name="assigned_to">
+          <option value="">— Unassigned —</option>
+          {% for s in staff_users %}
+          <option value="{{ s.id }}" {% if complaint.assigned_to_id == s.id %}selected{% endif %}>{{ s.get_full_name|default:s.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Municipality Notes</label>
+        <textarea name="admin_notes">{{ complaint.admin_notes }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Change Note (visible in history)</label>
+        <input type="text" name="change_note" placeholder="e.g. Assigned to maintenance team" maxlength="200">
+      </div>
+      <button type="submit" class="mayor-btn mayor-btn-gold">Save Changes</button>
+    </form>
+    {% if complaint.assigned_to %}
+    <p style="margin-top:12px;font-size:.82rem;color:var(--stone);">Currently assigned to: <strong>{{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}</strong></p>
+    {% endif %}
+  </div>
+
+  <!-- Escalate / Forward -->
+  <div class="action-card">
+    <h3>📤 Forward to Ward Chairperson</h3>
+    <p style="font-size:.84rem;color:var(--stone);margin:0 0 16px;">Assign this complaint to a specific ward. The chairperson will see it in their dashboard and status will be set to In Review.</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="escalate">
+      <div class="form-group">
+        <label>Forward to Ward</label>
+        <select name="ward_number" required>
+          <option value="">Select ward…</option>
+          {% for w in wards %}
+          <option value="{{ w }}" {% if complaint.ward_number == w %}selected{% endif %}>
+            Ward {{ w }}{% for c in chairpersons %}{% if c.ward_number == w %} — {{ c.get_full_name }}{% endif %}{% endfor %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="mayor-btn mayor-btn-dark">Forward Complaint</button>
+    </form>
+
+    {% if chairpersons %}
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0ece4;">
+      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--stone);margin-bottom:10px;">Ward Chairpersons</div>
+      {% for chair in chairpersons %}
+      <div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 0;border-bottom:1px solid #f5f0e8;">
+        <span>Ward {{ chair.ward_number }}</span>
+        <span style="color:var(--stone);">{{ chair.get_full_name }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

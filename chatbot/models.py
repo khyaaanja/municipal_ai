@@ -55,9 +55,18 @@ class KnowledgeBase(models.Model):
         ('rules', 'Rules & Guidelines'),
     ]
 
+    LANGUAGE_CHOICES = [
+        ('en', 'English'),
+        ('ne', 'Nepali (नेपाली)'),
+        ('hi', 'Hindi (हिंदी)'),
+        ('zh-cn', 'Chinese Simplified'),
+        ('bn', 'Bengali (বাংলা)'),
+    ]
+
     title = models.CharField(max_length=200)
     content = models.TextField()
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    language = models.CharField(max_length=10, default='en', choices=LANGUAGE_CHOICES, db_index=True)
     keywords = models.CharField(max_length=500, blank=True)
     is_active = models.BooleanField(default=True)
     priority = models.IntegerField(default=0)
@@ -127,6 +136,13 @@ class UserAIProfile(models.Model):
     preferences = models.JSONField(default=dict)           # {"dietary": "vegetarian", "budget": "low"}
     visited_attractions = models.JSONField(default=list)   # ["Nyatapola Temple", ...]
     conversation_summary = models.TextField(blank=True)    # rolling summary of past chats
+    preferred_language = models.CharField(max_length=10, default='en', choices=[
+        ('en', 'English'),
+        ('ne', 'Nepali (नेपाली)'),
+        ('hi', 'Hindi (हिंदी)'),
+        ('zh-cn', 'Chinese Simplified'),
+        ('bn', 'Bengali (বাংলা)'),
+    ])
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -134,3 +150,76 @@ class UserAIProfile(models.Model):
 
     def __str__(self):
         return f"AI Profile — {self.user}"
+
+
+class FAQEntry(models.Model):
+    """
+    Municipal FAQ pairs for the fallback answer path.
+
+    Anything answerable in a fixed way (office hours, required documents, fees)
+    lives here — checked *first* before Groq when there's a high-confidence
+    keyword match, and used to build extractive fallback answers.
+    """
+    question = models.TextField()
+    answer = models.TextField()
+    category = models.CharField(
+        max_length=50,
+        choices=[
+            ('documents', 'Documents'),
+            ('tax', 'Tax'),
+            ('tourism', 'Tourism'),
+            ('services', 'Municipal Services'),
+            ('emergency', 'Emergency Contacts'),
+            ('procedures', 'Procedures'),
+            ('general', 'General'),
+        ],
+        default='general',
+        db_index=True,
+    )
+    keywords = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'faq_entries'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.question[:80]
+
+
+class KnowledgeChunk(models.Model):
+    """
+    Long-form knowledge chunks for embedding into the vector store
+    (ChromaDB today, pgvector after migration). Used by the fallback
+    answer path when the LLM is unavailable.
+    """
+    source_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('tourism', 'Tourism'),
+            ('procedure', 'Procedure'),
+            ('service', 'Municipal Service'),
+            ('heritage', 'Heritage'),
+            ('culture', 'Culture'),
+            ('transport', 'Transport'),
+            ('emergency', 'Emergency'),
+            ('general', 'General'),
+        ],
+        default='general',
+        db_index=True,
+    )
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    embedding_id = models.CharField(max_length=100, null=True, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'knowledge_chunks'
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return self.title

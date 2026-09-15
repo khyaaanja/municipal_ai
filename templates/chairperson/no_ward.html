@@ -1,0 +1,15 @@
+{% extends "chairperson/base.html" %}
+{% block title %}No Ward Assigned{% endblock %}
+
+{% block chair_content %}
+<div style="text-align:center;padding:80px 20px;">
+  <div style="font-size:3rem;margin-bottom:16px;">⚠️</div>
+  <h2 style="font-family:var(--font-head);font-size:1.4rem;margin:0 0 12px;">No Ward Assigned</h2>
+  <p style="color:var(--stone);font-size:.95rem;max-width:400px;margin:0 auto 24px;">
+    Your account has not been assigned a ward number yet. Please contact the administrator to set your ward number.
+  </p>
+  <a href="/" style="display:inline-flex;align-items:center;padding:10px 24px;background:#16a34a;color:#fff;border-radius:4px;font-family:var(--font-head);font-weight:600;font-size:.9rem;text-decoration:none;">
+    Back to Home
+  </a>
+</div>
+{% endblock %}

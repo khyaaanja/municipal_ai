@@ -1,0 +1,86 @@
+{% extends "base/base.html" %}
+{% block title %}Apply — {{ service_info.label }}{% endblock %}
+{% block content %}
+<style>
+.form-wrap{max-width:700px;margin:0 auto;padding:32px 20px}
+.form-card{background:#fff;border:1px solid #e8e3da;border-radius:10px;padding:32px}
+.form-card h1{font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--ink);margin:0 0 4px}
+.form-card .sub{color:var(--stone);font-size:.88rem;margin:0 0 24px}
+.doc-checklist{background:#fffbeb;border:1px solid rgba(201,162,39,.3);border-radius:6px;padding:16px 20px;margin-bottom:24px}
+.doc-checklist h3{font-family:var(--font-head);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#8B6E10;margin:0 0 10px}
+.doc-checklist ul{margin:0;padding:0 0 0 16px;font-size:.85rem;color:var(--ink)}
+.doc-checklist li{margin-bottom:4px}
+.svc-meta-row{display:flex;gap:20px;margin-bottom:20px}
+.svc-meta-item{font-size:.82rem;color:var(--stone)}
+.svc-meta-item strong{color:var(--ink)}
+.fg{margin-bottom:18px}
+.fg label{display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:6px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.92rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#C9A227}
+.fg textarea{resize:vertical;min-height:80px}
+.fg small{display:block;margin-top:4px;font-size:.75rem;color:var(--stone)}
+.divider{border:none;border-top:1px solid #e8e3da;margin:24px 0}
+.btn-submit{width:100%;padding:12px;background:#C9A227;color:#fff;border:none;border-radius:6px;font-family:var(--font-head);font-size:1rem;font-weight:700;cursor:pointer;transition:background .15s}
+.btn-submit:hover{background:#a88520}
+</style>
+<div class="form-wrap">
+  {% if messages %}{% for m in messages %}<div style="background:{% if 'error' in m.tags %}#fee2e2{% else %}#dcfce7{% endif %};border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;">{{ m }}</div>{% endfor %}{% endif %}
+  <div class="form-card">
+    <h1>{{ service_info.label }}</h1>
+    <p class="sub">Fill in the form below and upload your documents.</p>
+    <div class="svc-meta-row">
+      <div class="svc-meta-item">⏱ Processing: <strong>{{ service_info.days }} working days</strong></div>
+      <div class="svc-meta-item">💳 Fee: <strong>{{ service_info.fee }}</strong></div>
+    </div>
+    <div class="doc-checklist">
+      <h3>Documents Required</h3>
+      <ul>{% for doc in service_info.docs %}<li>{{ doc }}</li>{% endfor %}</ul>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="fg">
+        <label>Full Name <span style="color:var(--red)">*</span></label>
+        <input type="text" name="applicant_name" required maxlength="150" value="{{ user.get_full_name }}">
+      </div>
+      <div class="fg">
+        <label>Phone Number <span style="color:var(--red)">*</span></label>
+        <input type="text" name="applicant_phone" required maxlength="20" placeholder="+977-98XXXXXXXX">
+      </div>
+      <div class="fg">
+        <label>Address <span style="color:var(--red)">*</span></label>
+        <textarea name="applicant_address" required rows="2" placeholder="Your full address"></textarea>
+      </div>
+      <div class="fg">
+        <label>Additional Details</label>
+        <textarea name="details" rows="3" placeholder="Any specific details relevant to your application..."></textarea>
+      </div>
+      {% if not user.ward_number %}
+      <div class="fg">
+        <label>Ward Number <span style="color:var(--red)">*</span></label>
+        <input type="number" name="ward_number" required min="1" max="17">
+      </div>
+      {% endif %}
+      <hr class="divider">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:12px">Upload Documents</div>
+      <div class="fg">
+        <label>Document 1{% if service_info.docs %} — {{ service_info.docs.0 }}{% endif %}</label>
+        <input type="file" name="document_1" accept=".pdf,.jpg,.jpeg,.png">
+        <small>PDF or image, max 5MB</small>
+      </div>
+      {% if service_info.docs|length > 1 %}
+      <div class="fg">
+        <label>Document 2{% if service_info.docs|length > 1 %} — {{ service_info.docs.1 }}{% endif %}</label>
+        <input type="file" name="document_2" accept=".pdf,.jpg,.jpeg,.png">
+      </div>
+      {% endif %}
+      {% if service_info.docs|length > 2 %}
+      <div class="fg">
+        <label>Document 3{% if service_info.docs|length > 2 %} — {{ service_info.docs.2 }}{% endif %}</label>
+        <input type="file" name="document_3" accept=".pdf,.jpg,.jpeg,.png">
+      </div>
+      {% endif %}
+      <button type="submit" class="btn-submit">Submit Application</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

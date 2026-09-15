@@ -1,0 +1,39 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div class="chair-page-header">
+  <h1 class="chair-page-title">Citizen Proposals</h1>
+  <span class="ward-badge">Ward {{ request.user.ward_number }}</span>
+</div>
+<form method="get" class="filter-bar" style="margin-bottom:20px">
+  <select name="status" onchange="this.form.submit()">
+    <option value="">All Statuses</option>
+    {% for val,lbl in status_choices %}
+    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ lbl }}</option>
+    {% endfor %}
+  </select>
+</form>
+<div class="chair-card">
+  <div class="chair-card-head">
+    Proposals
+    {% if pending_count %}<span style="background:#C9A227;color:#fff;border-radius:10px;padding:1px 8px;font-size:.65rem;font-weight:700">{{ pending_count }} pending</span>{% endif %}
+  </div>
+  <table class="chair-table">
+    <thead><tr><th>Title</th><th>Category</th><th>Submitted By</th><th>Date</th><th>Support</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for p in proposals %}
+      <tr>
+        <td style="font-weight:600">{{ p.title|truncatechars:50 }}</td>
+        <td>{{ p.get_category_display }}</td>
+        <td>{{ p.submitted_by.get_full_name|default:p.submitted_by.username }}</td>
+        <td>{{ p.created_at|date:"M d, Y" }}</td>
+        <td>👍 {{ p.support_count }}</td>
+        <td><span class="pill pill-{{ p.status|lower }}">{{ p.get_status_display }}</span></td>
+        <td><a href="/civic/manage/proposals/{{ p.pk }}/" class="chair-btn chair-btn-outline" style="padding:4px 12px;font-size:.78rem">Review</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" style="text-align:center;color:var(--stone);padding:30px">No proposals yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base/base.html" %}
+{% block title %}Notifications — Bhaktapur Municipality{% endblock %}
+
+{% block extra_css %}
+<style>
+body { background: var(--ink) !important; color: var(--paper) !important; font-family: var(--font-body); }
+body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:0; background:radial-gradient(ellipse 60% 40% at 50% -5%, rgba(193,59,42,.1) 0%, transparent 55%); }
+.notif-wrap { max-width:700px; margin:0 auto; padding:2.5rem 1.5rem 4rem; position:relative; z-index:1; }
+.page-head { margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; }
+.page-head h1 { font-family:var(--font-head); font-size:1.8rem; font-weight:800; letter-spacing:-.02em; }
+.notif-card {
+  background:#1C1C1C; border:1px solid rgba(255,255,255,.08); border-left:3px solid transparent;
+  border-radius:6px; padding:1rem 1.25rem; margin-bottom:.5rem;
+  display:flex; align-items:flex-start; gap:.85rem;
+  animation:cardIn .3s cubic-bezier(.22,1,.36,1) both; text-decoration:none; color:inherit;
+  transition:border-left-color .15s, background .15s;
+}
+.notif-card:hover { border-left-color:var(--gold); background:rgba(255,255,255,.03); }
+.notif-card.unread { border-left-color:var(--red); }
+@keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.notif-icon { font-size:1.3rem; flex-shrink:0; margin-top:2px; }
+.notif-msg { font-size:.9rem; color:var(--paper); line-height:1.5; }
+.notif-time { font-size:.75rem; color:var(--stone); margin-top:.25rem; }
+.btn-markread {
+  background:transparent; border:1px solid rgba(255,255,255,.15); color:var(--stone);
+  border-radius:4px; padding:.45rem 1rem; font-size:.82rem; cursor:pointer;
+  transition:border-color .15s, color .15s;
+}
+.btn-markread:hover { border-color:var(--paper); color:var(--paper); }
+.empty { text-align:center; padding:4rem 1rem; color:var(--stone); }
+.empty-icon { font-size:3rem; margin-bottom:1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notif-wrap">
+  <div class="page-head">
+    <h1>🔔 Notifications</h1>
+    {% if notifications %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="mark_read">
+      <button type="submit" class="btn-markread">Mark all read</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if notifications %}
+    {% for n in notifications %}
+    {% if n.url %}
+    <a class="notif-card {% if not n.is_read %}unread{% endif %}" href="{{ n.url }}" style="animation-delay:{{ forloop.counter0 }}0ms">
+    {% else %}
+    <div class="notif-card {% if not n.is_read %}unread{% endif %}" style="animation-delay:{{ forloop.counter0 }}0ms">
+    {% endif %}
+      <div class="notif-icon">{% if 'complaint' in n.message|lower %}📋{% elif 'ward' in n.message|lower %}🏘{% else %}ℹ{% endif %}</div>
+      <div>
+        <div class="notif-msg">{{ n.message }}</div>
+        <div class="notif-time">{{ n.created_at|timesince }} ago</div>
+      </div>
+    {% if n.url %}</a>{% else %}</div>{% endif %}
+    {% endfor %}
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">🔔</div>
+    <p>No notifications yet. You'll be notified when your complaint status changes.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

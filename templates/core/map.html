@@ -9,6 +9,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 /* ── ROOT ── */
+html, body { height: 100%; }
 .map-root { display:flex; height:calc(100vh - 64px); overflow:hidden; }
 
 /* ── LEFT PANEL ── */
@@ -224,7 +225,7 @@
 
 /* ── MAP ── */
 .map-area { flex:1; position:relative; overflow:hidden; }
-#map { width:100%; height:100%; }
+#map { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; }
 
 /* Right controls */
 .map-zoom-btns {
@@ -757,8 +758,6 @@ function clearAll() {
 
 function swapPoints() {
   const tf=fromPt, tt=toPt;
-  const fv=document.getElementById('fromInput').value;
-  const tv=document.getElementById('toInput').value;
   clearAll();
   if (tt) setPoint('from',tt.lat,tt.lng,tt.label);
   if (tf) setPoint('to',  tf.lat,tf.lng,tf.label);
@@ -779,7 +778,6 @@ function setTravelMode(btn) {
 let acTimer=null;
 
 function onDirType(which, val) {
-  // clear the set-point if user types
   if (which==='from') { fromPt=null; document.getElementById('fromInput').classList.remove('set'); document.getElementById('fromClr').style.display=val?'':'none'; }
   else                { toPt=null;   document.getElementById('toInput').classList.remove('set');   document.getElementById('toClr').style.display=val?'':'none'; }
   checkBtn();
@@ -794,11 +792,9 @@ async function buildAc(which, q) {
   acEl.innerHTML='<div class="ac-msg">Searching…</div>';
   acEl.classList.add('open');
 
-  // local results first
   const local=RAW_DATA.filter(i=>i.lat&&i.lng&&i.name.toLowerCase().includes(q.toLowerCase())).slice(0,5);
   const rows=local.map(i=>({ icon:(TC[i.type]||TC.business).emoji, name:i.name, sub:i.address||(TC[i.type]||TC.business).label, lat:i.lat, lng:i.lng }));
 
-  // Nominatim geocoding
   try {
     const geo=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' Nepal')}&format=json&limit=4&accept-language=en`,{signal:AbortSignal.timeout(4000)}).then(r=>r.json());
     geo.forEach(g=>{
@@ -814,9 +810,8 @@ async function buildAc(which, q) {
     const div=document.createElement('div');
     div.className='ac-item';
     div.innerHTML=`<span class="ac-icon">${r.icon}</span><div class="ac-text"><div class="ac-name">${esc(r.name)}</div><div class="ac-sub">${esc(r.sub)}</div></div>`;
-    // mousedown so it fires before input blur
     div.addEventListener('mousedown', e=>{
-      e.preventDefault();   // prevent input losing focus
+      e.preventDefault();
       setPoint(which, r.lat, r.lng, r.name);
     });
     acEl.appendChild(div);
@@ -825,14 +820,12 @@ async function buildAc(which, q) {
 
 function closeAc(id) { document.getElementById(id).classList.remove('open'); }
 
-// Close autocomplete on outside click
 document.addEventListener('click', e=>{
   if (!e.target.closest('.dir-row')) { closeAc('fromAc'); closeAc('toAc'); }
 });
 document.getElementById('fromInput').addEventListener('blur', ()=>setTimeout(()=>closeAc('fromAc'),200));
 document.getElementById('toInput').addEventListener('blur',   ()=>setTimeout(()=>closeAc('toAc'),200));
 
-/* ── use my location ── */
 async function useMyLoc(which) {
   if (userLat!==null) { setPoint(which,userLat,userLng,'Your location'); return; }
   toast('Getting your location…');
@@ -852,13 +845,11 @@ async function getRoute() {
   const btn=document.getElementById('getRouteBtn');
   btn.innerHTML=`<span class="spin"></span> Calculating…`; btn.disabled=true;
 
-  const osrmProfile = travelMode; // foot | driving | bike
-  const url=`https://router.project-osrm.org/route/v1/${osrmProfile}/${fromPt.lng},${fromPt.lat};${toPt.lng},${toPt.lat}?steps=true&geometries=geojson&overview=full`;
+  const url=`https://router.project-osrm.org/route/v1/${travelMode}/${fromPt.lng},${fromPt.lat};${toPt.lng},${toPt.lat}?steps=true&geometries=geojson&overview=full`;
 
   try {
     const resp=await fetch(url, {signal:AbortSignal.timeout(10000)});
     const data=await resp.json();
-
     if (!data.routes || data.routes.length===0) throw new Error('No route');
 
     const route=data.routes[0];
@@ -866,28 +857,22 @@ async function getRoute() {
     routeSteps =route.legs[0].steps;
     routeWPs   =routeSteps.map(s=>[s.maneuver.location[1],s.maneuver.location[0]]);
 
-    // draw polyline
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer=L.geoJSON(route.geometry,{
       style:{color:'#1a73e8',weight:5,opacity:.9,lineCap:'round',lineJoin:'round'}
     }).addTo(map);
 
-    // fit bounds
     const coords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
     map.fitBounds(L.latLngBounds(coords),{padding:[60,60]});
 
-    // summary
     const via=routeSteps.find(s=>s.name&&s.name.length>0)?.name||'local roads';
     document.getElementById('rsDist').textContent=fmtDist(routeDist);
     document.getElementById('rsTime').textContent=fmtTime(routeDist/speedMs());
     document.getElementById('rsVia').textContent =`Via ${via}`;
     document.getElementById('routeSummary').classList.add('show');
-
-    // steps list
     renderSteps(-1);
 
   } catch(err) {
-    // Fallback: straight line
     if (routeLayer) map.removeLayer(routeLayer);
     routeLayer=L.polyline([[fromPt.lat,fromPt.lng],[toPt.lat,toPt.lng]],{color:'#1a73e8',weight:4,opacity:.7,dashArray:'8 5'}).addTo(map);
     map.fitBounds([[fromPt.lat,fromPt.lng],[toPt.lat,toPt.lng]],{padding:[60,60]});
@@ -940,8 +925,6 @@ let navActive=false, navIdx=0, followMode=true, voiceOn=true, ann200=false, ann5
 
 function beginNavigation() {
   if (!routeSteps.length) { toast('Get directions first.'); return; }
-
-  // If no GPS yet, request it first then start
   if (userLat===null) {
     toast('Getting your location…');
     navigator.geolocation.getCurrentPosition(pos=>{
@@ -1085,6 +1068,9 @@ function toggleMobilePanel() {
   fab.innerHTML = panelOpen ? '▼ Hide' : '▲ Places';
   setTimeout(() => map.invalidateSize(), 320);
 }
+
+// Force Leaflet to recalculate dimensions after full page load
+window.addEventListener('load', () => { map.invalidateSize(); });
 
 // ?q= from AI chat
 const _q=new URLSearchParams(location.search).get('q');

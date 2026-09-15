@@ -1,0 +1,38 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div class="chair-page-header">
+  <h1 class="chair-page-title">Service Applications</h1>
+  <span class="ward-badge">Ward {{ request.user.ward_number }}</span>
+</div>
+<form method="get" class="filter-bar">
+  <select name="status" onchange="this.form.submit()">
+    <option value="">All Statuses</option>
+    {% for val,lbl in status_choices %}
+    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ lbl }}</option>
+    {% endfor %}
+  </select>
+</form>
+<div class="chair-card">
+  <div class="chair-card-head">
+    Applications
+    {% if pending_count %}<span style="background:#C9A227;color:#fff;border-radius:10px;padding:1px 8px;font-size:.65rem;font-weight:700">{{ pending_count }} new</span>{% endif %}
+  </div>
+  <table class="chair-table">
+    <thead><tr><th>Reference</th><th>Service</th><th>Applicant</th><th>Date</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for sr in service_requests %}
+      <tr>
+        <td style="font-family:monospace;font-size:.82rem">{{ sr.reference_number }}</td>
+        <td>{{ sr.get_service_type_display }}</td>
+        <td>{{ sr.applicant.get_full_name|default:sr.applicant.username }}</td>
+        <td>{{ sr.created_at|date:"M d, Y" }}</td>
+        <td><span class="pill pill-{{ sr.status|lower }}">{{ sr.get_status_display }}</span></td>
+        <td><a href="/services/manage/requests/{{ sr.reference_number }}/" class="chair-btn chair-btn-outline" style="padding:4px 12px;font-size:.78rem">Review</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--stone);padding:30px">No applications yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

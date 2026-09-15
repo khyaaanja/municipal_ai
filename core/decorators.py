@@ -16,6 +16,8 @@ def role_required(*roles):
     return decorator
 
 
-staff_required    = role_required('staff', 'official', 'admin')
-official_required = role_required('official', 'admin')
-admin_required    = role_required('admin')
+staff_required        = role_required('staff', 'official', 'admin')
+official_required     = role_required('official', 'admin')
+admin_required        = role_required('admin')
+mayor_required        = role_required('mayor', 'admin')
+chairperson_required  = role_required('chairperson', 'mayor', 'admin')

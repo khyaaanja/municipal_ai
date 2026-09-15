@@ -1,125 +1,209 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Profile — Bhaktapur Municipal</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:#060810;--gold:#c9a84c;--red:#C1440E;--surface:#111009;--card:#1A1710;
-      --border:rgba(201,168,76,0.18);--text:#E8DFC8;--muted:#7A7060;
-      --success:#4A8A5A;--font-h:'Cinzel',serif;--font-b:'Inter',sans-serif;
-    }
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;padding:2rem 1rem;}
-    .container{max-width:640px;margin:0 auto;}
-    .back-link{color:var(--muted);text-decoration:none;font-size:0.85rem;display:inline-flex;align-items:center;gap:0.4rem;margin-bottom:1.5rem;}
-    .back-link:hover{color:var(--gold);}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:2rem;margin-bottom:1.5rem;}
-    h1{font-family:var(--font-h);font-size:1.6rem;color:var(--gold);margin-bottom:0.25rem;}
-    .role-badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:20px;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;margin-bottom:1.25rem;}
-    .role-citizen {background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
-    .role-staff   {background:rgba(74,122,181,0.15);color:#4A7AB5;border:1px solid rgba(74,122,181,0.3);}
-    .role-official{background:rgba(122,90,181,0.15);color:#7A5AB5;border:1px solid rgba(122,90,181,0.3);}
-    .role-admin   {background:rgba(193,68,14,0.15);color:var(--red);border:1px solid rgba(193,68,14,0.3);animation:pulse-admin 2s ease infinite;}
-    @keyframes pulse-admin{0%,100%{box-shadow:0 0 0 0 rgba(193,68,14,0.3);}50%{box-shadow:0 0 0 4px rgba(193,68,14,0.1);}}
-    .stats{display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
-    .stat{text-align:center;}
-    .stat-val{font-family:var(--font-h);font-size:1.8rem;color:var(--gold);}
-    .stat-lab{font-size:0.75rem;color:var(--muted);margin-top:0.2rem;}
-    .field-row{margin-bottom:1.2rem;}
-    label.field-label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:0.35rem;}
-    .field-static{color:var(--text);font-size:0.95rem;}
-    input.field-input{
-      background:var(--surface);border:1px solid var(--border);border-radius:6px;
-      padding:0.65rem 0.9rem;font-size:1rem;color:var(--text);font-family:var(--font-b);
-      width:100%;outline:none;transition:border-color 0.3s,box-shadow 0.3s;
-    }
-    input.field-input:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,168,76,0.2);}
-    .btn-save{
-      background:linear-gradient(135deg,#c9a84c,#a07830);color:#060810;font-family:var(--font-h);
-      font-size:0.875rem;font-weight:700;border:none;border-radius:6px;padding:0.7rem 1.5rem;
-      cursor:pointer;transition:opacity 0.2s;min-height:44px;
-    }
-    .btn-save:hover{opacity:0.85;}
-    .btn-outline{
-      background:transparent;color:var(--gold);border:1px solid var(--border);
-      border-radius:6px;padding:0.65rem 1.2rem;font-size:0.875rem;cursor:pointer;
-      text-decoration:none;display:inline-flex;align-items:center;gap:0.4rem;
-      min-height:44px;transition:border-color 0.2s;
-    }
-    .btn-outline:hover{border-color:var(--gold);}
-    .action-links{display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem;}
-    .oauth-badge{
-      display:inline-flex;align-items:center;gap:0.4rem;padding:0.3rem 0.7rem;
-      border:1px solid var(--border);border-radius:20px;font-size:0.75rem;color:var(--muted);
-      margin-right:0.5rem;margin-top:0.5rem;
-    }
-    .msg-success{background:rgba(74,138,90,0.15);border:1px solid rgba(74,138,90,0.4);
-      color:#6abf80;border-radius:6px;padding:0.65rem 1rem;margin-bottom:1rem;font-size:0.875rem;}
-    .pw-error{background:rgba(193,68,14,0.12);border:1px solid rgba(193,68,14,0.4);
-      color:#ff8a65;border-radius:6px;padding:0.65rem 1rem;margin-bottom:1rem;font-size:0.875rem;}
-    @media(max-width:480px){.stats{gap:1rem;}.card{padding:1.25rem;}}
-  </style>
-</head>
-<body>
-<div class="container">
-  <a class="back-link" href="/">← Back to Home</a>
+{% extends "base/base.html" %}
+{% block title %}My Profile — Bhaktapur Municipality{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --card:   #1C1C1C;
+  --surf:   #141414;
+  --border: rgba(255,255,255,0.08);
+  --blue:   #4A7AB5;
+  --purple: #7A5AB5;
+  --green:  #3A7D50;
+}
+body { background: var(--ink) !important; color: var(--paper) !important; font-family: var(--font-body); }
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse 60% 40% at 50% -5%, rgba(193,59,42,.1) 0%, transparent 55%);
+}
+
+.profile-wrap { max-width: 660px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; position: relative; z-index: 1; }
+
+/* messages */
+.msg-success {
+  background: rgba(58,125,80,.12); border: 1px solid rgba(58,125,80,.35);
+  color: #6abf80; border-radius: 4px; padding: .7rem 1rem;
+  margin-bottom: 1rem; font-size: .875rem;
+}
+.msg-error {
+  background: rgba(193,59,42,.1); border: 1px solid rgba(193,59,42,.3);
+  color: #ff8060; border-radius: 4px; padding: .7rem 1rem;
+  margin-bottom: 1rem; font-size: .875rem;
+}
+
+/* cards */
+.profile-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-top: 3px solid var(--red); border-radius: 6px;
+  padding: 2rem; margin-bottom: 1.5rem;
+  animation: cardIn .4s cubic-bezier(.22,1,.36,1) both;
+}
+.profile-card:nth-child(2) { animation-delay: .06s; }
+.profile-card:nth-child(3) { animation-delay: .12s; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .profile-card { animation: none; } }
+.profile-card h1 { font-family: var(--font-head); font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .35rem; }
+.profile-card h2 { font-family: var(--font-head); font-size: 1.05rem; font-weight: 700; color: var(--paper); margin-bottom: 1.25rem; }
+
+/* role badge */
+.role-badge {
+  display: inline-block; padding: .25rem .75rem; border-radius: 20px;
+  font-size: .72rem; font-weight: 600; letter-spacing: .05em; margin-bottom: 1.5rem;
+}
+.role-citizen      { background: rgba(201,162,39,.12); color: var(--gold);   border: 1px solid rgba(201,162,39,.3); }
+.role-staff        { background: rgba(74,122,181,.12);  color: var(--blue);   border: 1px solid rgba(74,122,181,.3); }
+.role-official     { background: rgba(122,90,181,.12);  color: var(--purple); border: 1px solid rgba(122,90,181,.3); }
+.role-admin        { background: rgba(193,59,42,.12);   color: var(--red);    border: 1px solid rgba(193,59,42,.3); animation: pulse-badge 2s ease infinite; }
+.role-mayor        { background: rgba(201,162,39,.15);  color: #C9A227;       border: 1px solid rgba(201,162,39,.4); animation: pulse-badge 2s ease infinite; }
+.role-chairperson  { background: rgba(34,197,94,.1);    color: #4ade80;       border: 1px solid rgba(34,197,94,.35); }
+@keyframes pulse-badge { 0%,100% { box-shadow: 0 0 0 0 rgba(201,162,39,.3); } 50% { box-shadow: 0 0 0 4px rgba(201,162,39,.1); } }
+
+/* stats */
+.profile-stats { display: flex; gap: 2rem; margin-bottom: 1.75rem; flex-wrap: wrap; }
+.profile-stat { text-align: center; }
+.profile-stat-val { font-family: var(--font-head); font-size: 1.9rem; font-weight: 800; color: var(--gold); }
+.profile-stat-lab { font-size: .72rem; color: var(--stone); margin-top: .2rem; }
+
+/* form fields */
+.field-row { margin-bottom: 1.2rem; }
+.field-label { display: block; font-size: .75rem; color: var(--stone); margin-bottom: .35rem; letter-spacing: .04em; text-transform: uppercase; }
+.field-static { color: var(--paper); font-size: .95rem; }
+.field-input {
+  background: rgba(255,255,255,.04); border: 1.5px solid var(--border);
+  border-radius: 4px; padding: .65rem .9rem; font-size: 1rem;
+  color: var(--paper); font-family: var(--font-body); width: 100%;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+  min-height: 44px;
+}
+.field-input:hover { border-color: rgba(255,255,255,.15); }
+.field-input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(193,59,42,.12); }
+
+/* buttons */
+.btn-save {
+  background: var(--red); color: #fff; font-family: var(--font-head);
+  font-size: .875rem; font-weight: 700; border: none; border-radius: 4px;
+  padding: .7rem 1.5rem; cursor: pointer; min-height: 44px;
+  transition: background .15s;
+}
+.btn-save:hover { background: #9E2E1E; }
+.btn-outline-sm {
+  background: transparent; color: var(--stone-light, #C4BCB0);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: .65rem 1.2rem; font-size: .875rem; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: .4rem;
+  min-height: 44px; transition: border-color .15s, color .15s;
+}
+.btn-outline-sm:hover { border-color: var(--paper); color: var(--paper); }
+.action-links { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .5rem; }
+
+/* oauth badge */
+.oauth-badge {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .3rem .7rem; border: 1px solid var(--border);
+  border-radius: 20px; font-size: .75rem; color: var(--stone);
+  margin-right: .5rem; margin-top: .5rem;
+}
+
+/* ward info */
+.ward-info {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.25);
+  border-radius: 6px; padding: .5rem .9rem; margin-bottom: 1.5rem;
+  font-size: .85rem; color: #4ade80;
+}
+
+@media (max-width: 480px) {
+  .profile-wrap { padding: 1.75rem 1rem 3rem; }
+  .profile-card { padding: 1.25rem; }
+  .profile-stats { gap: 1rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrap">
 
   {% if messages %}
     {% for msg in messages %}
     <div class="msg-success">{{ msg }}</div>
     {% endfor %}
   {% endif %}
-  {% if pw_error %}<div class="pw-error">{{ pw_error }}</div>{% endif %}
+  {% if pw_error %}<div class="msg-error">{{ pw_error }}</div>{% endif %}
 
   <!-- Profile card -->
-  <div class="card">
+  <div class="profile-card">
     <h1>{{ request.user.get_full_name|default:request.user.email }}</h1>
+
     <div class="role-badge role-{{ request.user.role }}">
       {% if request.user.role == 'citizen' %}Citizen
       {% elif request.user.role == 'staff' %}Municipality Staff
       {% elif request.user.role == 'official' %}Municipality Official
       {% elif request.user.role == 'admin' %}Platform Admin
+      {% elif request.user.role == 'mayor' %}🏛 Mayor
+      {% elif request.user.role == 'chairperson' %}🏘 Ward Chairperson
       {% else %}{{ request.user.role }}{% endif %}
     </div>
 
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-val">{{ complaint_count }}</div>
-        <div class="stat-lab">Complaints Filed</div>
+    {% if request.user.role == 'chairperson' and request.user.ward_number %}
+    <div class="ward-info">🏘 Assigned Ward: <strong>Ward {{ request.user.ward_number }}</strong></div>
+    {% endif %}
+
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="profile-stat-val">{{ complaint_count|default:0 }}</div>
+        <div class="profile-stat-lab">Complaints Filed</div>
       </div>
-      <div class="stat">
-        <div class="stat-val">{{ request.user.date_joined|date:"Y" }}</div>
-        <div class="stat-lab">Member Since</div>
+      <div class="profile-stat">
+        <div class="profile-stat-val">{{ request.user.date_joined|date:"Y" }}</div>
+        <div class="profile-stat-lab">Member Since</div>
       </div>
+      {% if request.user.role == 'citizen' %}
+      <div class="profile-stat">
+        <div class="profile-stat-val" style="color:{{ civic_badge_color }};">{{ civic_score }}</div>
+        <div class="profile-stat-lab">Civic Score</div>
+      </div>
+      {% endif %}
     </div>
 
-    <!-- Edit display name -->
+    {% if request.user.role == 'citizen' %}
+    <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;font-size:0.82rem;font-weight:700;margin-top:8px;background:{{ civic_badge_color }}1a;color:{{ civic_badge_color }};border:1px solid {{ civic_badge_color }}44;">
+      <span>★</span> {{ civic_badge }}
+    </div>
+    {% endif %}
+
     <form method="post" action="{% url 'accounts:profile' %}">
       {% csrf_token %}
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
         <div class="field-row" style="flex:1;min-width:140px;">
           <label class="field-label">First Name</label>
-          <input class="field-input" type="text" name="first_name" value="{{ request.user.first_name }}" id="fn-input">
+          <input class="field-input" type="text" name="first_name" value="{{ request.user.first_name }}">
         </div>
         <div class="field-row" style="flex:1;min-width:140px;">
           <label class="field-label">Last Name</label>
-          <input class="field-input" type="text" name="last_name" value="{{ request.user.last_name }}" id="ln-input">
+          <input class="field-input" type="text" name="last_name" value="{{ request.user.last_name }}">
         </div>
       </div>
       <div class="field-row">
         <label class="field-label">Email (read-only)</label>
         <div class="field-static">{{ request.user.email }}</div>
       </div>
-      <button type="submit" class="btn-save">Save Name</button>
+      {% if request.user.role == 'citizen' %}
+      <div class="field-row">
+        <label class="field-label">Your Ward <span style="color:var(--stone);font-weight:400;">(enables neighbourhood feed)</span></label>
+        <select name="ward_number" class="field-input" style="cursor:pointer;">
+          <option value="">— Select ward —</option>
+          {% for w in wards %}
+          <option value="{{ w }}" {% if request.user.ward_number == w %}selected{% endif %}>Ward {{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <button type="submit" class="btn-save">Save Profile</button>
     </form>
 
     {% if oauth_providers %}
     <div style="margin-top:1.25rem;">
-      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Connected accounts</div>
+      <div style="font-size:.75rem;color:var(--stone);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.04em;">Connected accounts</div>
       {% for provider in oauth_providers %}
       <span class="oauth-badge">
         {% if provider == 'google-oauth2' %}🔵 Google{% elif provider == 'github' %}⚫ GitHub{% else %}{{ provider }}{% endif %}
@@ -130,8 +214,8 @@
   </div>
 
   <!-- Change password -->
-  <div class="card">
-    <h2 style="font-family:var(--font-h);font-size:1.1rem;color:var(--gold);margin-bottom:1.25rem;">Change Password</h2>
+  <div class="profile-card">
+    <h2>Change Password</h2>
     <form method="post" action="{% url 'accounts:change_password' %}">
       {% csrf_token %}
       <div class="field-row">
@@ -141,6 +225,7 @@
       <div class="field-row">
         <label class="field-label">New Password</label>
         <input class="field-input" type="password" name="new_password" required>
+        <div style="font-size:.75rem;color:var(--stone);margin-top:.3rem;">Min 8 characters, 1 uppercase, 1 number</div>
       </div>
       <div class="field-row">
         <label class="field-label">Confirm New Password</label>
@@ -150,11 +235,96 @@
     </form>
   </div>
 
+  <!-- Two-Factor Authentication -->
+  {% if request.user.role == 'staff' or request.user.role == 'official' or request.user.role == 'admin' or request.user.role == 'mayor' or request.user.role == 'chairperson' %}
+  <div class="profile-card" style="margin-top:1.5rem;">
+    <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:1rem;">🔐 Two-Factor Authentication</h3>
+    {% if request.user.otp_enabled %}
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:1rem;">
+      <div>
+        <span style="background:#dcfce7;color:#166534;border-radius:20px;padding:3px 12px;font-size:.78rem;font-weight:600;">✓ Enabled</span>
+        <p style="font-size:.82rem;color:var(--stone);margin-top:.5rem;">Your account is protected with TOTP 2FA.</p>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <a href="{% url 'accounts:totp_setup' %}" style="padding:6px 14px;border:1px solid #d5cfc6;border-radius:4px;font-size:.8rem;color:var(--ink);text-decoration:none;">Reconfigure</a>
+        <a href="{% url 'accounts:totp_disable' %}" style="padding:6px 14px;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;font-size:.8rem;color:#991b1b;text-decoration:none;">Disable</a>
+      </div>
+    </div>
+    {% else %}
+    <p style="font-size:.85rem;color:var(--stone);margin-bottom:1rem;">Add TOTP two-factor authentication to protect your {{ request.user.role }} account.</p>
+    <a href="{% url 'accounts:totp_setup' %}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:var(--red);color:#fff;border-radius:4px;font-family:var(--font-head);font-size:.85rem;font-weight:600;text-decoration:none;">Enable 2FA</a>
+    {% endif %}
+  </div>
+  </div>
+  {% endif %}
+
   <!-- Quick links -->
   <div class="action-links">
-    <a class="btn-outline" href="{% url 'complaints:my_complaints' %}">📋 My Complaints</a>
-    <a class="btn-outline" href="/">🏠 Home</a>
+    <a class="btn-outline-sm" href="{% url 'complaints:my_complaints' %}">📋 My Complaints</a>
+    {% if request.user.role == 'mayor' %}
+    <a class="btn-outline-sm" href="/mayor/">🏛 Mayor's Office</a>
+    <a class="btn-outline-sm" href="/admin/dashboard/">⚙ CMS</a>
+    {% elif request.user.role == 'chairperson' %}
+    <a class="btn-outline-sm" href="/chairperson/">🏘 Ward Office</a>
+    {% elif request.user.role == 'admin' %}
+    <a class="btn-outline-sm" href="/admin/dashboard/">⚙ CMS</a>
+    {% elif request.user.role == 'staff' or request.user.role == 'official' %}
+    <a class="btn-outline-sm" href="/dashboard/">📊 Dashboard</a>
+    <a class="btn-outline-sm" href="/admin/dashboard/">⚙ CMS</a>
+    {% endif %}
+    <a class="btn-outline-sm" href="/">🏠 Home</a>
   </div>
+
+  {% if followed_complaints %}
+  <div style="background:#1C1C1C;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:1.25rem;margin-top:1.5rem;">
+    <h3 style="font-family:var(--font-head);font-size:.95rem;margin-bottom:1rem;">🔔 Complaints You Follow</h3>
+    {% for f in followed_complaints %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.83rem;gap:.75rem;">
+      <div>
+        <a href="/complaint/status/{{ f.complaint.complaint_id }}/" style="color:var(--gold);font-weight:600;">{{ f.complaint.complaint_id }}</a>
+        <span style="color:var(--paper);margin-left:.4rem;">{{ f.complaint.title|truncatechars:50 }}</span>
+      </div>
+      <span style="flex-shrink:0;font-size:.73rem;padding:2px 8px;border-radius:10px;
+        {% if f.complaint.status == 'RESOLVED' %}background:rgba(74,222,128,.12);color:#4ade80;{% elif f.complaint.status == 'PENDING' %}background:rgba(201,162,39,.12);color:var(--gold);{% else %}background:rgba(255,255,255,.06);color:var(--stone);{% endif %}">
+        {{ f.complaint.get_status_display }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if voted_complaints %}
+  <div style="background:#1C1C1C;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:1.25rem;margin-top:1.5rem;">
+    <h3 style="font-family:var(--font-head);font-size:.95rem;margin-bottom:1rem;">👍 Complaints You Upvoted</h3>
+    {% for v in voted_complaints %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.83rem;gap:.75rem;">
+      <div>
+        <a href="/complaint/status/{{ v.complaint.complaint_id }}/" style="color:var(--gold);font-weight:600;">{{ v.complaint.complaint_id }}</a>
+        <span style="color:var(--paper);margin-left:.4rem;">{{ v.complaint.title|truncatechars:50 }}</span>
+      </div>
+      <span style="flex-shrink:0;color:var(--stone);font-size:.73rem;">{{ v.created_at|date:"M j" }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
 </div>
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('form').forEach(form => {
+  form.addEventListener('submit', function() {
+    const btn = this.querySelector('button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  });
+});
+document.querySelectorAll('.msg-success').forEach(el => {
+  setTimeout(() => {
+    el.style.transition = 'opacity .4s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 420);
+  }, 4500);
+});
+</script>
+{% endblock %}

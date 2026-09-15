@@ -14,6 +14,9 @@
   .co-summary { position:static; }
   .pay-methods { grid-template-columns:1fr 1fr; }
 }
+@media(max-width:480px){
+  .pay-methods { grid-template-columns:1fr; }
+}
 .co-form-section { background:var(--paper); border:2px solid var(--ink); padding:2rem; }
 .co-section-title { font-family:var(--font-head); font-size:1.1rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; margin-bottom:1.5rem; display:flex; align-items:center; gap:.75rem; }
 .co-section-title::after { content:''; flex:1; height:2px; background:var(--cream); }
@@ -125,20 +128,26 @@
           <div class="co-section-title">Payment Method</div>
 
           <div class="pay-methods">
-            <label class="pay-option selected" onclick="selectPay(this)">
-              <input type="radio" name="payment_method" value="cod" checked>
+            <label class="pay-option selected" id="cod-option" onclick="selectPay(this)">
+              <input type="radio" name="payment_method" value="cod" checked onchange="updatePaymentUI()">
               <span class="pay-icon">💵</span>
-              <span class="pay-label">Cash on Delivery</span>
+              <div>
+                <div class="pay-label">Cash on Delivery</div>
+                <div style="font-size:0.75rem;color:var(--stone);margin-top:2px;">Pay when your order arrives</div>
+              </div>
             </label>
             <label class="pay-option" onclick="selectPay(this)">
               <input type="radio" name="payment_method" value="esewa">
               <span class="pay-icon">📱</span>
               <span class="pay-label">eSewa</span>
             </label>
-            <label class="pay-option" onclick="selectPay(this)">
-              <input type="radio" name="payment_method" value="khalti">
+            <label class="pay-option" id="khalti-option" onclick="selectPay(this)">
+              <input type="radio" name="payment_method" value="khalti" onchange="updatePaymentUI()">
               <span class="pay-icon">💜</span>
-              <span class="pay-label">Khalti</span>
+              <div>
+                <div class="pay-label">Khalti Digital Wallet</div>
+                <div style="font-size:0.75rem;color:var(--stone);margin-top:2px;">Pay securely with Khalti</div>
+              </div>
             </label>
             <label class="pay-option" onclick="selectPay(this)">
               <input type="radio" name="payment_method" value="bank">
@@ -196,6 +205,18 @@ function selectPay(label) {
   document.querySelectorAll('.pay-option').forEach(l => l.classList.remove('selected'));
   label.classList.add('selected');
   label.querySelector('input').checked = true;
+  updatePaymentUI();
+}
+
+function updatePaymentUI() {
+  const khaltiChecked = document.querySelector('input[value="khalti"]') && document.querySelector('input[value="khalti"]').checked;
+  const khaltiOption = document.getElementById('khalti-option');
+  const codOption = document.getElementById('cod-option');
+  if (khaltiOption) khaltiOption.style.borderColor = khaltiChecked ? '#7B2FBE' : '';
+  if (codOption) codOption.style.borderColor = !khaltiChecked ? '' : '';
+  // Update button text hint
+  const btn = document.getElementById('placeBtn');
+  if (btn) btn.textContent = khaltiChecked ? 'Pay with Khalti →' : 'Place Order';
 }
 
 function placeOrder() {
@@ -206,6 +227,16 @@ function placeOrder() {
   inputs.forEach(i => { if (!i.value.trim()) { i.style.borderColor = 'var(--red)'; valid = false; } else { i.style.borderColor = ''; } });
   if (!valid) { return; }
 
+  // Khalti: do a regular form POST so Django can redirect to Khalti's hosted page
+  const payMethod = form.querySelector('input[name="payment_method"]:checked');
+  if (payMethod && payMethod.value === 'khalti') {
+    btn.disabled = true;
+    btn.textContent = 'Redirecting to Khalti...';
+    form.submit();
+    return;
+  }
+
+  // COD / others: AJAX flow with success modal
   btn.disabled = true;
   btn.textContent = 'Processing...';
 

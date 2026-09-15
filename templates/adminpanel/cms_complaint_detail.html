@@ -1,0 +1,87 @@
+{% extends "adminpanel/cms_base.html" %}
+{% block title %}{{ complaint.complaint_id }} — CMS{% endblock %}
+
+{% block cms_extra_css %}
+<style>
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+@media(max-width:600px){ .detail-grid { grid-template-columns:1fr; } }
+.detail-box { background:var(--white); border:var(--border); border-radius:6px; padding:18px; }
+.detail-label { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--stone); margin-bottom:5px; }
+.detail-val { font-size:.92rem; color:var(--ink); line-height:1.5; }
+.manage-card { background:var(--white); border:var(--border); border-radius:6px; padding:24px; max-width:480px; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--stone); margin-bottom:6px; }
+.form-group select, .form-group textarea {
+  width:100%; padding:9px 12px; border:var(--border); border-radius:4px;
+  font-size:.9rem; font-family:var(--font-body); color:var(--ink);
+  background:var(--paper); outline:none;
+}
+.form-group select:focus, .form-group textarea:focus { border-color:var(--red); }
+.form-group textarea { resize:vertical; min-height:100px; }
+</style>
+{% endblock %}
+
+{% block cms_content %}
+<div class="cms-page-header">
+  <div>
+    <a href="{% url 'adminpanel:cms_complaints' %}" style="font-size:.82rem;color:var(--stone);">← All Complaints</a>
+    <h1 class="cms-page-title" style="margin-top:4px;">{{ complaint.complaint_id }}</h1>
+  </div>
+  <span style="font-size:.8rem;color:var(--stone);">{{ complaint.created_at|date:"F j, Y H:i" }}</span>
+</div>
+
+<div class="detail-grid">
+  <div class="detail-box">
+    <div class="detail-label">Title</div>
+    <div class="detail-val">{{ complaint.title }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Category</div>
+    <div class="detail-val">{{ complaint.get_category_display }}</div>
+  </div>
+  <div class="detail-box" style="grid-column:1/-1">
+    <div class="detail-label">Description</div>
+    <div class="detail-val">{{ complaint.description }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Location</div>
+    <div class="detail-val">{{ complaint.location }}</div>
+  </div>
+  <div class="detail-box">
+    <div class="detail-label">Submitted by</div>
+    <div class="detail-val">
+      {{ complaint.submitter_name }}<br>
+      {% if complaint.submitter_email %}<span style="color:var(--stone);font-size:.85rem;">{{ complaint.submitter_email }}</span>{% endif %}
+      {% if complaint.submitter_phone %}<br><span style="color:var(--stone);font-size:.85rem;">{{ complaint.submitter_phone }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="manage-card">
+  <h3 style="font-family:var(--font-head);font-size:1rem;margin-bottom:18px;">Update Complaint</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label>Status</label>
+      <select name="status">
+        {% for val,label in status_choices %}
+        <option value="{{ val }}" {% if complaint.status == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Priority</label>
+      <select name="priority">
+        {% for val,label in priority_choices %}
+        <option value="{{ val }}" {% if complaint.priority == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Municipality Notes (shown to citizen)</label>
+      <textarea name="admin_notes">{{ complaint.admin_notes }}</textarea>
+    </div>
+    <button type="submit" class="btn-edit" style="background:var(--red);color:#fff;padding:9px 24px;font-size:.88rem;">Save Changes</button>
+  </form>
+</div>
+{% endblock %}

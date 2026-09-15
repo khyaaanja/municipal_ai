@@ -1,0 +1,72 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div class="chair-page-header">
+  <h1 class="chair-page-title">{{ meeting.title }}</h1>
+  <a href="/civic/manage/meetings/" class="chair-btn chair-btn-outline">← Back</a>
+</div>
+
+<div class="stat-grid" style="margin-bottom:20px">
+  <div class="stat-card"><div class="stat-num" style="color:#16a34a">{{ rsvp_count }}</div><div class="stat-lbl">RSVPs</div></div>
+  <div class="stat-card"><div class="stat-num">{{ questions.count }}</div><div class="stat-lbl">Questions</div></div>
+</div>
+
+<div class="chair-card" style="margin-bottom:16px">
+  <div class="chair-card-head">Meeting Info</div>
+  <div style="padding:20px;font-size:.88rem">
+    <p><strong>Date:</strong> {{ meeting.meeting_date|date:"F d, Y g:i A" }}</p>
+    <p><strong>Venue:</strong> {{ meeting.venue }}</p>
+    <p><strong>Status:</strong> <span class="pill pill-{{ meeting.status|lower }}">{{ meeting.get_status_display }}</span></p>
+    {% if meeting.agenda %}<p><strong>Agenda:</strong><br>{{ meeting.agenda|linebreaksbr }}</p>{% endif %}
+  </div>
+</div>
+
+<div class="chair-card" style="margin-bottom:16px">
+  <div class="chair-card-head">Update Meeting</div>
+  <div style="padding:20px">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="status">
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+          {% for val,lbl in status_choices %}
+          <option value="{{ val }}" {% if meeting.status == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Meeting Minutes</label>
+        <textarea name="minutes" rows="5" placeholder="Post-meeting minutes...">{{ meeting.minutes }}</textarea>
+      </div>
+      <button type="submit" class="chair-btn chair-btn-green">Save</button>
+    </form>
+  </div>
+</div>
+
+<div class="chair-card">
+  <div class="chair-card-head">Citizen Questions ({{ questions.count }})</div>
+  <div style="padding:0">
+    {% for q in questions %}
+    <div style="padding:16px 20px;border-bottom:1px solid #f0ece4">
+      <div style="font-size:.9rem;font-weight:600;color:var(--ink);margin-bottom:4px">{{ q.question }}</div>
+      <div style="font-size:.75rem;color:var(--stone);margin-bottom:8px">{{ q.asked_by.get_full_name|default:q.asked_by.username }} · {{ q.created_at|date:"M d, Y" }}</div>
+      {% if q.chairperson_reply %}
+      <div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:8px 12px;font-size:.85rem;margin-bottom:8px">
+        <strong>Your reply:</strong> {{ q.chairperson_reply }}
+      </div>
+      {% else %}
+      <form method="post" style="display:flex;gap:8px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reply">
+        <input type="hidden" name="question_id" value="{{ q.pk }}">
+        <input type="text" name="reply" placeholder="Reply to this question..." style="flex:1;padding:6px 10px;border:1px solid #d5cfc6;border-radius:4px;font-size:.85rem;font-family:var(--font-body)">
+        <button type="submit" class="chair-btn chair-btn-green" style="padding:6px 14px">Reply</button>
+      </form>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div style="padding:24px;text-align:center;color:var(--stone);font-size:.88rem">No questions submitted yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

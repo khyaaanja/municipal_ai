@@ -1,0 +1,175 @@
+{% extends "mayor/base.html" %}
+{% block title %}Municipal Report — Bhaktapur{% endblock %}
+
+{% block extra_css %}
+<style>
+  .rpt-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem; }
+  .rpt-title  { font-family:var(--font-head); font-size:1.6rem; font-weight:800; color:var(--ink); }
+  .rpt-sub    { font-size:.82rem; color:var(--stone); margin-top:4px; }
+  .rpt-actions { display:flex; gap:.75rem; }
+  .kpi-grid   { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:14px; margin-bottom:1.5rem; }
+  .kpi        { background:#fff; border:1px solid #e8e1d6; border-radius:10px; padding:1rem; text-align:center; }
+  .kpi-num    { font-family:var(--font-head); font-size:2rem; font-weight:800; line-height:1; }
+  .kpi-lbl    { font-size:.72rem; color:var(--stone); margin-top:5px; letter-spacing:.04em; text-transform:uppercase; }
+  .section-h  { font-family:var(--font-head); font-size:.9rem; font-weight:700; color:var(--ink); letter-spacing:.05em;
+                text-transform:uppercase; border-bottom:2px solid var(--gold); padding-bottom:6px; margin:1.5rem 0 .75rem; }
+  .rpt-table  { width:100%; border-collapse:collapse; font-size:.82rem; }
+  .rpt-table th { background:#f7f3ec; font-weight:700; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase;
+                  padding:8px 12px; text-align:left; color:var(--stone); }
+  .rpt-table td { padding:8px 12px; border-bottom:1px solid #f0ece4; }
+  .rpt-table tr:last-child td { border-bottom:none; }
+  .rate-bar   { height:6px; border-radius:3px; background:var(--gold); opacity:.75; display:inline-block; vertical-align:middle; min-width:2px; }
+  .cat-row    { display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f0ece4; }
+  .cat-row:last-child { border-bottom:none; }
+  .foot-note  { font-size:.74rem; color:var(--stone); margin-top:2rem; padding-top:1rem; border-top:1px solid #e8e1d6; }
+
+  @media print {
+    .mayor-sidebar, .mayor-topbar, .rpt-actions, .mayor-btn { display:none !important; }
+    .mayor-main { margin:0 !important; padding:0 !important; }
+    body, .mayor-page-wrap { background:#fff !important; }
+    .mayor-card { box-shadow:none !important; border:1px solid #ddd !important; }
+    .kpi { border:1px solid #ddd !important; }
+    .rpt-title { font-size:1.2rem; }
+    .section-h { font-size:.8rem; }
+    a { text-decoration:none; color:inherit !important; }
+    @page { margin:1.5cm; size:A4 portrait; }
+  }
+</style>
+{% endblock %}
+
+{% block mayor_content %}
+<div class="rpt-header">
+  <div>
+    <div class="rpt-title">Bhaktapur Municipality</div>
+    <div class="rpt-sub">Complaint Management Report &mdash; Generated {{ generated_at|date:"F j, Y" }}</div>
+  </div>
+  <div class="rpt-actions">
+    <a href="/mayor/complaints/export/csv/" class="mayor-btn mayor-btn-outline">⬇ CSV</a>
+    <button onclick="window.print()" class="mayor-btn mayor-btn-gold">🖨 Print / Save PDF</button>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-num" style="color:var(--ink);">{{ total }}</div>
+    <div class="kpi-lbl">Total Filed</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num" style="color:#8B6E10;">{{ pending }}</div>
+    <div class="kpi-lbl">Pending</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num" style="color:#1e4e8c;">{{ in_review }}</div>
+    <div class="kpi-lbl">In Review</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num" style="color:#6b21a8;">{{ in_progress }}</div>
+    <div class="kpi-lbl">In Progress</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num" style="color:#166534;">{{ resolved }}</div>
+    <div class="kpi-lbl">Resolved</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num" style="color:var(--red);">{{ rejected }}</div>
+    <div class="kpi-lbl">Rejected</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num" style="color:#166534;">{{ resolution_rate }}%</div>
+    <div class="kpi-lbl">Resolution Rate</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-num" style="color:{% if overdue_total %}var(--red){% else %}#166534{% endif %};">{{ overdue_total }}</div>
+    <div class="kpi-lbl">SLA Overdue</div>
+  </div>
+</div>
+
+<!-- Ward Performance -->
+<div class="section-h">Ward-wise Performance</div>
+<div class="mayor-card" style="padding:0;overflow:auto;">
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th>Ward</th>
+        <th>Chairperson</th>
+        <th>Total</th>
+        <th>Pending</th>
+        <th>Resolved</th>
+        <th>Resolution %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ws in ward_stats %}
+      {% if ws.total %}
+      <tr>
+        <td style="font-weight:700;">Ward {{ ws.ward }}</td>
+        <td>{{ ws.chairperson.get_full_name|default:"— Unassigned" }}</td>
+        <td>{{ ws.total }}</td>
+        <td>{{ ws.pending|default:"—" }}</td>
+        <td>{{ ws.resolved|default:"—" }}</td>
+        <td>
+          <span class="rate-bar" style="width:{{ ws.rate }}px;max-width:60px;"></span>
+          <span style="margin-left:6px;">{{ ws.rate }}%</span>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Category Breakdown -->
+<div class="section-h">Category Breakdown</div>
+<div class="mayor-card" style="padding:1rem 1.25rem;">
+  {% for row in by_category %}
+  <div class="cat-row">
+    <span style="font-size:.85rem;">{{ row.label }}</span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="height:6px;width:{{ row.n }}0px;max-width:160px;background:var(--gold);border-radius:3px;opacity:.7;min-width:4px;"></div>
+      <span style="font-weight:700;min-width:28px;text-align:right;font-size:.88rem;">{{ row.n }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Staff Performance -->
+{% if staff_perf %}
+<div class="section-h">Staff Performance</div>
+<div class="mayor-card" style="padding:0;overflow:auto;">
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th>Staff Member</th>
+        <th>Role</th>
+        <th>Assigned</th>
+        <th>Resolved</th>
+        <th>Pending</th>
+        <th>Resolution %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in staff_perf %}
+      <tr>
+        <td style="font-weight:600;">{{ s.get_full_name|default:s.username }}</td>
+        <td style="color:var(--stone);font-size:.8rem;">{{ s.role|capfirst }}</td>
+        <td>{{ s.assigned_count }}</td>
+        <td style="color:#166534;font-weight:600;">{{ s.resolved_count }}</td>
+        <td>{{ s.assigned_count }}</td>
+        <td>
+          {% if s.assigned_count %}
+            {% widthratio s.resolved_count s.assigned_count 100 %}%
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="foot-note">
+  This report was generated automatically by the BhaktapurAI Municipal Management System on {{ generated_at|date:"F j, Y" }}.
+  For official use only. Data reflects real-time database state at time of generation.
+</div>
+{% endblock %}

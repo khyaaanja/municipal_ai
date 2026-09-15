@@ -1,23 +1,20 @@
-# HTTPS Forcing Fix - TODO
+# TODO: Fix Groq 413 Token Limit Error
 
-- [x] Inspect settings for HTTPS/HSTS/proxy-ssl related config.
+## Problem
+`llama-3.1-8b-instant` free tier has 6000 TPM limit. Requests with full context (~12000 chars + history + max_tokens=1024) exceed this, causing 413 error.
 
-- [x] Edit `municipal_ai/settings.py` to explicitly disable HTTPS forcing and secure cookies.
+## Steps
 
-- [x] Ensure no SECURE_PROXY_SSL_HEADER or SECURE_HSTS_* settings are present.
+### Step 1: settings.py
+- [x] Add `AI_FAST_MAX_TOKENS` setting (default: 512)
 
-- [x] Search repo again for any remaining `https://127.0.0.1:8000` / `https://localhost:8000` references.
-
-- [x] Restart Django server (attempted) — fails due to MySQL socket not reachable.
-
-- [x] Started restart attempt; server failed because MySQL socket `/run/mysqld/mysqld.sock` not reachable (unrelated to HTTPS).
-- [x] Verified Django HTTPS forcing flags are set to disable redirects/secure cookies.
-
-
-- [x] Provide steps to clear browser site data/HSTS for localhost.
-
-- [x] Added project-local `.env` with SECRET_KEY + DB settings placeholders.
-
-
-
+### Step 2: chatbot/ai_engine.py
+- [x] Add `fast_max_tokens` attribute in `__init__`
+- [x] Add `_build_compact_context()` method for fast model (reduces context ~90%)
+- [x] Add `compact` parameter to `build_context_prompt()`
+- [x] Add `compact` parameter to `_get_cached_city_data()`
+- [x] Modify `chat()` to use compact context when fast model is selected
+- [x] Modify `build_stream()` to use compact context when fast model is selected, with smaller max_tokens
+- [x] Modify `_call_groq()` to use `fast_max_tokens` when using fast model
+- [x] Fix fallback timeout path to also use `fast_max_tokens`
 

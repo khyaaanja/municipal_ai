@@ -3,115 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Access Restricted — Bhaktapur Municipal</title>
+  <title>Access Restricted — Bhaktapur Municipality</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:      #060810;
-      --gold:    #c9a84c;
-      --red:     #C1440E;
-      --surface: #111009;
-      --card:    #1A1710;
-      --border:  rgba(201,168,76,0.18);
-      --text:    #E8DFC8;
-      --muted:   #7A7060;
-      --font-h:  'Cinzel', serif;
-      --font-b:  'Inter', sans-serif;
+      --ink:   #0D0D0D;
+      --paper: #F5F0E8;
+      --red:   #C13B2A;
+      --red-d: #9E2E1E;
+      --stone: #8A7F72;
+      --card:  #1C1C1C;
+      --border: rgba(255,255,255,0.08);
+      --font-h: 'Syne', sans-serif;
+      --font-b: 'DM Sans', sans-serif;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       height: 100%;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--ink); color: var(--paper);
       font-family: var(--font-b);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(193,59,42,.08) 0%, transparent 65%);
     }
     .container {
-      text-align: center;
-      padding: 2rem;
-      max-width: 480px;
-      opacity: 0;
-      will-change: transform;
+      text-align: center; padding: 2rem; max-width: 440px;
+      position: relative; z-index: 1;
+      animation: cardIn .45s cubic-bezier(.22,1,.36,1) both;
     }
-    .icon {
-      font-size: 4rem;
-      margin-bottom: 1.5rem;
-      display: block;
-    }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) { .container { animation: none; } }
+    .icon { font-size: 4rem; margin-bottom: 1.5rem; display: block; }
     h1 {
-      font-family: var(--font-h);
-      font-size: 2.2rem;
-      color: var(--gold);
-      margin-bottom: 0.75rem;
-      letter-spacing: 0.04em;
+      font-family: var(--font-h); font-size: 2.2rem; font-weight: 800;
+      color: var(--paper); margin-bottom: .75rem; letter-spacing: -.02em;
     }
-    p {
-      color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.6;
-      margin-bottom: 2rem;
-    }
-    .actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
+    .divider { width: 40px; height: 3px; background: var(--red); margin: 1.25rem auto; }
+    p { color: var(--stone); font-size: .95rem; line-height: 1.65; margin-bottom: 2rem; }
+    .actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
     .btn {
-      padding: 0.75rem 1.75rem;
-      border-radius: 6px;
-      font-family: var(--font-b);
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      border: none;
-      transition: opacity 0.2s;
+      padding: .75rem 1.75rem; border-radius: 4px;
+      font-family: var(--font-h); font-size: .875rem; font-weight: 700;
+      cursor: pointer; text-decoration: none; border: none;
+      min-height: 44px; display: inline-flex; align-items: center;
+      transition: background .15s, border-color .15s, color .15s;
     }
-    .btn:hover { opacity: 0.85; }
-    .btn-gold {
-      background: linear-gradient(135deg, #c9a84c, #a07830);
-      color: #060810;
-      font-weight: 600;
-    }
-    .btn-outline {
-      background: transparent;
-      color: var(--gold);
-      border: 1px solid var(--border);
-    }
-    .divider {
-      width: 60px;
-      height: 2px;
-      background: var(--border);
-      margin: 1.5rem auto;
-    }
+    .btn-primary { background: var(--red); color: #fff; }
+    .btn-primary:hover { background: var(--red-d); }
+    .btn-outline { background: transparent; color: var(--stone); border: 1px solid var(--border); }
+    .btn-outline:hover { border-color: var(--paper); color: var(--paper); }
   </style>
 </head>
 <body>
-  <div class="container" id="card">
+  <div class="container">
     <span class="icon">🔒</span>
     <h1>Access Restricted</h1>
     <div class="divider"></div>
     <p>You don't have permission to view this page.<br>Contact your administrator if you believe this is an error.</p>
     <div class="actions">
       <button class="btn btn-outline" onclick="history.back()">Go Back</button>
-      <a class="btn btn-gold" href="/">Go Home</a>
+      <a class="btn btn-primary" href="/">Go Home</a>
     </div>
   </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-  <script>
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!prefersReducedMotion) {
-      gsap.to('#card', { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out',
-        from: { opacity: 0, y: 30 } });
-      gsap.fromTo('#card', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' });
-    } else {
-      document.getElementById('card').style.opacity = '1';
-    }
-  </script>
 </body>
 </html>

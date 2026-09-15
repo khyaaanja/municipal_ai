@@ -1,0 +1,26 @@
+{
+  "id": "/?source=pwa",
+  "name": "Bhaktapur Municipal AI",
+  "short_name": "BhaktapurAI",
+  "description": "Official AI-powered platform for Bhaktapur, Nepal — report civic issues, explore attractions, and engage with your municipality.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#DC2626",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["government", "travel", "lifestyle"],
+  "icons": [
+    { "src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "AI Chat", "short_name": "Chat", "url": "/chat/", "description": "Chat with the Bhaktapur AI assistant" },
+    { "name": "Report Issue", "short_name": "Report", "url": "/complaint/", "description": "Submit a complaint to the municipality" },
+    { "name": "Attractions", "short_name": "Explore", "url": "/attractions/", "description": "Explore Bhaktapur attractions" },
+    { "name": "Transparency", "short_name": "Data", "url": "/transparency/", "description": "View civic data and metrics" }
+  ]
+}
+

@@ -1,0 +1,101 @@
+{% extends "base/base.html" %}
+{% block title %}Rate Service — {{ complaint.complaint_id }}{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+
+  <div style="margin-bottom:24px;">
+    <a href="/complaint/status/{{ complaint.complaint_id }}/" style="font-size:0.83rem;color:var(--red,#C13B2A);font-weight:600;text-decoration:none;">← Back to complaint</a>
+  </div>
+
+  <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:32px;">
+
+    {% if existing %}
+    <div style="text-align:center;padding:20px 0;">
+      <div style="font-size:3rem;margin-bottom:12px;">{% for i in "12345" %}{% if forloop.counter <= existing.rating %}★{% else %}☆{% endif %}{% endfor %}</div>
+      <h1 style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;margin:0 0 8px;color:var(--ink,#0D0D0D);">Already Rated</h1>
+      <p style="color:#666;font-size:0.9rem;margin:0 0 16px;">You rated this service <strong>{{ existing.rating }}/5 stars</strong> on {{ existing.created_at|date:"M d, Y" }}.</p>
+      {% if existing.feedback %}
+      <div style="background:#f8f8f8;border-radius:8px;padding:14px;font-size:0.88rem;color:#555;text-align:left;">"{{ existing.feedback }}"</div>
+      {% endif %}
+    </div>
+
+    {% else %}
+
+    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);border-radius:20px;padding:4px 12px;font-size:0.75rem;color:#2d8a4a;font-weight:700;margin-bottom:20px;letter-spacing:0.04em;">
+      ✓ RESOLVED
+    </div>
+
+    <h1 style="font-family:var(--font-head);font-size:1.6rem;font-weight:800;margin:0 0 6px;color:var(--ink,#0D0D0D);">Rate the Service</h1>
+    <p style="color:#666;font-size:0.88rem;margin:0 0 8px;">{{ complaint.title }}</p>
+    <p style="color:#aaa;font-size:0.78rem;margin:0 0 28px;">{{ complaint.complaint_id }}</p>
+
+    {% if error %}
+    <div style="background:rgba(193,59,42,0.08);border:1px solid rgba(193,59,42,0.25);border-radius:6px;padding:10px 14px;color:#C13B2A;font-size:0.85rem;margin-bottom:18px;">{{ error }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div style="margin-bottom:24px;">
+        <label style="display:block;font-size:0.8rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">How would you rate the resolution quality?</label>
+        <div style="display:flex;gap:10px;justify-content:center;" id="star-row">
+          {% for i in "12345" %}
+          <label style="cursor:pointer;text-align:center;">
+            <input type="radio" name="rating" value="{{ forloop.counter }}" style="display:none;" {% if forloop.counter == 4 %}checked{% endif %}>
+            <span class="star-btn" data-val="{{ forloop.counter }}"
+              style="font-size:2.5rem;color:#ddd;transition:color 0.15s;cursor:pointer;display:block;line-height:1;">★</span>
+            <span style="font-size:0.7rem;color:#aaa;display:block;margin-top:4px;">{{ forloop.counter }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="margin-bottom:22px;">
+        <label style="display:block;font-size:0.8rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Additional Feedback <span style="font-weight:400;color:#aaa;">(optional)</span></label>
+        <textarea name="feedback" maxlength="500" placeholder="Was the resolution timely? Was the team helpful? Any suggestions?"
+          style="width:100%;background:#f8f8f8;border:1.5px solid #e0e0e0;border-radius:6px;padding:11px 14px;font-size:0.9rem;color:#333;resize:vertical;min-height:90px;font-family:inherit;outline:none;box-sizing:border-box;"
+          onfocus="this.style.borderColor='var(--red,#C13B2A)'" onblur="this.style.borderColor='#e0e0e0'"></textarea>
+        <div style="font-size:0.72rem;color:#aaa;margin-top:4px;text-align:right;">Max 500 characters</div>
+      </div>
+
+      <button type="submit" style="width:100%;padding:13px;background:var(--red,#C13B2A);color:#fff;font-family:var(--font-head);font-size:0.9rem;font-weight:700;border:none;border-radius:6px;cursor:pointer;letter-spacing:0.02em;">Submit Rating</button>
+    </form>
+    {% endif %}
+
+    <div style="text-align:center;margin-top:20px;">
+      <a href="/complaint/status/{{ complaint.complaint_id }}/" style="font-size:0.83rem;color:#999;text-decoration:none;">Back to complaint details</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const stars = document.querySelectorAll('.star-btn');
+  const inputs = document.querySelectorAll('input[name="rating"]');
+  const GOLD = '#C9A227';
+
+  function highlight(val) {
+    stars.forEach(s => {
+      s.style.color = parseInt(s.dataset.val) <= val ? GOLD : '#ddd';
+    });
+  }
+
+  // Set initial highlight to checked value
+  inputs.forEach(inp => { if (inp.checked) highlight(parseInt(inp.value)); });
+
+  stars.forEach(star => {
+    star.addEventListener('mouseover', () => highlight(parseInt(star.dataset.val)));
+    star.addEventListener('click', () => {
+      const val = parseInt(star.dataset.val);
+      inputs.forEach(inp => { inp.checked = parseInt(inp.value) === val; });
+      highlight(val);
+    });
+  });
+
+  document.getElementById('star-row')?.addEventListener('mouseleave', () => {
+    const checked = document.querySelector('input[name="rating"]:checked');
+    highlight(checked ? parseInt(checked.value) : 0);
+  });
+})();
+</script>
+{% endblock %}

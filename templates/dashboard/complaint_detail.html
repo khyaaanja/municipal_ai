@@ -10,7 +10,7 @@
   @media(max-width:900px){.two-col{grid-template-columns:1fr;}}
   .info-card,.action-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;}
   .id-pill{font-family:var(--font-h);font-size:1.1rem;color:var(--gold);
-    background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);
+    background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.3);
     border-radius:20px;padding:0.3rem 0.9rem;display:inline-block;margin-bottom:0.75rem;}
   h2{font-family:var(--font-h);font-size:1.2rem;color:var(--text);margin-bottom:1rem;}
   .detail-row{margin-bottom:0.85rem;}
@@ -25,14 +25,11 @@
   select.action-select:disabled{opacity:0.45;cursor:not-allowed;}
   textarea.action-textarea{resize:vertical;min-height:90px;}
   .btn-save{
-    width:100%;padding:0.8rem;background:linear-gradient(135deg,#c9a84c,#a07830);
-    color:#060810;font-family:var(--font-h);font-size:0.875rem;font-weight:700;
-    border:none;border-radius:6px;cursor:pointer;min-height:44px;
-    position:relative;overflow:hidden;}
-  .btn-save::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent);
-    transition:left 0.6s linear;}
-  .btn-save:hover::after{left:150%;}
+    width:100%;padding:0.8rem;background:var(--red);
+    color:#fff;font-family:var(--font-h);font-size:0.875rem;font-weight:700;
+    border:none;border-radius:4px;cursor:pointer;min-height:44px;
+    transition:background .15s;}
+  .btn-save:hover{background:var(--red-d);}
 
   /* Log timeline */
   .log-section{margin-top:1.5rem;}
@@ -108,6 +105,12 @@
       <input type="hidden" name="priority" value="{{ complaint.priority }}">
       {% endif %}
 
+      {% if complaint.assigned_to %}
+      <div style="background:rgba(201,162,39,.08);border:1px solid rgba(201,162,39,.2);border-radius:6px;padding:.5rem .75rem;margin-bottom:.75rem;font-size:.78rem;">
+        🎯 Assigned to <strong style="color:var(--gold);">{{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}</strong>
+      </div>
+      {% endif %}
+
       <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.35rem;">Municipality Notes</label>
       <textarea class="action-textarea" name="admin_notes">{{ complaint.admin_notes|default:'' }}</textarea>
 
@@ -117,13 +120,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!prefersReducedMotion && document.getElementById('log-list')) {
-    gsap.fromTo('#log-list .log-entry',
-      {opacity:0, y:10},
-      {opacity:1, y:0, duration:0.35, stagger:0.1, ease:'power2.out'});
-  }
-</script>
-{% endblock %}
+{% block extra_js %}{% endblock %}

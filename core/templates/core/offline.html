@@ -1,0 +1,21 @@
+{% extends "base/base.html" %}
+{% block title %}You're Offline — {{ CITY_NAME }} AI{% endblock %}
+{% block content %}
+<div style="min-height:70vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;">
+  <div style="text-align:center;max-width:480px;">
+    <div style="font-size:4rem;margin-bottom:20px;">📡</div>
+    <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--text-1);margin:0 0 10px;">You're offline</h1>
+    <p style="color:var(--stone);font-size:.95rem;margin-bottom:24px;line-height:1.6;">
+      This page isn't available without a connection. Pages you've already visited may still work.
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="location.reload()" class="btn btn-primary">Try again</button>
+      <a href="/" class="btn btn-secondary">Go to Home</a>
+    </div>
+    <p style="color:var(--stone-light);font-size:.78rem;margin-top:24px;">
+      Once connected, all features will be available again.
+    </p>
+  </div>
+</div>
+{% endblock %}
+

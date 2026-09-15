@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Complaint {{ complaint.complaint_id }} — Bhaktapur Municipality</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #111; background: #fff; padding: 32px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #C13B2A; padding-bottom: 16px; margin-bottom: 20px; }
+  .header h1 { font-size: 18px; font-weight: 800; color: #C13B2A; }
+  .header .meta { text-align: right; font-size: 11px; color: #555; line-height: 1.7; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .badge-pending    { background: #fef3c7; color: #92400e; }
+  .badge-in_review  { background: #dbeafe; color: #1e3a5f; }
+  .badge-in_progress{ background: #ede9fe; color: #4c1d95; }
+  .badge-resolved   { background: #d1fae5; color: #065f46; }
+  .badge-rejected   { background: #fee2e2; color: #7f1d1d; }
+  .section { margin-bottom: 18px; }
+  .section h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #777; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 10px; }
+  .row { display: flex; gap: 16px; margin-bottom: 6px; }
+  .label { font-weight: 600; width: 130px; flex-shrink: 0; color: #555; }
+  .value { color: #111; line-height: 1.5; }
+  .timeline-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 12px; }
+  .tl-dot { width: 10px; height: 10px; border-radius: 50%; background: #C13B2A; flex-shrink: 0; }
+  .tl-date { color: #777; width: 90px; flex-shrink: 0; }
+  .footer { margin-top: 32px; border-top: 1px solid #e5e7eb; padding-top: 12px; font-size: 11px; color: #888; display: flex; justify-content: space-between; }
+  @media print {
+    body { padding: 16px; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="no-print" style="background:#f3f4f6;padding:10px 16px;margin-bottom:20px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;">
+  <span style="font-size:13px;color:#555;">Press <strong>Ctrl+P</strong> (or ⌘P on Mac) to print or save as PDF</span>
+  <button onclick="window.print()" style="background:#C13B2A;color:#fff;border:none;border-radius:5px;padding:7px 18px;font-weight:600;cursor:pointer;">🖨 Print / Save PDF</button>
+</div>
+
+<div class="header">
+  <div>
+    <div style="font-size:11px;color:#777;margin-bottom:4px;">BHAKTAPUR MUNICIPALITY — COMPLAINT RECORD</div>
+    <h1>{{ complaint.complaint_id }}</h1>
+    <div style="margin-top:6px;">
+      <span class="badge badge-{{ complaint.status|lower }}">{{ complaint.get_status_display }}</span>
+      &nbsp;
+      <span style="font-size:11px;color:#777;">Priority: {{ complaint.priority }}</span>
+    </div>
+  </div>
+  <div class="meta">
+    <div>Filed: {{ complaint.created_at|date:"F j, Y" }}</div>
+    <div>Last updated: {{ complaint.updated_at|date:"F j, Y" }}</div>
+    {% if complaint.ward_number %}<div>Ward {{ complaint.ward_number }}</div>{% endif %}
+    {% if complaint.resolved_at %}<div>Resolved: {{ complaint.resolved_at|date:"F j, Y" }}</div>{% endif %}
+  </div>
+</div>
+
+<div class="section">
+  <h2>Complaint Details</h2>
+  <div class="row"><span class="label">Category</span><span class="value">{{ complaint.get_category_display }}</span></div>
+  <div class="row"><span class="label">Title</span><span class="value">{{ complaint.title }}</span></div>
+  <div class="row"><span class="label">Description</span><span class="value">{{ complaint.description }}</span></div>
+  <div class="row"><span class="label">Location</span><span class="value">{{ complaint.location }}</span></div>
+  {% if complaint.latitude and complaint.longitude %}
+  <div class="row"><span class="label">Coordinates</span><span class="value">{{ complaint.latitude }}, {{ complaint.longitude }}</span></div>
+  {% endif %}
+</div>
+
+{% if is_owner %}
+<div class="section">
+  <h2>Submitter Information</h2>
+  <div class="row"><span class="label">Name</span><span class="value">{{ complaint.submitter_name }}</span></div>
+  {% if complaint.submitter_phone %}<div class="row"><span class="label">Phone</span><span class="value">{{ complaint.submitter_phone }}</span></div>{% endif %}
+  {% if complaint.submitter_email %}<div class="row"><span class="label">Email</span><span class="value">{{ complaint.submitter_email }}</span></div>{% endif %}
+</div>
+{% endif %}
+
+{% if complaint.admin_notes %}
+<div class="section">
+  <h2>Municipality Response</h2>
+  <div style="background:#f9fafb;border-left:3px solid #C13B2A;padding:10px 14px;border-radius:4px;line-height:1.6;">
+    {{ complaint.admin_notes }}
+  </div>
+</div>
+{% endif %}
+
+{% if history %}
+<div class="section">
+  <h2>Status History</h2>
+  {% for h in history %}
+  <div class="timeline-row">
+    <div class="tl-dot"></div>
+    <div class="tl-date">{{ h.changed_at|date:"M j, Y" }}</div>
+    <div>{% if h.old_status %}{{ h.old_status }} → {% endif %}<strong>{{ h.new_status }}</strong>{% if h.note %} — {{ h.note }}{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if photos %}
+<div class="section no-print">
+  <h2>Photos</h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% for p in photos %}
+    <img src="{{ p.image.url }}" alt="Complaint photo" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid #e5e7eb;">
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="footer">
+  <span>Bhaktapur Municipality — AI Civic Platform</span>
+  <span>Generated: {% now "F j, Y" %}</span>
+  <span>{{ request.scheme }}://{{ request.get_host }}/complaint/status/{{ complaint.complaint_id }}/</span>
+</div>
+
+</body>
+</html>

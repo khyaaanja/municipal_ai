@@ -1,0 +1,52 @@
+{% extends "mayor/base.html" %}
+{% block mayor_content %}
+<div class="mayor-page-header">
+  <h1 class="mayor-page-title">{% if notice %}Edit Notice{% else %}Publish Notice{% endif %}</h1>
+  <a href="/services/mayor/notices/" class="mayor-btn mayor-btn-outline">← Back</a>
+</div>
+<div class="mayor-card">
+  <div class="mayor-card-head">Notice Details</div>
+  <div style="padding:24px">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Notice Type <span style="color:var(--red)">*</span></label>
+        <select name="notice_type">
+          {% for val,lbl in type_choices %}
+          <option value="{{ val }}" {% if notice and notice.notice_type == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Title <span style="color:var(--red)">*</span></label>
+        <input type="text" name="title" required maxlength="200" value="{{ notice.title|default:'' }}" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box">
+      </div>
+      <div class="form-group">
+        <label>Body <span style="color:var(--red)">*</span></label>
+        <textarea name="body" required rows="8">{{ notice.body|default:'' }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Reference Number</label>
+        <input type="text" name="reference_no" maxlength="100" value="{{ notice.reference_no|default:'' }}" placeholder="e.g. BMC/2081/001" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box">
+      </div>
+      {% if request.user.role != 'chairperson' %}
+      <div class="form-group">
+        <label>Ward (optional — blank = municipality-wide)</label>
+        <input type="number" name="ward_number" min="1" max="17" value="{{ notice.ward_number|default:'' }}" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box">
+      </div>
+      {% endif %}
+      <div class="form-group">
+        <label>Deadline (optional)</label>
+        <input type="date" name="deadline" value="{{ notice.deadline|date:'Y-m-d'|default:'' }}" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box">
+      </div>
+      <div class="form-group">
+        <label>Attachment (optional)</label>
+        <input type="file" name="attachment" accept=".pdf,.doc,.docx,.jpg,.png">
+      </div>
+      <button type="submit" class="mayor-btn mayor-btn-gold" style="padding:11px 28px;font-size:.95rem">
+        {% if notice %}Save Changes{% else %}Publish Notice{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

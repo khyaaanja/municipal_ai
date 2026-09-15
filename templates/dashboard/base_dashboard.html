@@ -3,80 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Dashboard{% endblock %} — Bhaktapur Municipal</title>
+  <title>{% block title %}Dashboard{% endblock %} — Bhaktapur Municipality</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#060810;--gold:#c9a84c;--red:#C1440E;--surface:#111009;--card:#1A1710;
-      --border:rgba(201,168,76,0.18);--text:#E8DFC8;--muted:#7A7060;
-      --success:#4A8A5A;--warning:#FF6B35;--font-h:'Cinzel',serif;--font-b:'Inter',sans-serif;
-      --sidebar:240px;}
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-    body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;}
-
-    /* Sidebar */
-    .sidebar{
-      position:fixed;top:0;left:0;bottom:0;width:var(--sidebar);
-      background:var(--surface);border-right:1px solid var(--border);
-      display:flex;flex-direction:column;z-index:200;
-      transition:transform 0.3s ease;will-change:transform;}
-    .sidebar.collapsed{transform:translateX(calc(-1 * var(--sidebar)));}
-    .sidebar-header{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border);}
-    .sidebar-logo{font-family:var(--font-h);font-size:1rem;color:var(--gold);letter-spacing:0.06em;}
-    .sidebar-sub{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;}
-    .sidebar-nav{flex:1;padding:1rem 0;overflow-y:auto;}
-    .nav-item{
-      display:flex;align-items:center;gap:0.65rem;padding:0.75rem 1.25rem;
-      color:var(--muted);text-decoration:none;font-size:0.875rem;
-      transition:color 0.2s,background 0.2s;min-height:44px;}
-    .nav-item:hover,.nav-item.active{color:var(--gold);background:rgba(201,168,76,0.07);}
-    .nav-item .icon{font-size:1rem;width:20px;text-align:center;}
-    .sidebar-footer{padding:1.25rem;border-top:1px solid var(--border);}
-    .user-chip{display:flex;align-items:center;gap:0.65rem;}
-    .user-avatar{
-      width:36px;height:36px;border-radius:50%;background:rgba(201,168,76,0.2);
-      display:flex;align-items:center;justify-content:center;font-family:var(--font-h);
-      font-size:0.85rem;color:var(--gold);font-weight:700;flex-shrink:0;}
-    .user-info{min-width:0;}
-    .user-name{font-size:0.85rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .role-badge{display:inline-block;padding:0.15rem 0.5rem;border-radius:20px;font-size:0.65rem;font-weight:600;margin-top:0.2rem;}
-    .role-staff   {background:rgba(74,122,181,0.15);color:#4A7AB5;}
-    .role-official{background:rgba(122,90,181,0.15);color:#7A5AB5;}
-    .role-admin   {background:rgba(193,68,14,0.15);color:var(--red);}
-
-    /* Collapse toggle */
-    .collapse-btn{
-      position:fixed;top:1rem;left:calc(var(--sidebar) + 0.75rem);z-index:300;
-      background:var(--card);border:1px solid var(--border);border-radius:6px;
-      padding:0.4rem 0.6rem;cursor:pointer;color:var(--muted);font-size:1rem;
-      transition:left 0.3s,color 0.2s;}
-    .collapse-btn:hover{color:var(--gold);}
-    .sidebar.collapsed ~ .collapse-btn{left:0.75rem;}
-
-    /* Hamburger (mobile) */
-    .hamburger{
-      display:none;position:fixed;top:0.75rem;left:0.75rem;z-index:300;
-      background:var(--card);border:1px solid var(--border);border-radius:6px;
-      padding:0.5rem 0.65rem;cursor:pointer;color:var(--muted);font-size:1.2rem;}
-
-    /* Main content */
-    .main{margin-left:var(--sidebar);min-height:100vh;transition:margin-left 0.3s;}
-    .sidebar.collapsed ~ .main{margin-left:0;}
-    .main-inner{padding:2rem 1.5rem;max-width:1100px;}
-    .page-title{font-family:var(--font-h);font-size:1.6rem;color:var(--gold);margin-bottom:1.5rem;letter-spacing:0.04em;}
-
-    /* Overlay (mobile) */
-    .overlay{display:none;position:fixed;inset:0;background:rgba(6,8,16,0.7);z-index:150;}
-    .overlay.active{display:block;}
-
-    @media(max-width:1024px){
-      .sidebar{transform:translateX(calc(-1 * var(--sidebar)));}
-      .sidebar.open{transform:translateX(0);}
-      .main{margin-left:0;}
-      .hamburger{display:flex;}
-      .collapse-btn{display:none;}
+    :root {
+      --ink:     #0D0D0D;
+      --paper:   #F5F0E8;
+      --red:     #C13B2A;
+      --red-d:   #9E2E1E;
+      --gold:    #C9A227;
+      --stone:   #8A7F72;
+      --stone-l: #C4BCB0;
+      --card:    #1C1C1C;
+      --surf:    #141414;
+      --border:  rgba(255,255,255,0.08);
+      --success: #3A7D50;
+      --warn:    #D4620A;
+      --blue:    #4A7AB5;
+      --purple:  #7A5AB5;
+      --font-h:  'Syne', sans-serif;
+      --font-b:  'DM Sans', sans-serif;
+      --sidebar: 240px;
+      /* aliases for child templates */
+      --muted:   var(--stone);
+      --text:    var(--paper);
+      --surface: var(--surf);
+      --warning: var(--warn);
+      --bg:      var(--ink);
     }
-    @media(max-width:480px){.main-inner{padding:1rem 0.75rem;}}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--ink); color: var(--paper); font-family: var(--font-b); min-height: 100vh; }
+
+    /* ── sidebar ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar);
+      background: var(--surf); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; z-index: 200;
+      transition: transform .3s ease;
+    }
+    .sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar))); }
+    .sidebar-header {
+      padding: 1.25rem 1.25rem .9rem;
+      border-bottom: 3px solid var(--red);
+    }
+    .sidebar-logo { font-family: var(--font-h); font-size: 1rem; font-weight: 800; color: var(--paper); letter-spacing: -.01em; }
+    .sidebar-logo span { color: var(--red); }
+    .sidebar-sub { font-size: .7rem; color: var(--stone); margin-top: .2rem; text-transform: uppercase; letter-spacing: .06em; }
+    .sidebar-nav { flex: 1; padding: .75rem 0; overflow-y: auto; }
+    .nav-item {
+      display: flex; align-items: center; gap: .65rem;
+      padding: .75rem 1.25rem; color: var(--stone);
+      text-decoration: none; font-size: .875rem;
+      transition: color .15s, background .15s; min-height: 44px;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover, .nav-item.active {
+      color: var(--paper); background: rgba(255,255,255,.04);
+      border-left-color: var(--red);
+    }
+    .nav-item .icon { font-size: .95rem; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 1.25rem; border-top: 1px solid var(--border); }
+    .user-chip { display: flex; align-items: center; gap: .65rem; }
+    .user-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(193,59,42,.2); border: 1.5px solid rgba(193,59,42,.4);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-h); font-size: .85rem; color: var(--red); font-weight: 700; flex-shrink: 0;
+    }
+    .user-info { min-width: 0; }
+    .user-name { font-size: .85rem; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .role-badge { display: inline-block; padding: .15rem .5rem; border-radius: 20px; font-size: .65rem; font-weight: 600; margin-top: .2rem; }
+    .role-staff    { background: rgba(74,122,181,.15); color: var(--blue); }
+    .role-official { background: rgba(122,90,181,.15); color: var(--purple); }
+    .role-admin    { background: rgba(193,59,42,.15);  color: var(--red); }
+
+    /* ── collapse btn ── */
+    .collapse-btn {
+      position: fixed; top: .9rem; left: calc(var(--sidebar) + .75rem); z-index: 300;
+      background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+      padding: .4rem .6rem; cursor: pointer; color: var(--stone); font-size: 1rem;
+      transition: left .3s, color .15s;
+    }
+    .collapse-btn:hover { color: var(--paper); }
+    .sidebar.collapsed ~ .collapse-btn { left: .75rem; }
+
+    /* ── hamburger (mobile) ── */
+    .hamburger {
+      display: none; position: fixed; top: .75rem; left: .75rem; z-index: 300;
+      background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+      padding: .5rem .65rem; cursor: pointer; color: var(--stone); font-size: 1.2rem;
+    }
+
+    /* ── main ── */
+    .main { margin-left: var(--sidebar); min-height: 100vh; transition: margin-left .3s; }
+    .sidebar.collapsed ~ .main { margin-left: 0; }
+    .main-inner { padding: 2rem 1.5rem; max-width: 1100px; }
+    .page-title {
+      font-family: var(--font-h); font-size: 1.65rem; font-weight: 800;
+      color: var(--paper); margin-bottom: 1.5rem; letter-spacing: -.02em;
+    }
+
+    /* ── overlay (mobile) ── */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 150; }
+    .overlay.active { display: block; }
+
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(calc(-1 * var(--sidebar))); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .hamburger { display: flex; }
+      .collapse-btn { display: none; }
+    }
+    @media (max-width: 480px) { .main-inner { padding: 1rem .75rem; } }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
@@ -84,8 +123,8 @@
 
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo">Municipal AI</div>
-    <div class="sidebar-sub">Bhaktapur Dashboard</div>
+    <div class="sidebar-logo">Bhaktapur<span>AI</span></div>
+    <div class="sidebar-sub">Municipality Dashboard</div>
   </div>
 
   <nav class="sidebar-nav">
@@ -94,6 +133,9 @@
     </a>
     <a class="nav-item {% block nav_complaints %}{% endblock %}" href="{% url 'dashboard:complaints' %}">
       <span class="icon">📋</span> All Complaints
+    </a>
+    <a class="nav-item {% block nav_assigned %}{% endblock %}" href="{% url 'dashboard:complaints' %}?assigned=me" style="padding-left:2rem;">
+      <span class="icon">🎯</span> My Assignments
     </a>
     {% if request.user.role == 'official' or request.user.role == 'admin' %}
     <a class="nav-item" href="{% url 'dashboard:export' %}">
@@ -129,19 +171,14 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script>
   const sidebar = document.getElementById('sidebar');
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const main    = document.getElementById('main');
 
   function toggleSidebar() {
     sidebar.classList.toggle('collapsed');
-    document.getElementById('main').style.marginLeft = sidebar.classList.contains('collapsed') ? '0' : '';
-    if (!prefersReducedMotion) {
-      gsap.fromTo('#main', {x: sidebar.classList.contains('collapsed') ? -10 : 10}, {x:0, duration:0.3});
-    }
+    main.style.marginLeft = sidebar.classList.contains('collapsed') ? '0' : '';
   }
-
   function openMobile() {
     sidebar.classList.add('open');
     document.getElementById('overlay').classList.add('active');

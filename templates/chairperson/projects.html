@@ -1,0 +1,116 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div style="padding:24px 32px;">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--ink);margin:0 0 4px;">
+      🏗 Ward {{ ward }} — Projects
+    </h1>
+    <p style="color:#666;margin:0;">Track infrastructure and development projects for your ward. Citizens can view progress at <a href="/ward-projects/?ward={{ ward }}" target="_blank" style="color:#4ade80;">/ward-projects/</a></p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;">
+    <div>
+      {% for p in projects %}
+      <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;gap:12px;margin-bottom:10px;">
+          <div>
+            <h3 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin:0 0 4px;">{{ p.title }}</h3>
+            {% if p.description %}<p style="margin:0;font-size:0.85rem;color:#666;">{{ p.description|truncatechars:120 }}</p>{% endif %}
+          </div>
+          <span style="white-space:nowrap;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;
+            {% if p.status == 'COMPLETED' %}background:#e6f9ef;color:#16a34a;
+            {% elif p.status == 'IN_PROGRESS' %}background:#fef3c7;color:#C9A227;
+            {% elif p.status == 'ON_HOLD' %}background:#fee2e2;color:#C13B2A;
+            {% else %}background:#f0f0f0;color:#555;{% endif %}">
+            {{ p.get_status_display }}
+          </span>
+        </div>
+
+        <div style="background:#f5f5f5;border-radius:8px;height:8px;overflow:hidden;margin-bottom:8px;">
+          <div style="background:#4ade80;height:100%;width:{{ p.progress_pct }}%;transition:width 0.3s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#888;margin-bottom:14px;">
+          <span>{{ p.progress_pct }}% complete</span>
+          {% if p.budget %}<span>Budget: NPR {{ p.budget|floatformat:0 }}</span>{% endif %}
+          {% if p.end_date %}<span>Due: {{ p.end_date|date:"M d, Y" }}</span>{% endif %}
+        </div>
+
+        <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update">
+          <input type="hidden" name="pk" value="{{ p.pk }}">
+          <select name="status" style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;">
+            {% for val,label in status_choices %}
+            <option value="{{ val }}" {% if p.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" name="progress_pct" value="{{ p.progress_pct }}" min="0" max="100"
+            style="width:70px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.8rem;" placeholder="%">
+          <button type="submit" style="background:#4ade80;color:#052e16;border:none;padding:6px 14px;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">Update</button>
+          <button type="submit" name="action" value="delete"
+            style="background:none;border:1px solid #fca5a5;color:#C13B2A;padding:6px 10px;border-radius:6px;font-size:0.8rem;cursor:pointer;"
+            onclick="return confirm('Delete this project?')">Delete</button>
+        </form>
+      </div>
+      {% empty %}
+      <div style="background:#fff;border:1px dashed #ddd;border-radius:12px;padding:40px;text-align:center;color:#999;">
+        No projects yet. Add your first ward project using the form.
+      </div>
+      {% endfor %}
+    </div>
+
+    <div style="position:sticky;top:88px;">
+      <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:24px;">
+        <h2 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin:0 0 16px;">Add Project</h2>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;">Title *</label>
+            <input type="text" name="title" required maxlength="200"
+              style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;">Description</label>
+            <textarea name="description" rows="3"
+              style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;resize:vertical;"></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+            <div>
+              <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;">Status</label>
+              <select name="status" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;">
+                {% for val,label in status_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;">Progress %</label>
+              <input type="number" name="progress_pct" value="0" min="0" max="100"
+                style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;">Budget (NPR)</label>
+            <input type="number" name="budget" step="0.01"
+              style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+            <div>
+              <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;">Start Date</label>
+              <input type="date" name="start_date" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:5px;">End Date</label>
+              <input type="date" name="end_date" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+            </div>
+          </div>
+          <button type="submit" style="width:100%;background:#4ade80;color:#052e16;border:none;padding:12px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">
+            Add Project
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

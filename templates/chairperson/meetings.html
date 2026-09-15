@@ -1,0 +1,27 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div class="chair-page-header">
+  <h1 class="chair-page-title">Ward Meetings</h1>
+  <a href="/civic/manage/meetings/create/" class="chair-btn chair-btn-green">+ Create Meeting</a>
+</div>
+<div class="chair-card">
+  <div class="chair-card-head">All Meetings</div>
+  <table class="chair-table">
+    <thead><tr><th>Title</th><th>Date</th><th>Venue</th><th>RSVPs</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for m in meetings %}
+      <tr>
+        <td style="font-weight:600">{{ m.title }}</td>
+        <td>{{ m.meeting_date|date:"M d, Y g:i A" }}</td>
+        <td>{{ m.venue }}</td>
+        <td>{{ m.rsvps.count }}</td>
+        <td><span class="pill pill-{{ m.status|lower }}">{{ m.get_status_display }}</span></td>
+        <td><a href="/civic/manage/meetings/{{ m.pk }}/" class="chair-btn chair-btn-outline" style="padding:4px 12px;font-size:.78rem">Manage</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;color:var(--stone);padding:30px">No meetings yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

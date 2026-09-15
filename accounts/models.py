@@ -1,6 +1,34 @@
+import uuid
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+
+
+def _fernet():
+    """Return a Fernet cipher if TOTP_ENCRYPTION_KEY is configured."""
+    key = getattr(settings, 'TOTP_ENCRYPTION_KEY', '')
+    if not key:
+        return None
+    from cryptography.fernet import Fernet
+    return Fernet(key.encode() if isinstance(key, str) else key)
+
+
+def encrypt_otp_secret(plaintext: str) -> str:
+    f = _fernet()
+    if not f or not plaintext:
+        return plaintext
+    return f.encrypt(plaintext.encode()).decode()
+
+
+def decrypt_otp_secret(ciphertext: str) -> str:
+    f = _fernet()
+    if not f or not ciphertext:
+        return ciphertext
+    try:
+        return f.decrypt(ciphertext.encode()).decode()
+    except Exception:
+        return ciphertext
 
 
 class Role(models.Model):
@@ -49,15 +77,31 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    ROLE_CITIZEN  = 'citizen'
-    ROLE_STAFF    = 'staff'
-    ROLE_OFFICIAL = 'official'
-    ROLE_ADMIN    = 'admin'
+
+    # NOTE:
+    # Do NOT define `social_user` as a @property with no setter.
+    # social-auth/social-core may attempt to assign to `user.social_user`.
+    # If we override it as a read-only property, OAuth completion fails with:
+    #   "property 'social_user' of 'User' object has no setter".
+    #
+    # social-django stores related social accounts via the reverse relation
+    # `user.social_auth`.
+
+
+    ROLE_CITIZEN     = 'citizen'
+
+    ROLE_STAFF       = 'staff'
+    ROLE_OFFICIAL    = 'official'
+    ROLE_ADMIN       = 'admin'
+    ROLE_MAYOR       = 'mayor'
+    ROLE_CHAIRPERSON = 'chairperson'
     ROLE_CHOICES  = [
-        ('citizen',  'Citizen'),
-        ('staff',    'Municipality Staff'),
-        ('official', 'Municipality Official'),
-        ('admin',    'Platform Admin'),
+        ('citizen',     'Citizen'),
+        ('staff',       'Municipality Staff'),
+        ('official',    'Municipality Official'),
+        ('admin',       'Platform Admin'),
+        ('mayor',       'Mayor'),
+        ('chairperson', 'Ward Chairperson'),
     ]
 
     email = models.EmailField(unique=True)
@@ -66,9 +110,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=100)
     legacy_role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='citizen', db_index=True)
+    provider = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+
+    ward_number = models.IntegerField(null=True, blank=True, help_text='Ward number (1-17) for chairpersons')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
+    email_verification_token = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True)
+    otp_secret  = models.CharField(max_length=256, blank=True, default='')
+    otp_enabled = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(null=True, blank=True)
 
@@ -98,6 +148,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+
+    # OAuth identity fields
+    # Google uses the stable `sub` value (unique per provider/account).
+    google_id = models.CharField(max_length=255, null=True, blank=True, unique=True, db_index=True)
+
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     bio = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
@@ -108,8 +163,27 @@ class Profile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
     def __str__(self):
         return f"Profile: {self.user.email}"
 
     class Meta:
         db_table = 'profiles'
+
+
+class Notification(models.Model):
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message    = models.CharField(max_length=300)
+    url        = models.CharField(max_length=200, blank=True)
+    is_read    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        db_table = 'notifications'
+        indexes = [
+            models.Index(fields=['user', 'is_read', '-created_at'], name='idx_notif_user_read_created'),
+        ]
+
+    def __str__(self):
+        return f"Notification for {self.user.email}: {self.message[:50]}"

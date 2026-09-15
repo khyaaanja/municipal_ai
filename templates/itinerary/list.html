@@ -188,6 +188,7 @@ function generateItinerary() {
   const budget = document.getElementById('gen-budget').value;
   const group = document.getElementById('gen-group').value;
   const interests = [...document.querySelectorAll('.interests-grid input:checked')].map(i => i.value);
+  const btn = document.querySelector('.gen-btn');
 
   document.getElementById('genForm').style.display = 'none';
   document.getElementById('genLoading').style.display = 'block';
@@ -202,20 +203,26 @@ function generateItinerary() {
     if (data.success) {
       window.location.href = '/itineraries/' + data.itinerary_id + '/';
     } else {
-      alert(data.error || 'Generation failed. Please try again.');
       document.getElementById('genForm').style.display = 'block';
       document.getElementById('genLoading').style.display = 'none';
+      if (window.showToast) showToast(data.error || 'Generation failed. Please try again.', 'error');
     }
   })
   .catch(() => {
-    alert('Network error. Please try again.');
     document.getElementById('genForm').style.display = 'block';
     document.getElementById('genLoading').style.display = 'none';
+    if (window.showToast) showToast('Network error. Please try again.', 'error');
   });
 }
 
 function deleteItin(id, btn) {
-  if (!confirm('Delete this itinerary?')) return;
+  const card = document.getElementById('itin-' + id);
+  const title = card.querySelector('.itin-card-title')?.textContent?.trim() || 'Itinerary';
+  btn.disabled = true;
+  card.style.opacity = '0.4';
+  card.style.pointerEvents = 'none';
+  card.style.transition = 'opacity .2s';
+
   fetch('/itineraries/' + id + '/delete/', {
     method: 'POST',
     headers: { 'X-CSRFToken': getCookie('csrftoken') }
@@ -223,10 +230,23 @@ function deleteItin(id, btn) {
   .then(r => r.json())
   .then(data => {
     if (data.success) {
-      const card = document.getElementById('itin-' + id);
-      card.style.opacity = '0'; card.style.transform = 'scale(.95)'; card.style.transition = 'all .3s';
+      card.style.transition = 'all .3s';
+      card.style.opacity = '0';
+      card.style.transform = 'scale(.95)';
       setTimeout(() => card.remove(), 300);
+      if (window.showToast) showToast(`Deleted "${title}"`, 'info');
+    } else {
+      card.style.opacity = '1';
+      card.style.pointerEvents = '';
+      btn.disabled = false;
+      if (window.showToast) showToast('Could not delete. Try again.', 'error');
     }
+  })
+  .catch(() => {
+    card.style.opacity = '1';
+    card.style.pointerEvents = '';
+    btn.disabled = false;
+    if (window.showToast) showToast('Network error. Please try again.', 'error');
   });
 }
 

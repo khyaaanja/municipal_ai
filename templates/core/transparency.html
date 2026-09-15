@@ -1,0 +1,267 @@
+{% extends "base/base.html" %}
+{% block title %}Transparency Dashboard — Bhaktapur Municipality{% endblock %}
+{% block meta_description %}See how Bhaktapur Municipality handles citizen complaints — resolution rates, response times, and monthly trends.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+body { background: var(--ink) !important; color: var(--paper) !important; font-family: var(--font-body); }
+body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:0; background:radial-gradient(ellipse 70% 40% at 50% -5%, rgba(193,59,42,.08) 0%, transparent 55%); }
+.tr-wrap { max-width:1100px; margin:0 auto; padding:3rem 1.5rem 5rem; position:relative; z-index:1; }
+.tr-hero { text-align:center; margin-bottom:3rem; }
+.tr-hero h1 { font-family:var(--font-head); font-size:2.8rem; font-weight:900; letter-spacing:-.03em; margin-bottom:.5rem; }
+.tr-hero p { color:var(--stone); font-size:1rem; max-width:520px; margin:0 auto; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:1rem; margin-bottom:2.5rem; }
+.kpi-card { background:#1C1C1C; border:1px solid rgba(255,255,255,.08); border-top:3px solid var(--gold); border-radius:6px; padding:1.5rem; text-align:center; }
+.kpi-num { font-family:var(--font-head); font-size:2.8rem; font-weight:900; color:var(--gold); line-height:1; }
+.kpi-label { font-size:.8rem; color:var(--stone); margin-top:.4rem; letter-spacing:.05em; text-transform:uppercase; }
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem; }
+.chart-card { background:#1C1C1C; border:1px solid rgba(255,255,255,.08); border-radius:6px; padding:1.5rem; }
+.chart-card h3 { font-family:var(--font-head); font-size:1rem; font-weight:700; margin-bottom:1.25rem; color:var(--paper); }
+.tr-note { text-align:center; color:var(--stone); font-size:.8rem; margin-top:2rem; }
+#tr-map { height:340px; border-radius:6px; overflow:hidden; }
+.leaflet-popup-content-wrapper { background:#1C1C1C; border:1px solid rgba(201,162,39,.3); color:#e8e1d6; border-radius:6px; }
+.leaflet-popup-tip { background:#1C1C1C; }
+.leaflet-popup-content { font-family:'DM Sans',sans-serif; font-size:.82rem; }
+@media(max-width:680px) { .chart-grid { grid-template-columns:1fr; } .tr-hero h1 { font-size:2rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tr-wrap">
+  <div class="tr-hero">
+    <div style="display:inline-block;background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.3);color:var(--gold);border-radius:20px;padding:.3rem 1rem;font-size:.8rem;font-weight:600;margin-bottom:1rem;">🏛 Public Accountability</div>
+    <h1>Transparency Dashboard</h1>
+    <p>Real data on how Bhaktapur Municipality responds to citizen complaints.</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-num" data-count="{{ total }}">{{ total }}</div>
+      <div class="kpi-label">Total Complaints Filed</div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#4ade80;">
+      <div class="kpi-num" style="color:#4ade80;" data-count="{{ resolved }}">{{ resolved }}</div>
+      <div class="kpi-label">Resolved</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-num" data-count="{{ rate }}">{{ rate }}</div>
+      <div class="kpi-label">% Resolution Rate</div>
+    </div>
+    <div class="kpi-card" style="border-top-color:#4A7AB5;">
+      <div class="kpi-num" style="color:#4A7AB5;">{{ avg_days }}</div>
+      <div class="kpi-label">Avg. Days to Resolve</div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>📋 Complaints by Category</h3>
+      <canvas id="chartCat" height="280"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>📈 Filed vs Resolved (Last 6 Months)</h3>
+      <canvas id="chartMonthly" height="280"></canvas>
+    </div>
+  </div>
+
+  {% if has_pins %}
+  <div class="chart-card" style="margin-bottom:2rem;">
+    <h3>📍 Live Complaint Map</h3>
+    <div id="tr-map"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-top:.75rem;font-size:.74rem;color:var(--stone);">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#C9A227;display:inline-block;"></span> Pending</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#4A7AB5;display:inline-block;"></span> In Review</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#D4620A;display:inline-block;"></span> In Progress</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block;"></span> Resolved</span>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if top_voted %}
+  <div class="chart-card" style="margin-bottom:2rem;">
+    <h3>🔥 Most Community-Supported Issues</h3>
+    {% for c in top_voted %}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.65rem 0;border-bottom:1px solid rgba(255,255,255,.06);">
+      <div style="min-width:0;">
+        <a href="/complaint/status/{{ c.complaint_id }}/" style="color:var(--gold);font-weight:600;font-size:.88rem;">{{ c.complaint_id }}</a>
+        <div style="font-size:.82rem;color:var(--paper);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.title }}</div>
+        <div style="font-size:.74rem;color:var(--stone);">{{ c.get_category_display }} · {{ c.get_status_display }}</div>
+      </div>
+      <div style="flex-shrink:0;background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.3);color:var(--gold);border-radius:20px;padding:.25rem .75rem;font-size:.82rem;font-weight:700;white-space:nowrap;">
+        👍 {{ c.vote_count }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if leaderboard %}
+  <div class="chart-card" style="margin-bottom:2rem;">
+    <h3>🏆 Civic Champions — Top Contributors</h3>
+    <p style="font-size:.78rem;color:var(--stone);margin-bottom:1rem;">Score: 10 pts per complaint filed · 50 pts when resolved · 2 pts per vote cast</p>
+    {% for entry in leaderboard %}
+    <div style="display:flex;align-items:center;gap:.85rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.06);">
+      <div style="width:28px;height:28px;border-radius:50%;
+        background:{% if forloop.counter == 1 %}linear-gradient(135deg,#C9A227,#F0D06A){% elif forloop.counter == 2 %}linear-gradient(135deg,#888,#b0b0b0){% elif forloop.counter == 3 %}linear-gradient(135deg,#CD7F32,#e09550){% else %}rgba(255,255,255,.08){% endif %};
+        display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.78rem;color:{% if forloop.counter <= 3 %}#111{% else %}var(--stone){% endif %};flex-shrink:0;">
+        {{ forloop.counter }}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:.88rem;color:var(--paper);">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+        <div style="font-size:.74rem;color:var(--stone);">{{ entry.filed }} filed · {{ entry.resolved }} resolved</div>
+      </div>
+      <div style="font-family:var(--font-head);font-weight:800;font-size:1rem;color:{% if forloop.counter == 1 %}var(--gold){% else %}var(--stone-light){% endif %};">{{ entry.score }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if sla_rows %}
+  <div class="chart-card" style="margin-bottom:2rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.2rem;">
+      <h3 style="margin:0;">⏱ SLA Compliance</h3>
+      {% if overall_sla_pct is not None %}
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <span style="font-size:.78rem;color:var(--stone);">Overall compliance:</span>
+        <span style="font-family:var(--font-head);font-weight:800;font-size:1.15rem;color:{% if overall_sla_pct >= 80 %}#4ade80{% elif overall_sla_pct >= 50 %}var(--gold){% else %}var(--red-soft){% endif %};">{{ overall_sla_pct }}%</span>
+      </div>
+      {% endif %}
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:.84rem;">
+        <thead>
+          <tr style="color:var(--stone);text-align:left;border-bottom:1px solid rgba(255,255,255,.1);">
+            <th style="padding:.5rem .75rem;font-weight:600;">Priority</th>
+            <th style="padding:.5rem .75rem;font-weight:600;">SLA Target</th>
+            <th style="padding:.5rem .75rem;font-weight:600;">Resolved</th>
+            <th style="padding:.5rem .75rem;font-weight:600;">Within SLA</th>
+            <th style="padding:.5rem .75rem;font-weight:600;">Compliance</th>
+            <th style="padding:.5rem .75rem;font-weight:600;">Overdue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in sla_rows %}
+          <tr style="border-bottom:1px solid rgba(255,255,255,.05);">
+            <td style="padding:.6rem .75rem;">
+              <span style="display:inline-flex;align-items:center;gap:.35rem;font-weight:600;color:{% if row.priority == 'CRITICAL' %}#f87171{% elif row.priority == 'HIGH' %}#fb923c{% elif row.priority == 'MEDIUM' %}var(--gold){% else %}var(--stone-light){% endif %};">
+                {% if row.priority == 'CRITICAL' %}🔴{% elif row.priority == 'HIGH' %}🟠{% elif row.priority == 'MEDIUM' %}🟡{% else %}🟢{% endif %}
+                {{ row.priority }}
+              </span>
+            </td>
+            <td style="padding:.6rem .75rem;color:var(--paper);">{{ row.sla_days }} day{{ row.sla_days|pluralize }}</td>
+            <td style="padding:.6rem .75rem;color:var(--paper);">{{ row.resolved }}</td>
+            <td style="padding:.6rem .75rem;color:var(--paper);">{{ row.within_sla }}</td>
+            <td style="padding:.6rem .75rem;">
+              {% if row.compliance_pct is not None %}
+              <div style="display:flex;align-items:center;gap:.5rem;">
+                <div style="flex:1;background:rgba(255,255,255,.08);border-radius:4px;height:6px;min-width:60px;">
+                  <div style="height:100%;border-radius:4px;width:{{ row.compliance_pct }}%;background:{% if row.compliance_pct >= 80 %}#4ade80{% elif row.compliance_pct >= 50 %}var(--gold){% else %}var(--red-soft){% endif %};"></div>
+                </div>
+                <span style="font-weight:700;color:{% if row.compliance_pct >= 80 %}#4ade80{% elif row.compliance_pct >= 50 %}var(--gold){% else %}var(--red-soft){% endif %};">{{ row.compliance_pct }}%</span>
+              </div>
+              {% else %}
+              <span style="color:var(--stone);">—</span>
+              {% endif %}
+            </td>
+            <td style="padding:.6rem .75rem;">
+              {% if row.overdue > 0 %}
+              <span style="color:#f87171;font-weight:600;">{{ row.overdue }} overdue</span>
+              {% else %}
+              <span style="color:#4ade80;">None</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.73rem;color:var(--stone);margin-top:.75rem;">SLA targets: CRITICAL=1d · HIGH=3d · MEDIUM=7d · LOW=14d</p>
+  </div>
+  {% endif %}
+
+  <p class="tr-note">Data refreshed hourly. Last updated: {% now "F j, Y" %}.</p>
+  <p class="tr-note" style="margin-top:.5rem;">
+    <a href="/complaint/" style="color:var(--gold);">Report a civic issue →</a>
+    &nbsp;·&nbsp;
+    <a href="/complaint/track/" style="color:var(--stone);">Track your complaint →</a>
+  </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+Chart.defaults.color = '#8A7F72';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+const GOLD='#C9A227', GREEN='#4ade80', BLUE='#4A7AB5', RED='#C13B2A', ORANGE='#D4620A', PURPLE='#7A5AB5';
+
+new Chart(document.getElementById('chartCat'), {
+  type: 'doughnut',
+  data: {
+    labels: {{ cat_labels_json|safe }},
+    datasets: [{ data: {{ cat_values_json|safe }}, backgroundColor: [GOLD,BLUE,GREEN,PURPLE,ORANGE,RED,'#6B7280'], borderWidth:0, hoverOffset:8 }]
+  },
+  options: { cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:12 } } } }
+});
+
+new Chart(document.getElementById('chartMonthly'), {
+  type: 'bar',
+  data: {
+    labels: {{ months_labels_json|safe }},
+    datasets: [
+      { label:'Filed',    data:{{ filed_json|safe }},    backgroundColor:'rgba(201,162,39,.5)',  borderColor:GOLD,  borderWidth:1 },
+      { label:'Resolved', data:{{ resolved_json|safe }}, backgroundColor:'rgba(74,222,128,.35)', borderColor:GREEN, borderWidth:1 }
+    ]
+  },
+  options: {
+    plugins:{ legend:{ position:'bottom', labels:{ boxWidth:10, padding:12 } } },
+    scales:{
+      x:{ grid:{ color:'rgba(255,255,255,.04)' } },
+      y:{ grid:{ color:'rgba(255,255,255,.04)' }, beginAtZero:true, ticks:{ precision:0 } }
+    }
+  }
+});
+
+// Complaint map
+{% if has_pins %}
+(function() {
+  const pins = {{ complaint_pins_json|safe }};
+  const map = L.map('tr-map', { scrollWheelZoom: false }).setView([27.6720, 85.4298], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(map);
+  pins.forEach(p => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:12px;height:12px;border-radius:50%;background:${p.colour};border:2px solid rgba(255,255,255,.7);box-shadow:0 1px 4px rgba(0,0,0,.5);"></div>`,
+      iconSize: [12, 12], iconAnchor: [6, 6],
+    });
+    L.marker([p.lat, p.lng], { icon })
+      .bindPopup(`<strong>${p.id}</strong><br>${p.title}<br><em style="color:#8A7F72;">${p.status.replace('_',' ')}</em><br><a href="/complaint/status/${p.id}/" style="color:#C9A227;">View →</a>`)
+      .addTo(map);
+  });
+  if (pins.length) {
+    const lats = pins.map(p => p.lat), lngs = pins.map(p => p.lng);
+    map.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]], { padding: [20, 20] });
+  }
+})();
+{% endif %}
+
+// Count-up animation
+document.querySelectorAll('.kpi-num[data-count]').forEach(el => {
+  const target = parseInt(el.dataset.count, 10) || 0;
+  if (!target) return;
+  let s; const step = ts => {
+    if (!s) s = ts;
+    const pct = Math.min((ts-s)/1000, 1);
+    el.textContent = Math.floor((1-Math.pow(1-pct,3))*target);
+    if (pct < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  };
+  requestAnimationFrame(step);
+});
+</script>
+{% endblock %}

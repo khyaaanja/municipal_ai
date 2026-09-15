@@ -235,6 +235,17 @@
       <span class="cms-nav-icon">📦</span> Orders
     </a>
 
+    <div class="cms-sidebar-label">Municipality</div>
+    <a href="{% url 'adminpanel:cms_complaints' %}" class="cms-nav-link {% if 'complaint' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="cms-nav-icon">📋</span> Complaints
+    </a>
+    <a href="{% url 'adminpanel:cms_users' %}" class="cms-nav-link {% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="cms-nav-icon">👥</span> Users
+    </a>
+    <a href="/dashboard/" class="cms-nav-link">
+      <span class="cms-nav-icon">📊</span> Staff Dashboard
+    </a>
+
     <div class="cms-sidebar-label">System</div>
     <a href="/django-admin/" class="cms-nav-link" target="_blank">
       <span class="cms-nav-icon">⚙️</span> Django Admin ↗

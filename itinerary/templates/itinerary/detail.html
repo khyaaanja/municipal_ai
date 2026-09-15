@@ -1,0 +1,82 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block title %}{{ itinerary.title }} — {{ CITY_NAME }}AI{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <div class="container page-hero-content">
+    <div class="page-hero-tag">✈ {{ itinerary.days }} Day{{ itinerary.days|pluralize }} Itinerary</div>
+    <h1>{{ itinerary.title }}</h1>
+    <p style="margin-bottom:0;">
+      {% if itinerary.budget %}<span class="tag tag-gold" style="margin-right:6px;">💰 NPR {{ itinerary.budget }}</span>{% endif %}
+      <span class="tag tag-blue">👥 {{ itinerary.group_type|title }}</span>
+      {% for int in itinerary.interests %}
+      <span class="tag" style="margin-left:4px;">#{{ int }}</span>
+      {% endfor %}
+    </p>
+  </div>
+</div>
+
+<div class="container" style="padding-top:32px;padding-bottom:64px;">
+  <!-- Day-by-day itinerary -->
+  {% if itinerary.generated_plan %}
+    {% for day in itinerary.generated_plan %}
+    <div class="card" style="margin-bottom:24px;border-radius:var(--r-lg);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,var(--red),var(--red-dark));padding:18px 24px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.6);">Day {{ day.day }}</span>
+          <h3 style="color:#fff;margin:2px 0 0;font-size:1.1rem;">{{ day.title }}</h3>
+        </div>
+        <span style="font-size:1.8rem;">☀</span>
+      </div>
+      <div style="padding:20px 24px;">
+        {% if day.stops %}
+          {% for stop in day.stops %}
+          <div style="display:flex;gap:16px;padding:14px 0;{% if not forloop.last %}border-bottom:1px solid rgba(0,0,0,.06);{% endif %}">
+            <div style="flex-shrink:0;width:56px;text-align:center;">
+              <div style="font-size:.7rem;font-weight:700;color:var(--red);font-family:var(--font-head);">{{ stop.time }}</div>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;margin-bottom:3px;">{{ stop.activity }}</div>
+              {% if stop.location %}
+              <div style="font-size:.82rem;color:var(--stone);display:flex;align-items:center;gap:4px;margin-bottom:4px;">
+                <span>📍</span> {{ stop.location }}
+              </div>
+              {% endif %}
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+                {% if stop.duration %}
+                <span class="tag" style="font-size:.7rem;">⏱ {{ stop.duration }}</span>
+                {% endif %}
+                {% if stop.cost %}
+                <span class="tag tag-gold" style="font-size:.7rem;">💰 {{ stop.cost }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="color:var(--stone);font-size:.88rem;margin:0;">No stops defined for this day.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div style="text-align:center;padding:60px 20px;">
+      <div style="font-size:3rem;margin-bottom:12px;">📝</div>
+      <h2 style="font-size:1.3rem;margin-bottom:8px;">Itinerary not available</h2>
+      <p style="color:var(--stone);">The plan for this itinerary could not be loaded.</p>
+    </div>
+  {% endif %}
+
+  <!-- Action buttons -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:32px;padding-top:24px;border-top:1px solid rgba(0,0,0,.07);">
+    <a href="{% url 'itinerary:list' %}" class="btn btn-outline">← Back to My Itineraries</a>
+    <button class="btn btn-primary" onclick="window.print()">🖨 Print Itinerary</button>
+    <form method="post" action="{% url 'itinerary:delete' itinerary.pk %}" style="margin-left:auto;" onsubmit="return confirm('Delete this itinerary?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost" style="color:var(--red);">🗑 Delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

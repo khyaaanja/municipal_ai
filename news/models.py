@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 
 class NewsArticle(models.Model):
@@ -25,7 +26,7 @@ class NewsArticle(models.Model):
     is_active = models.BooleanField(default=True)
     is_pinned = models.BooleanField(default=False)
     view_count = models.IntegerField(default=0)
-    published_at = models.DateTimeField(auto_now_add=True)
+    published_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

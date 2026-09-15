@@ -1,0 +1,25 @@
+{% extends "base/base.html" %}
+
+{% block title %}Google Login Error — BhaktapurAI{% endblock %}
+
+{% block content %}
+  <div style="max-width:720px;margin:40px auto;padding:24px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:#fff;">
+    <h1 style="margin:0 0 12px 0;">Google login failed</h1>
+    <p style="margin:0 0 18px 0;color:#444;">
+      We couldn’t complete Google authentication.
+    </p>
+
+    {% if message %}
+      <div style="padding:12px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;">
+        <strong>Details:</strong> {{ message }}
+      </div>
+    {% endif %}
+
+    <div style="margin-top:20px;">
+      <a href="/login/" style="display:inline-block;padding:10px 14px;background:#DC2626;color:#fff;border-radius:10px;text-decoration:none;">
+        Try again
+      </a>
+    </div>
+  </div>
+{% endblock %}
+

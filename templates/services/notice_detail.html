@@ -1,0 +1,35 @@
+{% extends "base/base.html" %}
+{% block title %}{{ notice.title }}{% endblock %}
+{% block content %}
+<style>
+.notice-wrap{max-width:800px;margin:0 auto;padding:32px 20px}
+.breadcrumb{font-size:.8rem;color:var(--stone);margin-bottom:20px}
+.breadcrumb a{color:var(--stone);text-decoration:none}
+.notice-card{background:#fff;border:1px solid #e8e3da;border-radius:10px;padding:32px}
+.notice-type{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C9A227;margin-bottom:8px}
+.notice-card h1{font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--ink);margin:0 0 12px}
+.notice-meta-row{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--stone);margin-bottom:20px}
+.notice-body{line-height:1.75;color:var(--ink);font-size:.92rem;margin-bottom:20px;white-space:pre-line}
+.deadline-box{background:#fff5f5;border:1px solid rgba(193,59,42,.2);border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:.88rem}
+.attachment-link{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#f5f0e8;border:1px solid #d5cfc6;border-radius:6px;color:var(--ink);text-decoration:none;font-size:.88rem;font-weight:600;transition:background .15s}
+.attachment-link:hover{background:#ede8e0}
+</style>
+<div class="notice-wrap">
+  <div class="breadcrumb"><a href="/services/notices/">Notices</a> / {{ notice.title|truncatechars:40 }}</div>
+  <div class="notice-card">
+    <div class="notice-type">{{ notice.get_notice_type_display }}{% if notice.ward_number %} · Ward {{ notice.ward_number }}{% else %} · Municipality-wide{% endif %}</div>
+    <h1>{{ notice.title }}</h1>
+    <div class="notice-meta-row">
+      <span>Published {{ notice.created_at|date:"F d, Y" }}</span>
+      {% if notice.reference_no %}<span>Ref: {{ notice.reference_no }}</span>{% endif %}
+    </div>
+    {% if notice.deadline %}
+    <div class="deadline-box">⚠ Deadline: <strong>{{ notice.deadline|date:"F d, Y" }}</strong></div>
+    {% endif %}
+    <div class="notice-body">{{ notice.body }}</div>
+    {% if notice.attachment %}
+    <a href="{{ notice.attachment.url }}" target="_blank" class="attachment-link">📥 Download Attachment</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

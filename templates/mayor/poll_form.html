@@ -1,0 +1,61 @@
+{% extends "mayor/base.html" %}
+{% block mayor_content %}
+<div class="mayor-page-header">
+  <h1 class="mayor-page-title">Create Poll</h1>
+  <a href="/civic/mayor/polls/" class="mayor-btn mayor-btn-outline">← Back</a>
+</div>
+<div class="mayor-card">
+  <div class="mayor-card-head">Poll Details</div>
+  <div style="padding:24px">
+    {% if messages %}{% for m in messages %}<div style="background:{% if 'error' in m.tags %}#fee2e2{% else %}#dcfce7{% endif %};border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;">{{ m }}</div>{% endfor %}{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Question <span style="color:var(--red)">*</span></label>
+        <input type="text" name="question" required maxlength="300" placeholder="What do you want citizens to decide?" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" rows="3" placeholder="Context for the poll..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Ward (optional — leave blank for city-wide)</label>
+        <select name="ward_number">
+          <option value="">City-wide</option>
+          <option value="1">Ward 1</option><option value="2">Ward 2</option><option value="3">Ward 3</option>
+          <option value="4">Ward 4</option><option value="5">Ward 5</option><option value="6">Ward 6</option>
+          <option value="7">Ward 7</option><option value="8">Ward 8</option><option value="9">Ward 9</option>
+          <option value="10">Ward 10</option><option value="11">Ward 11</option><option value="12">Ward 12</option>
+          <option value="13">Ward 13</option><option value="14">Ward 14</option><option value="15">Ward 15</option>
+          <option value="16">Ward 16</option><option value="17">Ward 17</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Closes At (optional)</label>
+        <input type="datetime-local" name="closes_at" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box">
+      </div>
+      <div class="form-group">
+        <label>Options (add at least 2) <span style="color:var(--red)">*</span></label>
+        <div id="optionsContainer">
+          <input type="text" name="options" placeholder="Option 1" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box;margin-bottom:8px">
+          <input type="text" name="options" placeholder="Option 2" style="width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box;margin-bottom:8px">
+        </div>
+        <button type="button" onclick="addOption()" class="mayor-btn mayor-btn-outline" style="padding:6px 14px;font-size:.8rem">+ Add Option</button>
+      </div>
+      <button type="submit" class="mayor-btn mayor-btn-gold" style="padding:11px 28px;font-size:.95rem">Create & Activate Poll</button>
+    </form>
+  </div>
+</div>
+<script>
+let optCount = 2;
+function addOption() {
+  optCount++;
+  const c = document.getElementById('optionsContainer');
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.name = 'options';
+  inp.placeholder = `Option ${optCount}`;
+  inp.style.cssText = 'width:100%;padding:9px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.9rem;font-family:var(--font-body);color:var(--ink);background:#fff;outline:none;box-sizing:border-box;margin-bottom:8px';
+  c.appendChild(inp);
+}
+</script>
+{% endblock %}

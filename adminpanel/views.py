@@ -1,7 +1,7 @@
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from core.decorators import staff_required
+from core.decorators import staff_required, admin_required
 from django.utils.text import slugify
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -652,3 +652,146 @@ def cms_map_clear_location(request):
     obj.save(update_fields=['latitude', 'longitude'])
 
     return JsonResponse({'success': True})
+
+
+# ── CMS COMPLAINTS ─────────────────────────────────────────────────────────
+
+@staff_required
+def cms_complaints(request):
+    from complaints.models import Complaint
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+
+    qs = Complaint.objects.order_by('-created_at')
+    q = request.GET.get('q', '').strip()
+    status_f = request.GET.get('status', '')
+    category_f = request.GET.get('category', '')
+
+    if q:
+        qs = qs.filter(
+            Q(complaint_id__icontains=q) |
+            Q(title__icontains=q) |
+            Q(submitter_name__icontains=q)
+        )
+    if status_f:
+        qs = qs.filter(status=status_f)
+    if category_f:
+        qs = qs.filter(category=category_f)
+
+    paginator = Paginator(qs, 25)
+    page = paginator.get_page(request.GET.get('page', 1))
+
+    STATUS_CHOICES = Complaint.STATUS_CHOICES if hasattr(Complaint, 'STATUS_CHOICES') else [
+        ('PENDING','Pending'),('IN_REVIEW','In Review'),
+        ('IN_PROGRESS','In Progress'),('RESOLVED','Resolved'),('REJECTED','Rejected'),
+    ]
+    CAT_CHOICES = Complaint.CATEGORY_CHOICES if hasattr(Complaint, 'CATEGORY_CHOICES') else []
+
+    return render(request, 'adminpanel/cms_complaints.html', {
+        'page': page, 'q': q,
+        'status_f': status_f, 'category_f': category_f,
+        'status_choices': STATUS_CHOICES,
+        'cat_choices': CAT_CHOICES,
+        'total': qs.count(),
+    })
+
+
+@staff_required
+def cms_complaint_detail(request, complaint_id):
+    from complaints.models import Complaint
+    complaint = get_object_or_404(Complaint, complaint_id=complaint_id)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status', '').strip()
+        admin_notes = request.POST.get('admin_notes', '').strip()
+        priority = request.POST.get('priority', '').strip()
+
+        if new_status:
+            complaint.status = new_status
+        if admin_notes is not None:
+            complaint.admin_notes = admin_notes
+        if priority:
+            complaint.priority = priority
+
+        from django.utils import timezone
+        if new_status == 'RESOLVED' and not complaint.resolved_at:
+            complaint.resolved_at = timezone.now()
+
+        complaint.save()
+        messages.success(request, 'Complaint updated successfully.')
+        return redirect('adminpanel:cms_complaint_detail', complaint_id=complaint_id)
+
+    STATUS_CHOICES = [
+        ('PENDING','Pending'),('IN_REVIEW','In Review'),
+        ('IN_PROGRESS','In Progress'),('RESOLVED','Resolved'),('REJECTED','Rejected'),
+    ]
+    PRIORITY_CHOICES = [
+        ('LOW','Low'),('MEDIUM','Medium'),('HIGH','High'),('CRITICAL','Critical'),
+    ]
+    return render(request, 'adminpanel/cms_complaint_detail.html', {
+        'complaint': complaint,
+        'status_choices': STATUS_CHOICES,
+        'priority_choices': PRIORITY_CHOICES,
+    })
+
+
+# ── CMS USERS ──────────────────────────────────────────────────────────────
+
+@staff_required
+def cms_users(request):
+    from accounts.models import User
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+
+    qs = User.objects.order_by('-date_joined')
+    q = request.GET.get('q', '').strip()
+    role_f = request.GET.get('role', '')
+
+    if q:
+        qs = qs.filter(
+            Q(username__icontains=q) |
+            Q(email__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q)
+        )
+    if role_f:
+        qs = qs.filter(role=role_f)
+
+    paginator = Paginator(qs, 30)
+    page = paginator.get_page(request.GET.get('page', 1))
+
+    ROLE_CHOICES = [
+        ('citizen','Citizen'),('staff','Staff'),
+        ('official','Official'),('admin','Admin'),('vendor','Vendor'),
+    ]
+    return render(request, 'adminpanel/cms_users.html', {
+        'page': page, 'q': q, 'role_f': role_f,
+        'role_choices': ROLE_CHOICES,
+        'total': qs.count(),
+    })
+
+
+@require_POST
+@admin_required
+def cms_user_role(request, pk):
+    from accounts.models import User
+    user = get_object_or_404(User, pk=pk)
+    new_role = request.POST.get('role', '').strip()
+    # Only admins may assign roles; mayor/chairperson require superuser action outside this form
+    valid_roles = ('citizen', 'staff', 'official', 'vendor', 'chairperson')
+    if new_role in valid_roles:
+        user.is_staff = new_role in ('staff', 'official', 'admin', 'mayor')
+        user.role = new_role
+        ward_raw = request.POST.get('ward_number', '').strip()
+        if ward_raw:
+            try:
+                user.ward_number = int(ward_raw)
+            except ValueError:
+                pass
+        elif new_role != 'chairperson':
+            user.ward_number = None
+        user.save(update_fields=['role', 'is_staff', 'ward_number'])
+        messages.success(request, f'{user.username} role updated to {new_role}.')
+    else:
+        messages.error(request, 'Invalid role.')
+    return redirect('adminpanel:cms_users')

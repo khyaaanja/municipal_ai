@@ -1,0 +1,56 @@
+{% extends "base/base.html" %}
+{% block title %}Public Notices{% endblock %}
+{% block content %}
+<style>
+.notice-wrap{max-width:1000px;margin:0 auto;padding:32px 20px}
+.page-header{margin-bottom:24px}
+.page-header h1{font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--ink);margin:0 0 6px}
+.page-header p{color:var(--stone);margin:0;font-size:.88rem}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.filter-row select{padding:8px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.85rem;font-family:var(--font-body);background:#fff;color:var(--ink);outline:none}
+.notice-grid{display:grid;gap:14px}
+.notice-card{background:#fff;border:1px solid #e8e3da;border-radius:8px;padding:20px;display:flex;gap:16px}
+.notice-icon{width:40px;height:40px;background:#f5f0e8;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.notice-body{flex:1}
+.notice-type{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#C9A227;margin-bottom:3px}
+.notice-title{font-family:var(--font-head);font-size:1rem;font-weight:700;color:var(--ink);text-decoration:none;display:block;margin-bottom:5px}
+.notice-title:hover{color:#C9A227}
+.notice-meta{font-size:.78rem;color:var(--stone)}
+.deadline-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.68rem;font-weight:700;background:rgba(193,59,42,.1);color:var(--red-dark)}
+</style>
+<div class="notice-wrap">
+  <div class="page-header">
+    <h1>Public Notices</h1>
+    <p>Tenders, jobs, regulations and official notices from Bhaktapur Municipality</p>
+  </div>
+  <form method="get" class="filter-row">
+    <select name="type" onchange="this.form.submit()">
+      <option value="">All Types</option>
+      {% for val,label in type_choices %}
+      <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <div class="notice-grid">
+    {% for n in notices %}
+    <div class="notice-card">
+      <div class="notice-icon">
+        {% if n.notice_type == 'TENDER' %}📋{% elif n.notice_type == 'JOB' %}💼
+        {% elif n.notice_type == 'REGULATION' %}⚖{% else %}📢{% endif %}
+      </div>
+      <div class="notice-body">
+        <div class="notice-type">{{ n.get_notice_type_display }}{% if n.ward_number %} · Ward {{ n.ward_number }}{% else %} · Municipality{% endif %}</div>
+        <a href="/services/notices/{{ n.pk }}/" class="notice-title">{{ n.title }}</a>
+        <div class="notice-meta">
+          {{ n.created_at|date:"M d, Y" }}
+          {% if n.reference_no %}· Ref: {{ n.reference_no }}{% endif %}
+          {% if n.deadline %}<span class="deadline-badge">Deadline: {{ n.deadline|date:"M d, Y" }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:60px;color:var(--stone);background:#fff;border:1px solid #e8e3da;border-radius:8px">No notices found.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

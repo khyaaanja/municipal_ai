@@ -1,0 +1,108 @@
+{% extends "mayor/base.html" %}
+{% block title %}All Complaints — Mayor's Office{% endblock %}
+
+{% block mayor_content %}
+<div class="mayor-page-header">
+  <div>
+    <h1 class="mayor-page-title">All Complaints</h1>
+    <p style="color:var(--stone);font-size:.85rem;margin:4px 0 0;">{{ total }} complaint{{ total|pluralize }} city-wide</p>
+  </div>
+  <a href="/mayor/complaints/export/csv/?status={{ status_f }}&ward={{ ward_f }}&category={{ category_f }}" class="mayor-btn mayor-btn-outline" style="font-size:.8rem;">⬇ Export CSV</a>
+</div>
+
+<form method="get" class="filter-bar">
+  <input type="text" name="q" placeholder="Search ID, title, name, location…" value="{{ q }}">
+  <select name="status">
+    <option value="">All Statuses</option>
+    {% for val,lbl in status_choices %}
+    <option value="{{ val }}" {% if status_f == val %}selected{% endif %}>{{ lbl }}</option>
+    {% endfor %}
+  </select>
+  <select name="ward">
+    <option value="">All Wards</option>
+    {% for w in wards %}
+    <option value="{{ w }}" {% if ward_f == w|stringformat:"s" %}selected{% endif %}>Ward {{ w }}</option>
+    {% endfor %}
+  </select>
+  <select name="category">
+    <option value="">All Categories</option>
+    {% for val,lbl in category_choices %}
+    <option value="{{ val }}" {% if category_f == val %}selected{% endif %}>{{ lbl }}</option>
+    {% endfor %}
+  </select>
+  <select name="sort" onchange="this.form.submit()" style="padding:7px 12px;border:1px solid #d5cfc6;border-radius:4px;font-size:.85rem;font-family:var(--font-body);background:#fff;color:var(--ink);">
+    <option value="" {% if not sort_f %}selected{% endif %}>Sort: Newest</option>
+    <option value="votes" {% if sort_f == 'votes' %}selected{% endif %}>Sort: Most Voted</option>
+  </select>
+  <button type="submit" class="mayor-btn mayor-btn-dark">Filter</button>
+  {% if q or status_f or ward_f or category_f or sort_f %}
+  <a href="/mayor/complaints/" class="mayor-btn mayor-btn-outline">Clear</a>
+  {% endif %}
+</form>
+
+<div class="mayor-card">
+  <div style="overflow-x:auto;">
+    <table class="mayor-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Ward</th>
+          <th>Category</th>
+          <th>Status</th>
+          <th>Priority</th>
+          <th>Votes</th>
+          <th>Submitted</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page.object_list %}
+        <tr{% if c.is_overdue %} style="border-left:3px solid #C13B2A;"{% endif %}>
+          <td style="font-family:var(--font-head);font-weight:700;font-size:.82rem;">
+            {{ c.complaint_id }}
+            {% if c.is_overdue %}<span title="SLA overdue" style="color:#C13B2A;font-size:.7rem;margin-left:4px;">⚠ OVERDUE</span>{% endif %}
+          </td>
+          <td style="max-width:200px;">
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.88rem;">{{ c.title }}</div>
+            <div style="font-size:.74rem;color:var(--stone);">{{ c.submitter_name }}</div>
+          </td>
+          <td>
+            {% if c.ward_number %}
+              <span style="font-weight:600;">Ward {{ c.ward_number }}</span>
+            {% else %}
+              <span style="color:var(--stone);font-size:.82rem;">—</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.82rem;">{{ c.get_category_display }}</td>
+          <td><span class="pill pill-{{ c.status|lower }}">{{ c.status }}</span></td>
+          <td><span class="pill pill-{{ c.priority|lower }}">{{ c.priority }}</span></td>
+          <td style="font-size:.82rem;font-weight:600;color:var(--stone);">{% if c.vote_count %}👍 {{ c.vote_count }}{% else %}—{% endif %}</td>
+          <td style="font-size:.8rem;color:var(--stone);white-space:nowrap;">{{ c.created_at|date:"M j, Y" }}</td>
+          <td>
+            <a href="/mayor/complaints/{{ c.complaint_id }}/" class="mayor-btn mayor-btn-outline" style="padding:4px 12px;font-size:.76rem;">Manage</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--stone);">No complaints found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if page.has_other_pages %}
+<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}&q={{ q }}&status={{ status_f }}&ward={{ ward_f }}&category={{ category_f }}" class="mayor-btn mayor-btn-outline">← Prev</a>
+  {% endif %}
+  {% for num in page.paginator.page_range %}
+  <a href="?page={{ num }}&q={{ q }}&status={{ status_f }}&ward={{ ward_f }}&category={{ category_f }}"
+     class="mayor-btn {% if num == page.number %}mayor-btn-gold{% else %}mayor-btn-outline{% endif %}">{{ num }}</a>
+  {% endfor %}
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}&q={{ q }}&status={{ status_f }}&ward={{ ward_f }}&category={{ category_f }}" class="mayor-btn mayor-btn-outline">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

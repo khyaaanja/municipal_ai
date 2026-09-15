@@ -1,0 +1,65 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div style="padding:24px 32px;max-width:700px;">
+  <div style="margin-bottom:24px;">
+    <h1 style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--ink);margin:0 0 4px;">
+      💰 Ward {{ ward }} — Budget Tracker
+    </h1>
+    <p style="color:#666;margin:0;">Fiscal Year: {{ fiscal_year }}</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
+    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:1.5rem;font-weight:800;color:#4A7AB5;">NPR {{ budget.total_allocation|floatformat:0 }}</div>
+      <div style="font-size:0.78rem;color:#666;margin-top:4px;">Total Allocation</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:1.5rem;font-weight:800;color:#D4620A;">NPR {{ budget.spent|floatformat:0 }}</div>
+      <div style="font-size:0.78rem;color:#666;margin-top:4px;">Amount Spent</div>
+    </div>
+    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;text-align:center;">
+      <div style="font-size:1.5rem;font-weight:800;color:#4ade80;">NPR {{ budget.remaining|floatformat:0 }}</div>
+      <div style="font-size:0.78rem;color:#666;margin-top:4px;">Remaining</div>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:20px;margin-bottom:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:0.85rem;font-weight:600;">Spend Progress</span>
+      <span style="font-size:0.85rem;color:#666;">{{ budget.spend_pct }}%</span>
+    </div>
+    <div style="background:#f0f0f0;border-radius:8px;height:16px;overflow:hidden;">
+      <div style="background:{% if budget.spend_pct > 90 %}#C13B2A{% elif budget.spend_pct > 75 %}#D4620A{% else %}#4ade80{% endif %};height:100%;width:{{ budget.spend_pct }}%;transition:width 0.5s;"></div>
+    </div>
+    {% if budget.notes %}<p style="margin:12px 0 0;font-size:0.85rem;color:#555;">{{ budget.notes }}</p>{% endif %}
+  </div>
+
+  <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:24px;">
+    <h2 style="font-family:var(--font-head);font-size:1rem;font-weight:700;margin:0 0 16px;">Update Budget</h2>
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;">Total Allocation (NPR)</label>
+          <input type="number" name="total_allocation" value="{{ budget.total_allocation }}" step="0.01"
+            style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;">Amount Spent (NPR)</label>
+          <input type="number" name="spent" value="{{ budget.spent }}" step="0.01"
+            style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:0.8rem;font-weight:600;margin-bottom:6px;">Notes</label>
+        <textarea name="notes" rows="3"
+          style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:0.875rem;box-sizing:border-box;resize:vertical;">{{ budget.notes }}</textarea>
+      </div>
+      <button type="submit" style="background:#4ade80;color:#052e16;border:none;padding:12px 28px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">
+        Save Budget
+      </button>
+      <span style="margin-left:12px;font-size:0.8rem;color:#aaa;">Last updated: {{ budget.updated_at|date:"M d, Y H:i" }}</span>
+    </form>
+  </div>
+</div>
+{% endblock %}

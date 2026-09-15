@@ -6,30 +6,44 @@ import json
 
 
 def _resolve_favorites(favorites):
-    """Attach name and url to each Favorite by loading related objects."""
+    """Attach name and url to each Favorite — bulk loads per type to avoid N+1."""
     from tourism.models import Attraction
     from events.models import Event
     from businesses.models import Business
     from marketplace.models import Product
 
     model_map = {
-        'attraction': (Attraction, '/attractions/'),
-        'event':      (Event,      '/events/'),
-        'business':   (Business,   '/businesses/'),
-        'product':    (Product,    '/marketplace/'),
+        'attraction': (Attraction, '/attractions/', 'slug'),
+        'event':      (Event,      '/events/',      'slug'),
+        'business':   (Business,   '/businesses/',  'slug'),
+        'product':    (Product,    '/marketplace/', None),
     }
+
+    # Group by type, bulk-fetch, build lookup dicts
+    by_type: dict = {}
+    for fav in favorites:
+        by_type.setdefault(fav.content_type, []).append(fav.object_id)
+
+    cache: dict = {}
+    for ctype, ids in by_type.items():
+        if ctype not in model_map:
+            continue
+        model_cls, _, _ = model_map[ctype]
+        for obj in model_cls.objects.filter(pk__in=ids):
+            cache[(ctype, obj.pk)] = obj
 
     resolved = []
     for fav in favorites:
-        model_cls, url_prefix = model_map.get(fav.content_type, (None, '/'))
-        obj = None
-        if model_cls:
-            try:
-                obj = model_cls.objects.get(pk=fav.object_id)
-            except model_cls.DoesNotExist:
-                pass
-        fav.object_name = str(obj) if obj else '(Deleted)'
-        fav.object_url = f"{url_prefix}{fav.object_id}/" if obj else '#'
+        info = model_map.get(fav.content_type)
+        obj = cache.get((fav.content_type, fav.object_id))
+        if info and obj:
+            _, url_prefix, slug_field = info
+            slug_val = getattr(obj, slug_field) if slug_field else fav.object_id
+            fav.object_name = str(obj)
+            fav.object_url = f"{url_prefix}{slug_val}/"
+        else:
+            fav.object_name = '(Deleted)'
+            fav.object_url = '#'
         resolved.append(fav)
     return resolved
 

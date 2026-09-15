@@ -1,0 +1,62 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Authentication Error</title>
+    <style>
+      :root { --ink:#0C0C14; --paper:#F5F1E9; --red:#DC2626; --red-soft:#EF4444; --gold:#D97706; }
+      body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0b12; color:#F5F1E9; }
+      .wrap{ max-width: 860px; margin: 48px auto; padding: 0 16px; }
+      .card{ background: rgba(245,241,233,0.06); border:1px solid rgba(245,241,233,0.14); border-radius: 14px; padding: 22px; }
+      h1{ margin:0 0 8px; font-size: 1.35rem; }
+      p{ margin: 8px 0; color: rgba(245,241,233,0.9); }
+      .tag{ display:inline-block; padding: 4px 10px; border-radius: 999px; border:1px solid rgba(245,241,233,0.18); color: rgba(245,241,233,0.9); font-size: .85rem; margin-right: 8px; }
+      .err{ color: #ffb4b4; word-break: break-word; }
+      .kv{ margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(245,241,233,0.14); }
+      .kv pre{ white-space: pre-wrap; word-break: break-word; background: rgba(0,0,0,0.25); border: 1px solid rgba(245,241,233,0.12); padding: 12px; border-radius: 10px; overflow-x: auto; }
+      a{ color: #F59E0B; text-decoration:none; }
+      a:hover{ text-decoration:underline; }
+      .btn{ display:inline-block; margin-top: 14px; padding: 10px 14px; border-radius: 10px; background: #EF4444; color:#fff; border: none; }
+      code{ font-size:.82rem; word-break:break-all; }
+      ul{ padding-left:1.2rem; }
+      li{ margin-bottom:.5rem; line-height:1.5; }
+      .btn{ text-align:center; }
+      @media(max-width:480px){ .wrap{ margin:24px auto; } .card{ padding:16px; } h1{ font-size:1.1rem; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>Google sign-in cancelled / failed</h1>
+
+        {% if message %}
+          <p class="err"><span class="tag">OAuth error</span>{{ message }}</p>
+        {% else %}
+          <p class="err"><span class="tag">OAuth error</span>No error details were provided.</p>
+        {% endif %}
+
+        <div class="kv">
+          <p><b>Debug details from query params</b> (safe to share):</p>
+          <pre>
+{% for k,v in request.GET.items %}{{ k }}={{ v }}
+{% endfor %}
+          </pre>
+        </div>
+
+        <p>What to do:</p>
+        <ul>
+          <li>Try again and make sure you approve the permissions.</li>
+          <li>If it still fails, verify your Google redirect URI is exactly:<br>
+              <code>https://xxxxx.ngrok-free.app/auth/complete/google-oauth2/</code></li>
+          <li>If the error says <code>redirect_uri_mismatch</code> or <code>invalid_request</code>, update the Google “Authorized redirect URIs”.</li>
+          <li>If it says <code>access_denied</code>, the user denied consent.</li>
+        </ul>
+
+        <a class="btn" href="/login/">Back to login</a>
+      </div>
+    </div>
+  </body>
+</html>
+

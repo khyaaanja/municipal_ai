@@ -1,0 +1,50 @@
+{% extends "base/base.html" %}
+{% block title %}Application Submitted{% endblock %}
+{% block content %}
+<style>
+.success-wrap{max-width:620px;margin:60px auto;padding:0 20px;text-align:center}
+.success-card{background:#fff;border:1px solid #e8e3da;border-radius:12px;padding:48px 40px}
+.success-icon{font-size:3rem;margin-bottom:16px}
+.success-card h1{font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--ink);margin:0 0 8px}
+.success-card p{color:var(--stone);margin:0 0 24px;font-size:.92rem;line-height:1.6}
+.ref-box{background:#f5f0e8;border-radius:8px;padding:20px;margin-bottom:24px}
+.ref-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:6px}
+.ref-number{font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--ink)}
+.info-row{display:flex;gap:24px;justify-content:center;margin-bottom:28px}
+.info-item{text-align:center}
+.info-item .val{font-family:var(--font-head);font-size:1.1rem;font-weight:800;color:var(--ink)}
+.info-item .lbl{font-size:.72rem;color:var(--stone);text-transform:uppercase;letter-spacing:.06em}
+.btn-track{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:#C9A227;color:#fff;border-radius:6px;font-family:var(--font-head);font-size:.95rem;font-weight:700;text-decoration:none;transition:background .15s}
+.btn-track:hover{background:#a88520;color:#fff}
+.btn-more{display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:transparent;border:1px solid #d5cfc6;color:var(--ink);border-radius:6px;font-family:var(--font-head);font-size:.95rem;font-weight:700;text-decoration:none;margin-left:12px;transition:background .15s}
+.btn-more:hover{background:#f5f0e8}
+</style>
+<div class="success-wrap">
+  <div class="success-card">
+    <div class="success-icon">✅</div>
+    <h1>Application Submitted!</h1>
+    <p>Your {{ service_info.label }} application has been received. You will be notified when the status changes.</p>
+
+    <div class="ref-box">
+      <div class="ref-label">Reference Number</div>
+      <div class="ref-number">{{ sr.reference_number }}</div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-item">
+        <div class="val">{{ service_info.days }} days</div>
+        <div class="lbl">Processing Time</div>
+      </div>
+      <div class="info-item">
+        <div class="val">{{ service_info.fee }}</div>
+        <div class="lbl">Fee</div>
+      </div>
+    </div>
+
+    <p style="font-size:.82rem;color:var(--stone);margin-bottom:24px">Save your reference number. Visit your ward office if you have questions.</p>
+
+    <a href="/services/my/{{ sr.reference_number }}/" class="btn-track">Track My Application</a>
+    <a href="/services/" class="btn-more">Apply for More</a>
+  </div>
+</div>
+{% endblock %}

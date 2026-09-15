@@ -1,0 +1,54 @@
+{% extends "chairperson/base.html" %}
+{% block chair_content %}
+<div class="chair-page-header">
+  <h1 class="chair-page-title">Review Proposal</h1>
+  <a href="/civic/manage/proposals/" class="chair-btn chair-btn-outline">← Back</a>
+</div>
+<div class="chair-card" style="margin-bottom:20px">
+  <div class="chair-card-head">Proposal Details</div>
+  <div style="padding:20px">
+    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:4px">{{ proposal.get_category_display }}</div>
+    <h2 style="font-family:var(--font-head);font-size:1.2rem;font-weight:800;color:var(--ink);margin:0 0 12px">{{ proposal.title }}</h2>
+    <div style="font-size:.82rem;color:var(--stone);margin-bottom:16px">
+      By {{ proposal.submitted_by.get_full_name|default:proposal.submitted_by.username }} · {{ proposal.created_at|date:"M d, Y" }} · 👍 {{ proposal.support_count }} support{% if proposal.support_count != 1 %}s{% endif %}
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:6px">Description</div>
+      <p style="margin:0;line-height:1.7">{{ proposal.description }}</p>
+    </div>
+    {% if proposal.expected_benefit %}
+    <div style="margin-bottom:16px">
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:6px">Expected Benefit</div>
+      <p style="margin:0;line-height:1.7">{{ proposal.expected_benefit }}</p>
+    </div>
+    {% endif %}
+    {% if proposal.estimated_cost %}
+    <div>
+      <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--stone);margin-bottom:6px">Estimated Cost</div>
+      <p style="margin:0">NPR {{ proposal.estimated_cost }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<div class="chair-card">
+  <div class="chair-card-head">Your Review</div>
+  <div style="padding:20px">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Update Status</label>
+        <select name="status">
+          {% for val,lbl in status_choices %}
+          <option value="{{ val }}" {% if proposal.status == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Chairperson Note (shown to citizen)</label>
+        <textarea name="chairperson_note" rows="4" placeholder="Provide feedback or reasoning...">{{ proposal.chairperson_note }}</textarea>
+      </div>
+      <button type="submit" class="chair-btn chair-btn-green">Save Review</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

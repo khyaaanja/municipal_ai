@@ -432,7 +432,16 @@ p  { line-height: 1.72; color: var(--text-2); }
   backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
   padding: 14px 20px;
   border-top: 1px solid rgba(255,255,255,0.07);
-  max-height: calc(100vh - 64px); overflow-y: auto;
+  /* 100vh on a phone is the height with the URL bar hidden, so the menu
+     believed it fitted, never turned on its own scrolling, and its last
+     links sat below the fold unreachable. dvh tracks the visible area; the
+     vh line stays as the fallback for browsers without it. */
+  max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Reaching the end of the menu must not start scrolling the page behind. */
+  overscroll-behavior: contain;
 }
 .mobile-menu a {
   display: block; color: rgba(255,255,255,0.58);

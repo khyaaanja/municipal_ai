@@ -61,6 +61,23 @@ class MobileMenuScrollLockTests(TestCase):
         self.assertIn("'Escape'", body)
         self.assertIn('closeMobileMenu', body)
 
+    def test_menu_height_tracks_the_visible_viewport(self):
+        """100vh on a phone excludes the URL bar, so the menu thought it fitted.
+
+        Without dvh the menu never enabled its own scrolling and its last
+        links sat below the fold with no way to reach them.
+        """
+        body = self.client.get('/').content.decode()
+        self.assertIn('calc(100dvh - 64px)', body)
+        # The vh line must stay as the fallback, and must come first.
+        self.assertIn('calc(100vh - 64px)', body)
+        self.assertLess(body.index('calc(100vh - 64px)'),
+                        body.index('calc(100dvh - 64px)'))
+
+    def test_menu_scroll_does_not_chain_to_the_page(self):
+        body = self.client.get('/').content.decode()
+        self.assertIn('overscroll-behavior: contain', body)
+
     def test_hamburger_reports_its_state(self):
         body = self.client.get('/').content.decode()
         self.assertIn('aria-expanded', body)

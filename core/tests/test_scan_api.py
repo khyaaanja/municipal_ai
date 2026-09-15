@@ -31,3 +31,19 @@ class ScanAPITest(TestCase):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
+
+    def test_scan_rejects_malformed_base64(self):
+        response = self.client.post(
+            "/api/scan/",
+            data=json.dumps({"image": "A" * 1000}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_scan_rejects_non_string_fields(self):
+        response = self.client.post(
+            "/api/scan/",
+            data=json.dumps({"image": {"encoded": "data"}, "question": ["identify"]}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)

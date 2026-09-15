@@ -47,6 +47,24 @@ def _unique_slug(model_cls, base_name, exclude_pk=None):
     return slug
 
 
+def _save_with_slug_retry(save_fn, slug_fn, max_attempts=5):
+    """
+    Call save_fn(slug) inside a savepoint, retrying up to max_attempts times
+    if a DB IntegrityError (duplicate slug) is raised. slug_fn(attempt) must
+    return a fresh slug candidate on each call.
+    """
+    from django.db import IntegrityError, transaction
+    for attempt in range(max_attempts):
+        slug = slug_fn(attempt)
+        try:
+            with transaction.atomic():
+                return save_fn(slug)
+        except IntegrityError:
+            if attempt == max_attempts - 1:
+                raise
+            continue
+
+
 # ── ATTRACTIONS ────────────────────────────────────────────────────────────
 
 @staff_required
@@ -68,9 +86,8 @@ def cms_attraction_form(request, pk=None):
             messages.error(request, 'Name is required.')
             return render(request, 'adminpanel/attraction_form.html', {'obj': obj, 'categories': categories})
 
-        data = dict(
+        base_data = dict(
             name=name,
-            slug=_unique_slug(Attraction, name, exclude_pk=pk),
             description=request.POST.get('description', ''),
             category_id=request.POST.get('category') or None,
             address=request.POST.get('address', ''),
@@ -85,12 +102,20 @@ def cms_attraction_form(request, pk=None):
             is_featured='is_featured' in request.POST,
         )
         if obj:
-            for k, v in data.items():
+            for k, v in base_data.items():
                 setattr(obj, k, v)
+            obj.slug = _unique_slug(Attraction, name, exclude_pk=pk)
             obj.save()
             messages.success(request, f'"{name}" updated.')
         else:
-            Attraction.objects.create(**data)
+            def _slug_fn(attempt):
+                base = _unique_slug(Attraction, name)
+                return f"{base}-{attempt}" if attempt else base
+
+            def _create_fn(slug):
+                return Attraction.objects.create(slug=slug, **base_data)
+
+            _save_with_slug_retry(_create_fn, _slug_fn)
             messages.success(request, f'"{name}" added.')
         return redirect('adminpanel:cms_attractions')
 

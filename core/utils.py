@@ -1,8 +1,81 @@
 import base64
 import hashlib
 import io
+import json
 import struct
 from django.core.cache import cache
+
+MAX_AI_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_AI_AUDIO_BYTES = 10 * 1024 * 1024
+
+
+def parse_structured_json(value, default=None):
+    """Parse a provider JSON object without guessing at missing or malformed data."""
+    if default is None:
+        default = {}
+    if not isinstance(value, str):
+        return default.copy() if isinstance(default, dict) else default
+    text = value.strip()
+    if text.startswith('```'):
+        parts = text.split('```')
+        if len(parts) < 3:
+            return default.copy() if isinstance(default, dict) else default
+        text = parts[1].strip()
+        if text.lower().startswith('json'):
+            text = text[4:].lstrip()
+    try:
+        parsed = json.loads(text)
+    except (TypeError, ValueError):
+        return default.copy() if isinstance(default, dict) else default
+    return parsed if isinstance(parsed, dict) else (default.copy() if isinstance(default, dict) else default)
+
+
+def decode_image_base64(image_data: str, max_bytes: int = MAX_AI_IMAGE_BYTES):
+    """Return decoded image bytes, or None for malformed/oversized/non-image input."""
+    if not isinstance(image_data, str):
+        return None
+    if ',' in image_data:
+        image_data = image_data.split(',', 1)[1]
+    try:
+        raw = base64.b64decode(image_data, validate=True)
+    except (ValueError, TypeError):
+        return None
+    if not raw or len(raw) > max_bytes:
+        return None
+    try:
+        from PIL import Image
+        with Image.open(io.BytesIO(raw)) as image:
+            image.verify()
+    except Exception:
+        return None
+    return raw
+
+
+def valid_uploaded_file(uploaded_file, max_bytes: int, content_prefix: str = '') -> bool:
+    """Apply the same size/type boundary checks to uploaded media."""
+    if not uploaded_file or uploaded_file.size > max_bytes:
+        return False
+    content_type = getattr(uploaded_file, 'content_type', '') or ''
+    return not content_prefix or content_type.startswith(content_prefix)
+
+
+def valid_uploaded_image(uploaded_file, max_bytes: int) -> bool:
+    """Validate an uploaded image by size, declared type, and decoded bytes."""
+    if not valid_uploaded_file(uploaded_file, max_bytes, 'image/'):
+        return False
+    try:
+        from PIL import Image
+        uploaded_file.seek(0)
+        with Image.open(uploaded_file) as image:
+            image.verify()
+        uploaded_file.seek(0)
+        return True
+    except Exception:
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+        return False
 
 
 def get_client_ip(request):

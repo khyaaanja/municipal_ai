@@ -10,7 +10,7 @@ def make_event(name='Bisket Jatra', **kw):
         description='A great festival.',
         category='festival',
         venue='Taumadhi Square',
-        start_date=(timezone.now() + timedelta(days=7)).date(),
+        start_date=timezone.now() + timedelta(days=7),
         is_active=True,
         is_free=True,
     )

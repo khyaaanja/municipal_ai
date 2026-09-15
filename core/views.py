@@ -1,3 +1,4 @@
+import base64
 import json
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -254,7 +255,10 @@ def map_pins_api(request):
 
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
-from core.utils import get_client_ip, compress_image_base64, image_hash
+from core.utils import (
+    MAX_AI_IMAGE_BYTES, compress_image_base64, decode_image_base64,
+    get_client_ip, image_hash,
+)
 
 
 @require_http_methods(["POST"])
@@ -279,8 +283,11 @@ def scan_api(request):
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({'error': 'Invalid request body'}, status=400)
 
-    image_data    = data.get('image', '')
-    user_question = data.get('question', '').strip()[:300]
+    image_data = data.get('image', '')
+    user_question = data.get('question', '')
+    if not isinstance(image_data, str) or not isinstance(user_question, str):
+        return JsonResponse({'error': 'Image and question must be strings'}, status=400)
+    user_question = user_question.strip()[:300]
 
     if not image_data:
         return JsonResponse({'error': 'No image provided'}, status=400)
@@ -288,8 +295,10 @@ def scan_api(request):
     if ',' in image_data:
         image_data = image_data.split(',', 1)[1]
 
-    if len(image_data) < 500:
+    raw_image = decode_image_base64(image_data, max_bytes=MAX_AI_IMAGE_BYTES)
+    if raw_image is None or len(raw_image) < 500:
         return JsonResponse({'error': 'Image too small or corrupt'}, status=400)
+    image_data = base64.b64encode(raw_image).decode('ascii')
 
     # Compress image to reduce token cost ~60%
     image_data = compress_image_base64(image_data, max_width=640)

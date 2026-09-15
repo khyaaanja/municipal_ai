@@ -58,6 +58,17 @@ def _owns(request, complaint, claim_token=''):
     return False
 
 
+def _confidence_band(coverage_ratio):
+    """Map query-term coverage onto something a citizen can read."""
+    if coverage_ratio >= 0.65:
+        return 'high'
+    if coverage_ratio >= 0.35:
+        return 'medium'
+    if coverage_ratio > 0:
+        return 'low'
+    return 'none'
+
+
 # --------------------------------------------------------------------------
 # Public
 # --------------------------------------------------------------------------
@@ -65,6 +76,7 @@ def _owns(request, complaint, claim_token=''):
 @tool('search_municipal_knowledge', auth=AUTH_NONE,
       rate_ip=60, rate_user=30, cacheable=True)
 def search_municipal_knowledge(request, query='', lang='en'):
+    from .retrieval import coverage as retrieval_coverage
     from .retrieval import search as retrieval_search
 
     query = _clean(query, 300)
@@ -72,10 +84,14 @@ def search_municipal_knowledge(request, query='', lang='en'):
         lang = 'en'
 
     rows = retrieval_search(query, limit=5)
+    best = retrieval_coverage(query, rows[0]) if rows else 0.0
     return {
         'passages': [{'title': r['title'], 'text': r['content']} for r in rows],
         'sources': sorted({r['source_type'] for r in rows if r['source_type']}),
         'found': bool(rows),
+        # A weak best match is still the best match, but the citizen should be
+        # told it is weak rather than shown it with full confidence.
+        'confidence': _confidence_band(best),
     }
 
 
@@ -170,13 +186,27 @@ def find_businesses(request, query='', category='', limit=MAX_ROWS):
 
 
 @tool('list_events', auth=AUTH_NONE, rate_ip=120, rate_user=60, cacheable=True)
-def list_events(request, limit=MAX_ROWS):
+def list_events(request, when='upcoming', limit=MAX_ROWS):
+    from datetime import timedelta
+
     from django.utils import timezone
     from events.models import Event
 
-    qs = (Event.objects
-          .filter(is_active=True, start_date__gte=timezone.now())
-          .order_by('start_date'))
+    now = timezone.now()
+    qs = Event.objects.filter(is_active=True).order_by('start_date')
+
+    if when == 'today':
+        end = now.replace(hour=23, minute=59, second=59)
+        qs = qs.filter(start_date__gte=now.replace(hour=0, minute=0, second=0),
+                       start_date__lte=end)
+    elif when == 'tomorrow':
+        start = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0)
+        qs = qs.filter(start_date__gte=start,
+                       start_date__lte=start.replace(hour=23, minute=59, second=59))
+    elif when == 'week':
+        qs = qs.filter(start_date__gte=now, start_date__lte=now + timedelta(days=7))
+    else:
+        qs = qs.filter(start_date__gte=now)
 
     return [{
         'name': e.name,

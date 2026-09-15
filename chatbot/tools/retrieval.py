@@ -78,13 +78,20 @@ def _useful(tokens):
     return [t for t in tokens if t not in STOPWORDS and len(t) > 1]
 
 
-def search(query, limit=5, chunks=None):
-    """Return up to `limit` chunks ranked by BM25 against the query."""
+def search(query, limit=5, chunks=None, with_scores=False):
+    """Return up to `limit` chunks ranked by BM25 against the query.
+
+    With `with_scores`, returns (chunk, score) pairs so the caller can turn
+    the ranking into something a citizen can act on — a weak best match is
+    worth flagging rather than presenting with the same certainty as a
+    strong one.
+    """
     from chatbot.models import KnowledgeChunk
 
     terms = _useful(expand(tokenize(query)))
     if not terms:
         return []
+
 
     if chunks is None:
         chunks = list(
@@ -93,6 +100,7 @@ def search(query, limit=5, chunks=None):
         )
     if not chunks:
         return []
+
 
     docs = []
     for chunk in chunks:
@@ -122,4 +130,20 @@ def search(query, limit=5, chunks=None):
             scored.append((score, chunk))
 
     scored.sort(key=lambda pair: pair[0], reverse=True)
-    return [chunk for _, chunk in scored[:limit]]
+    top = scored[:limit]
+    if with_scores:
+        return [(chunk, score) for score, chunk in top]
+    return [chunk for _, chunk in top]
+
+def coverage(query, chunk):
+    """Fraction of the query's meaningful terms present in a chunk.
+
+    Corpus-independent, unlike a raw BM25 score: the same answer scores the
+    same whether the knowledge base holds ten chunks or ten thousand, so it
+    is the honest basis for telling a citizen how sure the match is.
+    """
+    terms = set(_useful(expand(tokenize(query))))
+    if not terms:
+        return 0.0
+    present = set(_useful(tokenize(f"{chunk['title']} {chunk['content']}")))
+    return len(terms & present) / len(terms)

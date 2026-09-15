@@ -33,6 +33,8 @@ _ROUTES = [
     ('list_events', (
         'what events', 'upcoming events', 'events this', 'festival',
         'jatra', 'what is happening', "what's happening", 'events near',
+        'happening today', 'happening tomorrow', 'on today', 'events today',
+        'events',  # bare, so Nepali phrasing like 'आज के events छ' still routes
     )),
     ('list_public_notices', (
         'public notice', 'notices', 'tender', 'vacancy', 'job opening',
@@ -82,7 +84,19 @@ def route(message, claim_token=''):
     return None
 
 
+def _when_from(lowered):
+    if 'today' in lowered or 'tonight' in lowered or 'आज' in lowered:
+        return 'today'
+    if 'tomorrow' in lowered or 'भोलि' in lowered:
+        return 'tomorrow'
+    if 'this week' in lowered or 'this weekend' in lowered:
+        return 'week'
+    return 'upcoming'
+
+
 def _kwargs_for(name, lowered):
+    if name == 'list_events':
+        return {'when': _when_from(lowered)}
     if name == 'get_my_notifications':
         return {'unread_only': 'unread' in lowered}
     if name in ('find_businesses', 'find_attractions'):

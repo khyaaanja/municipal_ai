@@ -122,9 +122,11 @@ def _events(rows):
 def _notices(rows):
     out = ['**Public notices**', '']
     for n in rows:
-        ref = f" ({n['reference_no']})" if n['reference_no'] else ''
+        ref = f" ({n['reference_no']})" if n.get('reference_no') else ''
         deadline = f" · deadline {n['deadline']}" if n['deadline'] else ''
-        out.append(f"- **{n['title']}**{ref} — {n['type']}{deadline}")
+        title = (f"[{n['title']}]({n['source_url']})" if n.get('source_url')
+                 else f"**{n['title']}**")
+        out.append(f"- {title}{ref} — {n['type']}{deadline}")
     out += ['', '[All notices](/services/notices/)']
     return '\n'.join(out)
 

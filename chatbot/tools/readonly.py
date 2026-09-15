@@ -58,6 +58,21 @@ def _owns(request, complaint, claim_token=''):
     return False
 
 
+SOURCE_LINE = re.compile(r'Source:\s*(https?://\S+)')
+
+
+def _source_url(body):
+    match = SOURCE_LINE.search(body or '')
+    return match.group(1) if match else None
+
+
+def _public_reference(value):
+    value = (value or '').strip()
+    if not value or len(value) > 40 or '%' in value or '/' in value:
+        return None
+    return value
+
+
 def _confidence_band(coverage_ratio):
     """Map query-term coverage onto something a citizen can read."""
     if coverage_ratio >= 0.65:
@@ -232,7 +247,11 @@ def list_public_notices(request, notice_type='', limit=MAX_ROWS):
     return [{
         'title': n.title,
         'type': n.get_notice_type_display(),
-        'reference_no': n.reference_no,
+        # Imported notices use the source URL as their dedupe key, which is
+        # not a reference a citizen would ever quote. Only surface a value
+        # that actually reads like an official reference number.
+        'reference_no': _public_reference(n.reference_no),
+        'source_url': _source_url(n.body),
         'ward_number': n.ward_number,
         'deadline': n.deadline.isoformat() if n.deadline else None,
     } for n in qs[:_limit(limit)]]

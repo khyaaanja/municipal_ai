@@ -20,6 +20,7 @@ EMPTY = {
 }
 
 FOLLOWUPS = {
+    'search_municipal_knowledge': ['Tell me more', 'Who do I contact?'],
     'find_on_map': ['Show nearby restaurants', 'What else is close by?'],
     'mark_notifications_read': ['Show my complaints', 'Show my applications'],
     'draft_service_request': ['Yes, submit it', 'Change the details'],
@@ -268,7 +269,21 @@ def _marked_read(d):
     return f"Marked **{n}** notification(s) as read."
 
 
+
+def _knowledge(d):
+    out = []
+    for p in d['passages'][:3]:
+        out.append(f"**{p['title']}**")
+        out.append(p['text'])
+        out.append('')
+    if d.get('confidence') == 'medium':
+        out.append('_This is the closest match in the municipal records — '
+                   'check with the ward office if you need certainty._')
+    return '\n'.join(out).strip()
+
+
 _RENDERERS = {
+    'search_municipal_knowledge': _knowledge,
     'find_on_map': _on_map,
     'mark_notifications_read': _marked_read,
     'draft_service_request': _draft_service_request,

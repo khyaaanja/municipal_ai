@@ -5,6 +5,8 @@ the Django session. Nothing about a pending complaint is ever echoed to
 the client or passed through the model: the browser sees a summary, the
 server keeps the payload.
 """
+import re
+
 from .base import run_tool
 from .present import present
 from .router import COMPLAINT_REF, route
@@ -35,8 +37,20 @@ CIVIC_KEYWORDS = {
                        'footpath', 'pavement'),
 }
 
-REPORT_INTENT = ('report', 'complain', 'complaint', 'file a', 'there is a',
+REPORT_INTENT = ('report a', 'report the', 'complain', 'file a', 'there is a',
                  'there is', 'broken', 'gunaso', 'ujuri')
+
+
+
+def _has_report_intent(lowered):
+    """Word-boundary match.
+
+    Both ends matter. A leading boundary alone still let "complain" fire on
+    "list every complaint with phone numbers" — a request for data, not a
+    report — because "complaints" starts with "complain".
+    """
+    return any(re.search(rf'\b{re.escape(phrase)}\b', lowered)
+               for phrase in REPORT_INTENT)
 
 
 def _normalise(message):
@@ -96,7 +110,7 @@ def handle(request, message, claim_token=''):
     # Reporting a problem outranks a topic keyword. "garbage piling up near
     # the temple" is a sanitation complaint, not a request for temple
     # opening hours, and routing on 'temple' would lose the report.
-    reporting = detect_category(lowered) or any(k in lowered for k in REPORT_INTENT)
+    reporting = detect_category(lowered) or _has_report_intent(lowered)
 
     if not in_progress:
         routed = route(message, claim_token=claim_token)
@@ -109,7 +123,25 @@ def handle(request, message, claim_token=''):
                 return _with_intent(
                     present(name, run_tool(name, request, **kwargs)), name)
 
-    return _filing_flow(request, session, message, lowered)
+    handled = _filing_flow(request, session, message, lowered)
+    if handled is not None:
+        return handled
+
+    # Retrieval before the model: if the municipality has a verified answer,
+    # use it rather than paying for a generated one (sections 42-43). A weak
+    # match falls through, so the assistant never presents a poor retrieval
+    # hit as though it were an answer.
+    return _knowledge_fallback(request, message)
+
+
+def _knowledge_fallback(request, message):
+    result = run_tool('search_municipal_knowledge', request, query=message)
+    if not result.ok or not result.data.get('found'):
+        return None
+    if result.data.get('confidence') in (None, 'none', 'low'):
+        return None
+    return _with_intent(present('search_municipal_knowledge', result),
+                        'search_municipal_knowledge')
 
 
 def _with_intent(presented, intent):
@@ -131,7 +163,7 @@ def _filing_flow(request, session, message, lowered):
 
     if not started:
         category = detect_category(lowered)
-        wants_to_report = any(k in lowered for k in REPORT_INTENT)
+        wants_to_report = _has_report_intent(lowered)
         if not category and not wants_to_report:
             return None
         if not category:

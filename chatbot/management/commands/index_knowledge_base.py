@@ -61,11 +61,23 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--rebuild', action='store_true',
                             help='Delete existing chunks before indexing.')
+        parser.add_argument('--include-auto', action='store_true',
+                            help='Also index AI-generated entries (not municipal record).')
         parser.add_argument('--dry-run', action='store_true',
                             help='Report what would be written, change nothing.')
 
     def handle(self, *args, **options):
         entries = KnowledgeBase.objects.filter(is_active=True)
+        if not options['include_auto']:
+            # auto_generated rows are the assistant's own past answers, saved
+            # back by the self-learning path. Indexing them lets the assistant
+            # cite itself as municipal record, which sections 14 and 37 forbid.
+            excluded = entries.filter(auto_generated=True).count()
+            entries = entries.filter(auto_generated=False)
+            if excluded:
+                self.stdout.write(self.style.WARNING(
+                    f'Skipping {excluded} AI-generated entries '
+                    '(pass --include-auto to index them anyway).'))
         total = entries.count()
         if not total:
             self.stdout.write(self.style.WARNING(

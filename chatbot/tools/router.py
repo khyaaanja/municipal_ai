@@ -13,11 +13,12 @@ COMPLAINT_REF = re.compile(r'\b(BK-[A-Z0-9]{6})\b')
 
 # Nepali and romanised-Nepali forms sit alongside English: "mero" (my),
 # "gunaso" (complaint), "sifaris" (recommendation/application).
-_MINE = ('my ', 'mero ', 'mera ', 'i have', 'show me my')
+_MINE = ('my ', 'mero ', 'mera ', 'i have', 'show me my', 'मेरो', 'मेरा')
 
 _ROUTES = [
     ('get_my_complaints', (
         'my complaint', 'my complaints', 'mero gunaso', 'mero ujuri',
+        'मेरो गुनासो', 'मेरा गुनासो', 'मेरो उजुरी',
         'my reports', 'my issues', 'complaints i filed',
     )),
     ('get_my_service_requests', (
@@ -35,14 +36,16 @@ _ROUTES = [
         'jatra', 'what is happening', "what's happening", 'events near',
         'happening today', 'happening tomorrow', 'on today', 'events today',
         'events',  # bare, so Nepali phrasing like 'आज के events छ' still routes
+        'कार्यक्रम', 'जात्रा', 'चाडपर्व',
     )),
     ('list_public_notices', (
         'public notice', 'notices', 'tender', 'vacancy', 'job opening',
-        'suchana',
+        'suchana', 'सूचना', 'बोलपत्र', 'टेन्डर', 'सूचनाहरू',
     )),
     ('find_businesses', (
         'restaurant', 'where can i eat', 'hotel', 'shop', 'cafe',
         'khaja', 'food near',
+        'रेस्टुरेन्ट', 'खाना', 'होटल', 'पसल',
     )),
     ('mark_notifications_read', (
         'mark notifications read', 'mark all read', 'clear my notifications',
@@ -54,6 +57,7 @@ _ROUTES = [
     ('find_attractions', (
         'temple', 'heritage', 'museum', 'what to see', 'tourist',
         'durbar square', 'attraction', 'mandir',
+        'मन्दिर', 'दरबार', 'सम्पदा', 'घुम्न',
     )),
 ]
 

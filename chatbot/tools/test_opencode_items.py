@@ -113,3 +113,26 @@ class ConfidenceBandTests(Base):
         for q in ('tax', 'zzzz', 'citizenship certificate'):
             result = run_tool('search_municipal_knowledge', self.request(), query=q)
             self.assertIn(result.data['confidence'], ('high', 'medium', 'low', 'none'))
+
+
+class NepaliScriptRoutingTests(Base):
+    """Devanagari phrasing must route, not just romanised Nepali."""
+
+    def test_notices_in_devanagari(self):
+        self.assertEqual(route('सूचना हेर्न चाहन्छु')[0], 'list_public_notices')
+
+    def test_own_complaints_in_devanagari(self):
+        self.assertEqual(route('मेरो गुनासो')[0], 'get_my_complaints')
+
+    def test_attractions_in_devanagari(self):
+        self.assertEqual(route('मन्दिर घुम्न')[0], 'find_attractions')
+
+    def test_businesses_in_devanagari(self):
+        self.assertEqual(route('रेस्टुरेन्ट खोज्दै')[0], 'find_businesses')
+
+    def test_events_in_devanagari(self):
+        self.assertEqual(route('कार्यक्रम के छ')[0], 'list_events')
+
+    def test_devanagari_possessive_still_gates_private_tools(self):
+        """A bare topic word must not reach a per-citizen tool."""
+        self.assertIsNone(route('गुनासो कसरी दर्ता गर्ने'))

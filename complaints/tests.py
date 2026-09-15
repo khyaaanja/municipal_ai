@@ -1,4 +1,5 @@
 from django.test import TestCase, Client, override_settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from .models import Complaint
@@ -121,23 +122,75 @@ class ComplaintStatusTests(TestCase):
         self.assertNotContains(resp, '9800000000')
         self.assertNotContains(resp, 'secret@test.com')
 
-    def test_admin_notes_shown_always(self):
-        """admin_notes appear whenever they are set, regardless of status (improvement plan 1.2)."""
+    def test_public_status_hides_admin_notes(self):
+        """Internal municipality notes are never exposed on the public status page."""
         self.complaint.status = 'PENDING'
         self.complaint.save()
         resp = self.client.get(
             reverse('complaints:complaint_status', args=[self.complaint.complaint_id])
         )
-        self.assertContains(resp, 'Resolved after inspection.')
+        self.assertNotContains(resp, 'Resolved after inspection.')
 
-    def test_admin_notes_shown_resolved(self):
-        """admin_notes must appear when status is RESOLVED."""
+    def test_owner_status_shows_admin_notes(self):
+        """The authenticated complainant may see municipality notes."""
+        owner = User.objects.create_user(
+            email='owner@test.com', password='Test1234!', username='owner1',
+        )
+        self.complaint.user = owner
         self.complaint.status = 'RESOLVED'
         self.complaint.save()
+        self.client.force_login(owner)
         resp = self.client.get(
             reverse('complaints:complaint_status', args=[self.complaint.complaint_id])
         )
         self.assertContains(resp, 'Resolved after inspection.')
+
+    def test_public_status_hides_history_and_photos(self):
+        from .models import ComplaintStatusHistory, ComplaintPhoto
+        from PIL import Image
+        import io
+        image = io.BytesIO()
+        Image.new('RGB', (2, 2), 'red').save(image, format='PNG')
+        image.seek(0)
+        ComplaintStatusHistory.objects.create(
+            complaint=self.complaint, new_status='IN_REVIEW', note='Internal note',
+        )
+        ComplaintPhoto.objects.create(
+            complaint=self.complaint,
+            image=SimpleUploadedFile('evidence.png', image.read(), content_type='image/png'),
+        )
+        resp = self.client.get(
+            reverse('complaints:complaint_status', args=[self.complaint.complaint_id])
+        )
+        self.assertNotContains(resp, 'Internal note')
+        self.assertNotContains(resp, 'Submitted Photos')
+
+    def test_public_pdf_hides_internal_details(self):
+        from .models import ComplaintStatusHistory
+        ComplaintStatusHistory.objects.create(
+            complaint=self.complaint, new_status='IN_REVIEW', note='Internal PDF note',
+        )
+        resp = self.client.get(
+            reverse('complaints:complaint_pdf', args=[self.complaint.complaint_id])
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, 'Resolved after inspection.')
+        self.assertNotContains(resp, 'Internal PDF note')
+
+    def test_update_rejects_non_image_upload(self):
+        owner = User.objects.create_user(
+            email='update-owner@test.com', password='Test1234!', username='updateowner',
+        )
+        self.complaint.user = owner
+        self.complaint.save()
+        self.client.force_login(owner)
+        resp = self.client.post(
+            reverse('complaints:add_update', args=[self.complaint.complaint_id]),
+            {'message': 'Still blocked', 'photo': SimpleUploadedFile(
+                'payload.html', b'<script>alert(1)</script>', content_type='text/html'
+            )},
+        )
+        self.assertEqual(resp.status_code, 400)
 
 
 @override_settings(CACHES=CACHE_OVERRIDE)

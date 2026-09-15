@@ -75,7 +75,7 @@
 </div>
 {% endif %}
 
-{% if complaint.admin_notes %}
+{% if show_private and complaint.admin_notes %}
 <div class="section">
   <h2>Municipality Response</h2>
   <div style="background:#f9fafb;border-left:3px solid #C13B2A;padding:10px 14px;border-radius:4px;line-height:1.6;">
@@ -84,7 +84,7 @@
 </div>
 {% endif %}
 
-{% if history %}
+{% if show_private and history %}
 <div class="section">
   <h2>Status History</h2>
   {% for h in history %}
@@ -97,12 +97,12 @@
 </div>
 {% endif %}
 
-{% if photos %}
+{% if show_private and photos %}
 <div class="section no-print">
   <h2>Photos</h2>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
     {% for p in photos %}
-    <img src="{{ p.image.url }}" alt="Complaint photo" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid #e5e7eb;">
+    <img src="{% url 'complaints:complaint_photo' complaint.complaint_id p.id %}" alt="Complaint photo" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid #e5e7eb;">
     {% endfor %}
   </div>
 </div>

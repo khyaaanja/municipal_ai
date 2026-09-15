@@ -136,14 +136,20 @@ def search(query, limit=5, chunks=None, with_scores=False):
     return [chunk for _, chunk in top]
 
 def coverage(query, chunk):
-    """Fraction of the query's meaningful terms present in a chunk.
+    """Fraction of the question's own words this chunk addresses.
 
-    Corpus-independent, unlike a raw BM25 score: the same answer scores the
-    same whether the knowledge base holds ten chunks or ten thousand, so it
-    is the honest basis for telling a citizen how sure the match is.
+    Counted over the words the citizen actually typed, not the expanded set.
+    Expansion turns "कर" into four alternatives, and a chunk will rarely
+    contain all of them — scoring against the expansion made a good match
+    look like a poor one purely because the query had been broadened.
+    Each original word counts as covered if any of its alternatives appear.
     """
-    terms = set(_useful(expand(tokenize(query))))
-    if not terms:
+    originals = _useful(tokenize(query))
+    if not originals:
         return 0.0
     present = set(_useful(tokenize(f"{chunk['title']} {chunk['content']}")))
-    return len(terms & present) / len(terms)
+    matched = sum(
+        1 for term in originals
+        if term in present or any(alt in present for alt in BILINGUAL.get(term, ()))
+    )
+    return matched / len(originals)

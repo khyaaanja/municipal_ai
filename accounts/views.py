@@ -79,9 +79,12 @@ def login_page(request):
             cache.delete(attempts_key)
             # Enforce email verification for citizen accounts
             if not user.is_email_verified and user.role == 'citizen':
+                # The message stays plain text and the template renders the
+                # link. Markup here is escaped on output — correctly — so the
+                # citizen saw the raw <a> tag instead of something clickable.
                 return render(request, 'accounts/login.html', {
-                    'error': 'Please verify your email before logging in. '
-                             '<a href="/resend-verification/">Resend verification email →</a>',
+                    'error': 'Please verify your email before logging in.',
+                    'show_resend_verification': True,
                     'next': request.POST.get('next', ''),
                 })
             login(request, user)

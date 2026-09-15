@@ -7,7 +7,7 @@
 <p class="auth-sub">Sign in to your Bhaktapur City account</p>
 
 {% if error %}
-<div class="error-box" id="error-box">{{ error }}</div>
+<div class="error-box" id="error-box">{{ error }}{% if show_resend_verification %} <a href="{% url 'accounts:resend_verification' %}">Resend verification email →</a>{% endif %}</div>
 {% endif %}
 
 <form method="post" id="login-form">

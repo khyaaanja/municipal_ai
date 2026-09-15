@@ -75,13 +75,42 @@ PROBE_WORDS = (
 )
 
 
+# A run of ASCII digits with optional separators is a figure, not letters.
+# Preeti's unshifted number row carries consonants, so "7,500.00" would
+# otherwise convert to "ठ,छ००.००" — a garbled amount in a fee schedule.
+# Bounded by non-letters, because a digit flanked by Preeti consonants is a
+# consonant itself: "j8f" is वडा, not "v8a". And a lone digit is ambiguous,
+# so a figure must be two digits or carry a separator.
+# A trailing comma does not make a figure: "6," in "O{G6/g]6," is the letter
+# ट. Thousands separators must sit between digit groups, and a matra before
+# the digit means we are mid-word, not at a number.
+_NUMERIC_RUN = re.compile(
+    r"(?<![A-Za-z\]\['\"}{])"
+    r'(?:\d{1,3}(?:,\d{2,3})+(?:\.\d+)?|\d+\.\d+|\d{2,})'
+    r'(?![A-Za-z])')
+_SENTINEL = '\uE000'
+
+
 def convert(text):
     """Return Unicode Devanagari for Preeti-encoded `text`."""
     if not text:
         return ''
     table = dict(SINGLE)
     table.update(MULTI)
+
+    # Lift figures out before conversion, then put them back as Devanagari
+    # digits. Protecting them afterwards is impossible: by then the digits
+    # have already become consonants and are indistinguishable from letters.
+    figures = []
+
+    def _stash(match):
+        figures.append(match.group(0))
+        return _SENTINEL
+
+    text = _NUMERIC_RUN.sub(_stash, text)
     out = _TOKEN.sub(lambda m: table[m.group(0)], text)
+    for figure in figures:
+        out = out.replace(_SENTINEL, figure.translate(_ASCII_TO_DEV), 1)
     out = _I_MATRA.sub(r'\1ि', out)
     out = _REPH.sub(r'र्\1\2', out)
     out = _DIGIT_CONTEXT.sub('१', out)

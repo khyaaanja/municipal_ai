@@ -39,6 +39,19 @@ class ConversionTests(TestCase):
         self.assertEqual(convert('?=10'), 'रु.१०')
         self.assertEqual(convert('1fg'), 'ज्ञान')
 
+    def test_figures_survive_conversion(self):
+        """The unshifted digit row is consonants, so figures need protecting."""
+        self.assertEqual(convert('7,500।00'), '७,५००।००')
+        self.assertEqual(convert('ax fn s/ 7,500.00'), 'बह ाल कर ७,५००.००')
+
+    def test_digit_flanked_by_consonants_stays_a_consonant(self):
+        """"j8f" is वडा: the 8 is ड, not the digit 8."""
+        self.assertEqual(convert('j8f ;lrj'), 'वडा सचिव')
+        self.assertEqual(convert('1fg'), 'ज्ञान')
+
+    def test_trailing_comma_does_not_make_a_figure(self):
+        self.assertEqual(convert('O{G6/g]6,'), 'ईन्टरनेट,')
+
     def test_empty_input(self):
         self.assertEqual(convert(''), '')
         self.assertEqual(convert(None), '')

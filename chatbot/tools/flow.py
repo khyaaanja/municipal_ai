@@ -23,23 +23,43 @@ AFFIRMATIVE = {
 }
 NEGATIVE = {'no', 'n', 'nope', 'cancel', 'stop', 'never mind', 'nevermind', 'chaina'}
 
+# English, romanised Nepali and Devanagari. The Devanagari forms were missing,
+# so a resident writing in the script the municipality itself publishes in
+# could not report a problem by describing it.
 CIVIC_KEYWORDS = {
     'ROAD': ('pothole', 'broken road', 'road damage', 'bad road', 'road repair',
-             'sadak'),
+             'sadak', 'सडक', 'खाल्डो', 'बाटो'),
     'SANITATION': ('garbage', 'trash', 'waste', 'litter', 'dirty street',
-                   'rubbish', 'fohor'),
+                   'rubbish', 'fohor', 'फोहोर', 'कसिंगर', 'फोहर'),
     'WATER': ('water leak', 'no water', 'water cut', 'dirty water', 'water pipe',
-              'water supply', 'pani'),
+              'water supply', 'pani', 'पानी', 'धारा', 'खानेपानी'),
     'ELECTRICITY': ('power cut', 'no electricity', 'blackout', 'power failure',
-                    'streetlight', 'street light', 'batti'),
-    'NOISE': ('loud noise', 'noise pollution', 'noisy'),
+                    'streetlight', 'street light', 'batti', 'बत्ती',
+                    'बिजुली', 'लाइट'),
+    'NOISE': ('loud noise', 'noise pollution', 'noisy', 'हल्ला', 'ध्वनि'),
     'INFRASTRUCTURE': ('broken bridge', 'drainage', 'sewer', 'blocked drain',
-                       'footpath', 'pavement'),
+                       'footpath', 'pavement', 'ढल', 'पुल', 'नाली'),
 }
 
 REPORT_INTENT = ('report a', 'report the', 'complain', 'file a', 'there is a',
                  'there is', 'broken', 'gunaso', 'ujuri')
 
+
+
+# "when is garbage collected" names a category but asks a question about the
+# service. Starting a complaint there answers a question with a form.
+ASKING_EN = re.compile(
+    r'^\s*(?:when|what|which|where|how|who|why|is|are|does|do|can|could)\b')
+
+# Matched as plain substrings: Python's \b is defined by \w boundaries and
+# does not reliably separate Devanagari words, so anchoring on it silently
+# failed and "फोहोर कहिले उठाउँछ" opened a complaint instead of
+# answering the question.
+ASKING_NE = ('कहिले', 'कसरी', 'कहाँ', 'कति', 'के हो', 'को हो')
+
+
+def _is_a_question(lowered):
+    return bool(ASKING_EN.search(lowered)) or any(w in lowered for w in ASKING_NE)
 
 
 def _has_report_intent(lowered):
@@ -110,7 +130,12 @@ def handle(request, message, claim_token=''):
     # Reporting a problem outranks a topic keyword. "garbage piling up near
     # the temple" is a sanitation complaint, not a request for temple
     # opening hours, and routing on 'temple' would lose the report.
-    reporting = detect_category(lowered) or _has_report_intent(lowered)
+    # A category word alone is not a report. An explicit reporting verb still
+    # wins, so "when did you fix it" stays a question but "report a broken
+    # streetlight" is still a report.
+    reporting = _has_report_intent(lowered) or (
+        bool(detect_category(lowered)) and not _is_a_question(lowered)
+    )
 
     if not in_progress:
         routed = route(message, claim_token=claim_token)
@@ -164,6 +189,10 @@ def _filing_flow(request, session, message, lowered):
     if not started:
         category = detect_category(lowered)
         wants_to_report = _has_report_intent(lowered)
+        # Same rule as the caller: a category word inside a question is a
+        # question. "When is garbage collected" must not open a complaint.
+        if category and not wants_to_report and _is_a_question(lowered):
+            return None
         if not category and not wants_to_report:
             return None
         if not category:

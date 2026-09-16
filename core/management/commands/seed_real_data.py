@@ -39,7 +39,7 @@ ATTRACTIONS = [
         "opening_hours": "7:00 AM – 7:00 PM daily",
         "entry_fee":     1500, "is_free": False,
         "is_featured":   True,
-        "phone":         "+977-1-6610000",
+        "phone":         "977-01-6613957",
     },
     {
         "name":          "Nyatapola Temple",

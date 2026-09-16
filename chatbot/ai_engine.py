@@ -10,6 +10,7 @@ from django.utils import timezone
 from core.utils import MAX_AI_IMAGE_BYTES, decode_image_base64, parse_structured_json
 
 import threading as _threading
+from core import contacts
 
 _groq_client = None
 _groq_client_lock = _threading.Lock()
@@ -1627,7 +1628,7 @@ mid-list. If you are running long, close the current point cleanly and stop — 
             "🎟 **Entry Fee** — NPR 1,500 for foreign visitors (covers all three squares).\n\n"
             "🕐 **Hours** — Durbar Square: 7AM–7PM. Temples vary.\n\n"
             "🚨 **Emergency** — Police: 100 | Ambulance: 102 | "
-            "Tourist Police: +977-1-4247041 | Municipality: +977-1-6610000\n\n"
+            f"Tourist Police: +977-1-4247041 | Municipality: {contacts.PHONES}\n\n"
             "Please try again in a moment."
         )
 

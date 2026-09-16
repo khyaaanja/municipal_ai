@@ -10,6 +10,7 @@ from django.db import transaction
 from django.db.models import F
 import json
 from .models import Product, Cart, CartItem, Order, OrderItem
+from core import contacts
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def _send_order_confirmation(order, items):
         f"Total        : NPR {order.total_amount:,.0f}\n"
         f"Payment      : Cash on Delivery\n\n"
         f"Delivery address:\n{order.delivery_address}\n\n"
-        f"Questions? Call +977-1-6610000 or reply to this email.\n\n"
+        f"Questions? Call {contacts.PHONES} or reply to this email.\n\n"
         f"Bhaktapur Heritage Store\n"
         f"Bhaktapur Municipality Platform"
     )

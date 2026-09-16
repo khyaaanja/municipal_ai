@@ -1,6 +1,7 @@
 from celery import shared_task
 import logging
 import json
+from core import contacts
 
 logger = logging.getLogger(__name__)
 
@@ -276,7 +277,7 @@ def send_complaint_notification_async(complaint_log_id: int):
                 f"Track your complaint:\n"
                 f"{site_url}/complaint/track/?id={complaint.complaint_id}\n\n"
                 f"Bhaktapur Municipal AI Platform\n"
-                f"Municipality Office: +977-1-6610000"
+                f"Municipality Office: {contacts.PHONES}"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=recipients,

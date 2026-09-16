@@ -137,3 +137,94 @@ simultaneous citizens.
 This is why the tool layer matters more than the model: it answers from
 municipal records at no token cost, so the questions that exhaust the quota
 are only the open-ended ones.
+
+---
+
+# Retrieval: what the questions could not reach
+
+Probing the assistant as a tourist found 7 of 18 questions unanswered. Only
+three of those were missing content. The rest were material already indexed
+that the words of a normal question could not reach.
+
+## The matcher only stemmed one of its two languages
+
+`_stem()` trimmed Nepali case endings and did nothing to English. So the
+index held the words and the query held the same words in another form:
+
+| Question | Indexed text | Matched |
+|---|---|---|
+| "where can I **eat**" | "avoid **eating** near temples" | no |
+| "where can I eat" | "best **restaurants** near Durbar Square" | no |
+| "building permit **fees**" | "**fee**" | no |
+| "**taxes**" | "**tax**" | no |
+
+`search()` has no minimum score — it returns anything scoring above zero — so
+"where can I eat" returned *nothing at all*. Not a weak answer. Nothing,
+against a chunk that names five local dishes and where to eat them.
+
+English inflections are now trimmed the same way Nepali endings are. The
+rule is deliberately crude, because both the question and the document go
+through it: agreeing with itself matters more than being right about
+English. `buses` → `buse` is wrong and still matches another `buses`.
+
+## Nepali stemming did not converge, so the two forms never met
+
+This was the older bug, and worse, because the tests claimed it was fixed.
+
+```
+नगरपालिकाको  → (strip को) → नगरपालिका     # stops here
+नगरपालिका    → (strip का) → नगरपालि       # different answer
+```
+
+Stripping once meant a word's inflected and bare forms landed on different
+strings. A question about the municipality could not reach a document naming
+it — the exact failure the stemmer was written to prevent. The test asserted
+`tokenize('नगरपालिकाको') == ['नगरपालिका']`, which passed while the property
+that mattered was false.
+
+Stemming now repeats to a fixed point, and the test asserts what the
+docstring always claimed: that the two forms agree, not that either equals a
+particular string.
+
+## BM25 rank is not "answers the question"
+
+With English stemming on, `घर नक्सा पास कसरी गर्ने` ("how do I get a house
+map approved") started returning a hotel listing, because the listing
+repeats a common word often and BM25 rewards that. The Act that sets the
+building-permit fee was still retrieved — at rank two, with **twice** the
+question's words covered.
+
+`search()` now reconsiders its top 8 candidates by coverage before cutting
+to `limit`. Across 28 probed questions this improved 2 and worsened none;
+mean coverage 0.774 → 0.804.
+
+## Synonyms buy reach and cost precision
+
+Worth keeping only where measured. Two of the groups first written had to be
+withdrawn:
+
+| Group | Effect | Kept |
+|---|---|---|
+| stay/overnight/hotel → accommodation | "where to stay" 0.00 → 1.00 | yes |
+| eat/food/dining → restaurant | "where can I eat" 0.00 → 1.00 | yes |
+| wear/clothing/modest → dress | dress-code question 0.50 → 1.00 | yes |
+| fee → **entry, ticket** | pulled the tourist entry-fee page over the Act on *any* fee question | **no** |
+| temple → shrine, pagoda, monument | lifted temple-named pages over the page that answers | **no** |
+
+This is the third time a synonym has cost more than it bought — `व्यवसाय` →
+`shop` did it earlier by pulling a shopping guide above the tax Act. Every
+group added here was checked in both directions before being kept.
+
+## Still missing: content, not vocabulary
+
+These return nothing because nothing is indexed. They are not retrieval
+bugs and must not be filled with plausible text — a wrong toilet location or
+an invented accessibility claim is worse than an honest refusal.
+
+- public toilets
+- ATMs / card payment / currency exchange
+- wheelchair and step-free access
+- solo-travel safety
+- activities for children
+
+Each needs a source from the municipality before it is written down.

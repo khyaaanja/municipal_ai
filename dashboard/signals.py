@@ -2,6 +2,7 @@ import logging
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from core import contacts
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ def notify_complaint_status_change(sender, instance, created, **kwargs):
                 f"{status_labels.get(instance.new_status, instance.new_status)}\n\n"
                 f"Track: {getattr(settings, 'SITE_URL', 'http://localhost:8000')}"
                 f"/complaint/track/?id={complaint.complaint_id}\n\n"
-                f"Bhaktapur Municipality +977-1-6610000"
+                f"Bhaktapur Municipality {contacts.PHONES}"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=recipients,

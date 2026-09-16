@@ -5,6 +5,7 @@ Run:  python manage.py seed_knowledge
 import time
 import requests
 from django.core.management.base import BaseCommand
+from core import contacts
 
 WIKI_REST = "https://en.wikipedia.org/api/rest_v1/page/summary/{}"
 HEADERS   = {"User-Agent": "BhaktapurMunicipalAI/1.0 (contact@bhaktapur.gov.np)"}
@@ -52,7 +53,7 @@ KNOWLEDGE_ENTRIES = [
     ("emergency", "Emergency Contacts Bhaktapur", None,
      "Police (Nepal): 100 | Fire: 101 | Ambulance: 102 | "
      "Tourist Police Bhaktapur: +977-1-4247041 | "
-     "Bhaktapur Municipality: +977-1-6610000 | "
+     "Bhaktapur Municipality: " + contacts.PHONES + " | "
      "Bhaktapur Hospital: +977-1-6610798 | "
      "Embassy (US): +977-1-4234000",
      10),

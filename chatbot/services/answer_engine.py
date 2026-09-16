@@ -27,6 +27,7 @@ from django.core.cache import cache
 
 from groq import APIError, APITimeoutError, RateLimitError
 from .response_contract import answer_engine_response
+from core import contacts
 
 _QUERY_STOPWORDS = {
     'a', 'an', 'and', 'are', 'about', 'can', 'do', 'does', 'for', 'how',
@@ -40,13 +41,21 @@ CIRCUIT_KEY = "groq_circuit_open"
 CIRCUIT_TIMEOUT = 60  # seconds
 CONFIDENCE_THRESHOLD = 0.30  # cosine similarity — lower bound for extractive answers
 
+# The reply a citizen gets when the assistant has nothing. It used to give
+# out an unverified phone number and place the office at Dattatreya Square,
+# neither of which the municipality publishes. Someone who has already failed
+# to get an answer here is exactly the person who will act on whatever this
+# says, so it now carries only what bhaktapurmun.gov.np states, and sends an
+# emergency to the emergency services rather than to an office switchboard.
 NO_INFO_MESSAGE = (
     "माफ गर्नुहोस्, यस विषयमा अहिले जानकारी उपलब्ध छैन। "
-    "कृपया फेरि प्रयास गर्नुहोस् वा भक्तपुर नगरपालिका कार्यालयमा सम्पर्क गर्नुहोस्: "
-    "+977-1-6610000।\n\n"
+    "कृपया भक्तपुर नगरपालिका कार्यालयमा सम्पर्क गर्नुहोस्: "
+    f"{contacts.PHONES_NE} ({contacts.EMAIL})।\n"
+    f"{contacts.EMERGENCY_LINE_NE}\n\n"
     "Sorry, I don't have confident information on this right now. "
-    "Please try again shortly or contact the Bhaktapur Municipality office directly: "
-    "+977-1-6610000, or visit Dattatreya Square, Bhaktapur."
+    "Please contact the Bhaktapur Municipality office directly: "
+    f"{contacts.PHONES} ({contacts.EMAIL}), or see {contacts.WEBSITE}.\n"
+    f"{contacts.EMERGENCY_LINE_EN}"
 )
 
 
@@ -530,7 +539,7 @@ class AnswerEngine:
 
         lines.append(
             "\n\n_(Answered from local records — the live AI service is temporarily unavailable. "
-            "For urgent help, call the municipality: +977-1-6610000.)_"
+            "For urgent help, call the municipality: " + contacts.PHONES + ".)_"
         )
         return "\n".join(lines)
 

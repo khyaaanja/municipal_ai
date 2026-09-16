@@ -752,7 +752,7 @@ class Command(BaseCommand):
         from chatbot.models import KnowledgeBase
         entries = [
             ('emergency', 'Emergency Contacts',
-             'Police: 100 | Fire Brigade: 101 | Ambulance: 102 | Tourist Police: +977-1-4247041 | Bhaktapur Municipality: +977-1-6610000 | Hospital: Bhaktapur Hospital +977-1-6610798'),
+             'Police: 100 | Fire Brigade: 101 | Ambulance: 102 | Tourist Police: +977-1-4247041 | Bhaktapur Municipality: 977-01-6613957 / 977-01-6610096 | Hospital: Bhaktapur Hospital +977-1-6610798'),
             ('transport', 'Getting Around Bhaktapur',
              'Bhaktapur is 16km from Kathmandu. Take Bus No.1 or microbus from Koteshwor/Kalanki (NPR 20-30). Electric tempos run within the city (NPR 15). Taxis available, negotiate price. The old city is best explored on foot. Rickshaws available near Durbar Square.'),
             ('rules', 'Visitor Guidelines',

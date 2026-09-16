@@ -17,6 +17,7 @@ from django.utils import timezone as tz
 from core.utils import get_client_ip
 from core.utils import MAX_AI_IMAGE_BYTES, valid_uploaded_image
 from core.analytics import track
+from core import contacts
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ def _send_complaint_confirmation(complaint):
         f"{claim_section}\n"
         f"We aim to respond within 5 working days.\n\n"
         f"Bhaktapur Municipality\n"
-        f"Tel: +977-1-6610000"
+        f"Tel: {contacts.PHONES}"
     )
     send_mail(
         subject=f'[{complaint.complaint_id}] Complaint Received — Bhaktapur Municipality',
@@ -77,7 +78,7 @@ def _send_status_update_email(complaint, old_status, new_status):
     body += (
         f"\nTrack your complaint: https://bhaktapur.gov.np/complaint/track/\n\n"
         f"Bhaktapur Municipality\n"
-        f"Tel: +977-1-6610000\n\n"
+        f"Tel: {contacts.PHONES}\n\n"
         f"---\n"
         f"You're receiving this because you submitted a complaint to Bhaktapur Municipality.\n"
         f"To opt out of status update emails, reply with 'UNSUBSCRIBE {complaint.complaint_id}'."

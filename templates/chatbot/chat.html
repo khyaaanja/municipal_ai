@@ -529,13 +529,28 @@ const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
 const welcomeState = document.getElementById('welcomeState');
 const sourceLabels = {
-  'attractions_db': '🏛️ Attractions DB',
-  'events_db': '🎪 Events DB',
-  'businesses_db': '🏪 Businesses DB',
+  'attractions_db': '🏛️ Attractions',
+  'events_db': '🎪 Events',
+  'businesses_db': '🏪 Businesses',
   'marketplace_db': '🛍️ Marketplace',
-  'knowledge_base': '📚 Knowledge Base',
-  'news_db': '📰 News DB',
+  'city_database': '🗂 City records',
+  'knowledge_base': '📚 Municipal records',
+  'news_db': '📰 News',
 };
+
+// Answers served straight from a municipal record are quoted; everything
+// else is written by the model with those records in front of it. Only the
+// first kind can carry a figure the municipality actually published, so the
+// two must not look alike.
+const QUOTED_INTENTS = new Set([
+  'search_municipal_knowledge', 'find_attractions', 'find_businesses',
+  'find_on_map', 'list_events', 'list_public_notices', 'get_complaint_status',
+  'get_my_complaints', 'get_my_service_requests', 'get_my_proposals',
+  'get_my_notifications', 'mark_notifications_read', 'draft_complaint',
+  'confirm_complaint', 'draft_service_request', 'confirm_service_request',
+  'draft_proposal', 'confirm_proposal', 'complaint_filing',
+  'submission_cancelled',
+]);
 
 function newChat() {
   conversationId = null;
@@ -644,6 +659,11 @@ function addMessage(role, content, sources = [], metadata = {}) {
   }
   if (metadata.source_note) {
     sourcesHTML += `<div class="msg-source-note">${escapeHtml(metadata.source_note)}</div>`;
+  }
+  if (role === 'assistant' && metadata.intent && !QUOTED_INTENTS.has(metadata.intent)) {
+    sourcesHTML += `<div class="msg-source-note">Written by the assistant using city data. `
+                 + `Confirm any fee, date or phone number against `
+                 + `<a href="/services/notices/">municipal records</a> before relying on it.</div>`;
   }
 
   const feedbackHTML = role === 'assistant' ? `

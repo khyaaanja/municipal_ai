@@ -68,11 +68,53 @@ class LocalRetrieverAdapter:
         self.semantic_hits = semantic_hits or []
 
     def retrieve(self, query: str, top_k: int = 5) -> list:
-        """Return a list of LocalChunk objects with `.text` and `.score`."""
+        """Return a list of LocalChunk objects with `.text` and `.score`.
+
+        Indexed municipal documents come first. Without them the fallback saw
+        only the keyword retriever's output, so "how many complaints are
+        pending" came back as Bisket Jatra festival text under the heading
+        "Based on our municipal records" — and questions the documents do
+        answer, like the business tax rate, came back as no information.
+        """
+        chunks = self._municipal_chunks(query, top_k)
         city_data = self.retriever.retrieve(query, semantic_hits=self.semantic_hits)
-        return self.chunks_from_city_data(
+        chunks += self.chunks_from_city_data(
             city_data, semantic_hits=self.semantic_hits, query=query, top_k=top_k
         )
+        return chunks[:top_k]
+
+    @staticmethod
+    def _municipal_chunks(query: str, top_k: int) -> list:
+        """Top hits from the same index the assistant's tools search.
+
+        Scored by how much of the question each passage covers, so a passage
+        that shares nothing with the question scores zero and is dropped
+        rather than presented as an answer.
+        """
+        try:
+            from chatbot.tools.retrieval import coverage, search
+        except Exception:
+            return []
+
+        # Matches the bar the assistant's own tools use. One word in three is
+        # not an answer: at 0.33 "how many complaints are pending" returned
+        # festival text under the heading "Based on our municipal records".
+        MIN_COVERAGE = 0.35
+
+        out = []
+        try:
+            for row in search(query, limit=top_k):
+                score = coverage(query, row)
+                if score < MIN_COVERAGE:
+                    continue
+                out.append(LocalChunk(
+                    text=row['content'], score=score, title=row['title'],
+                    source='municipal_document', citation=row['title'],
+                ))
+        except Exception:
+            logger.exception('municipal retrieval failed in fallback')
+            return []
+        return out
 
     @classmethod
     def chunks_from_city_data(cls, city_data: dict, semantic_hits: list = None,
@@ -191,6 +233,22 @@ class LocalRetrieverAdapter:
             else:
                 parts.append(str(val))
         return ' | '.join(parts)
+
+
+# A passage must address at least this much of the question before it can be
+# offered as the municipality's answer.
+ANSWER_COVERAGE_MIN = 0.35
+
+
+def _covers_question(query: str, chunk) -> float:
+    """Fraction of the question's words this chunk addresses, either language."""
+    try:
+        from chatbot.tools.retrieval import coverage
+        return coverage(query, {'title': getattr(chunk, 'title', '') or '',
+                                'content': getattr(chunk, 'text', '') or ''})
+    except Exception:
+        logger.exception('coverage check failed; treating as uncovered')
+        return 0.0
 
 
 class LocalChunk:
@@ -356,14 +414,20 @@ class AnswerEngine:
         if not local_chunks or local_chunks[0].score < self.confidence_threshold:
             return response_factory(NO_INFO_MESSAGE, 'none', True)
         best = local_chunks[0]
-        lexical_overlap = LocalRetrieverAdapter._query_overlap(query, best.text)
+        # How much of the question this passage actually addresses, counted
+        # over the asker's own words and across languages. The previous gate
+        # was an 8% lexical overlap, which almost nothing failed: "how many
+        # complaints are pending" cleared it on festival text and was served
+        # as "Based on our municipal records". Being one-directional, it also
+        # rejected the tax Act for an English question about the tax Act.
+        answered = _covers_question(query, best)
         semantic_match = (
             getattr(best, 'source', '') == 'semantic_search'
             and best.score >= max(self.confidence_threshold, 0.55)
         )
         if (
             self.confidence_threshold >= CONFIDENCE_THRESHOLD
-            and lexical_overlap < 0.08
+            and answered < ANSWER_COVERAGE_MIN
             and not semantic_match
         ):
             return response_factory(NO_INFO_MESSAGE, 'none', True)

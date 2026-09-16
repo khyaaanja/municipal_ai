@@ -79,6 +79,14 @@ STOPWORDS = {
     'and', 'or', 'i', 'my', 'me', 'do', 'how', 'what', 'where', 'when',
     'can', 'you', 'please', 'it', 'this', 'that', 'with', 'at', 'be',
     'हो', 'छ', 'को', 'मा', 'र', 'के', 'कसरी', 'लाई', 'बाट',
+
+    # Conversational filler. "Tell me about Nyatapola" is a question about
+    # Nyatapola; counting "tell" and "about" as content made a perfect match
+    # score one word in three.
+    'tell', 'about', 'know', 'want', 'need', 'give', 'show', 'find', 'get',
+    'looking', 'could', 'would', 'should', 'many', 'much', 'any', 'some',
+    'there', 'here', 'does', 'did', 'has', 'have', 'from', 'more', 'like',
+    'भन्नुहोस्', 'चाहन्छु', 'दिनुहोस्', 'बारे',
 }
 
 

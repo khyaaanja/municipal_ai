@@ -1,0 +1,101 @@
+"""Retrieval must work from either language.
+
+The municipal documents are all Devanagari and BILINGUAL was written
+Nepali-first, so English questions scored zero against them: "business tax"
+could not reach the Act that sets the business tax rate.
+"""
+from django.test import TestCase
+
+from chatbot.models import KnowledgeChunk
+from chatbot.tools.retrieval import BILINGUAL, ENGLISH_TO_NEPALI, coverage, equivalents, search
+
+
+class ReverseIndexTests(TestCase):
+    def test_reverse_index_is_derived_from_the_forward_one(self):
+        for nepali, english_terms in BILINGUAL.items():
+            for english in english_terms:
+                self.assertIn(nepali, ENGLISH_TO_NEPALI[english], english)
+
+    def test_equivalents_work_in_both_directions(self):
+        self.assertIn('tax', equivalents('कर'))
+        self.assertIn('कर', equivalents('tax'))
+
+    def test_unknown_word_has_no_equivalents(self):
+        self.assertEqual(equivalents('zzzzq'), ())
+
+    def test_business_is_not_mapped_to_shop(self):
+        """'shop' pulled a shopping guide above the Act setting business tax."""
+        self.assertNotIn('shop', BILINGUAL['व्यवसाय'])
+
+
+class CrossLanguageRetrievalTests(TestCase):
+    def setUp(self):
+        KnowledgeChunk.objects.create(
+            source_type='rules', title='आर्थिक ऐन (कर तथा शुल्क)',
+            content='व्यवसाय तथा उद्योग करः भक्तपुर नगरपालिका क्षेत्रभित्र व्यापार, '
+                    'व्यवसाय वा उद्योग सेवामा कर लगाइनेछ । बहाल कर र सम्पत्ति कर पनि '
+                    'अनुसूची बमोजिम असूल गरिनेछ ।',
+            is_active=True)
+        KnowledgeChunk.objects.create(
+            source_type='general', title='Shopping & Handicrafts',
+            content='Bhaktapur shops sell pottery, thangka and handicrafts to visitors.',
+            is_active=True)
+
+    def top(self, query):
+        hits = search(query, limit=1)
+        return hits[0]['title'] if hits else None
+
+    def test_english_question_reaches_the_nepali_act(self):
+        self.assertEqual(self.top('How much is the business tax?'),
+                         'आर्थिक ऐन (कर तथा शुल्क)')
+
+    def test_nepali_question_still_reaches_the_act(self):
+        self.assertEqual(self.top('व्यवसाय कर कति हो?'), 'आर्थिक ऐन (कर तथा शुल्क)')
+
+    def test_english_property_tax_reaches_the_act(self):
+        self.assertEqual(self.top('property tax'), 'आर्थिक ऐन (कर तथा शुल्क)')
+
+    def test_english_question_scores_as_a_real_match(self):
+        hits = search('business tax', limit=1)
+        self.assertGreaterEqual(coverage('business tax', hits[0]), 0.5)
+
+    def test_shopping_query_still_finds_the_shopping_page(self):
+        self.assertEqual(self.top('where can I go shopping for handicrafts'),
+                         'Shopping & Handicrafts')
+
+
+class ScriptFramingTests(TestCase):
+    """An English asker should be told the answer is quoted Nepali."""
+
+    def setUp(self):
+        KnowledgeChunk.objects.create(
+            source_type='rules', title='आर्थिक ऐन',
+            content='व्यवसाय कर अनुसूची बमोजिम असूल गरिनेछ । बहाल कर पनि लाग्नेछ ।',
+            is_active=True)
+
+    def _ask(self, query):
+        from django.test import RequestFactory
+
+        from chatbot.tools import run_tool
+
+        class Anon:
+            is_authenticated = False; is_staff = False; pk = None; role = None
+        req = RequestFactory().post('/chat/')
+        req.user = Anon()
+        return run_tool('search_municipal_knowledge', req, query=query)
+
+    def test_english_question_is_flagged(self):
+        data = self._ask('business tax').data
+        self.assertTrue(data['answer_in_devanagari'])
+        self.assertFalse(data['asked_in_devanagari'])
+
+    def test_nepali_question_is_not_flagged(self):
+        data = self._ask('व्यवसाय कर').data
+        self.assertTrue(data['asked_in_devanagari'])
+
+    def test_note_shown_only_to_the_english_asker(self):
+        from chatbot.tools.present import present
+        english, _ = present('search_municipal_knowledge', self._ask('business tax'))
+        nepali, _ = present('search_municipal_knowledge', self._ask('व्यवसाय कर'))
+        self.assertIn('official Nepali-language records', english)
+        self.assertNotIn('official Nepali-language records', nepali)

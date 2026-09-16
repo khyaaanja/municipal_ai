@@ -73,6 +73,14 @@ def _public_reference(value):
     return value
 
 
+def _is_devanagari(text, threshold=0.20):
+    letters = [c for c in (text or '') if c.isalpha()]
+    if not letters:
+        return False
+    dev = sum(1 for c in letters if '\u0900' <= c <= '\u097F')
+    return dev / len(letters) >= threshold
+
+
 def _confidence_band(coverage_ratio):
     """Map query-term coverage onto something a citizen can read."""
     if coverage_ratio >= 0.65:
@@ -104,6 +112,11 @@ def search_municipal_knowledge(request, query='', lang='en'):
         'passages': [{'title': r['title'], 'text': r['content']} for r in rows],
         'sources': sorted({r['source_type'] for r in rows if r['source_type']}),
         'found': bool(rows),
+        # The municipal documents are Devanagari. Someone who asked in English
+        # should be told what they are about to read rather than met with a
+        # wall of script they cannot place.
+        'asked_in_devanagari': _is_devanagari(query),
+        'answer_in_devanagari': _is_devanagari(' '.join(r['content'][:400] for r in rows)),
         # A weak best match is still the best match, but the citizen should be
         # told it is weak rather than shown it with full confidence.
         'confidence': _confidence_band(best),

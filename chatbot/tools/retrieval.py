@@ -52,6 +52,26 @@ BILINGUAL = {
     'आपतकालीन': ('emergency',),
     'प्रहरी': ('police',),
     'यातायात': ('transport', 'bus'),
+
+    # The tax and fee categories the Act actually charges on. Without these an
+    # English question names a category the documents only hold in Devanagari.
+    # Deliberately not 'shop': it pulled a shopping guide above the Act
+    # that sets the business tax rate.
+    'व्यवसाय': ('business', 'trade', 'enterprise'),
+    'बहाल': ('rent', 'rental', 'lease', 'tenancy'),
+    'सम्पत्ति': ('property', 'asset'),
+    'मालपोत': ('land', 'revenue'),
+    'जग्गा': ('land', 'plot'),
+    'घर': ('house', 'home', 'building'),
+    'सवारी': ('vehicle', 'car'),
+    'विज्ञापन': ('advertisement', 'advertising', 'signboard'),
+    'दर': ('rate', 'rates'),
+    'नवीकरण': ('renewal', 'renew'),
+    'दर्ता': ('registration', 'register'),
+    'प्रमाणपत्र': ('certificate',),
+    'अनुमति': ('permission', 'permit'),
+    'पर्यटन': ('tourism', 'tourist'),
+    'सरसफाइ': ('sanitation', 'cleaning'),
 }
 
 STOPWORDS = {
@@ -62,15 +82,34 @@ STOPWORDS = {
 }
 
 
+# BILINGUAL is written Nepali-first because the source documents are Nepali,
+# but a question arrives in either language. The reverse index is derived from
+# it rather than maintained by hand, so the two cannot drift apart.
+ENGLISH_TO_NEPALI = {}
+for _nepali, _english_terms in BILINGUAL.items():
+    for _english in _english_terms:
+        ENGLISH_TO_NEPALI.setdefault(_english, []).append(_nepali)
+
+
 def tokenize(text):
     return [t.lower() for t in TOKEN.findall(text or '')]
 
 
+def equivalents(token):
+    """Cross-language forms of one word, in whichever direction applies."""
+    return tuple(BILINGUAL.get(token, ())) + tuple(ENGLISH_TO_NEPALI.get(token, ()))
+
+
 def expand(tokens):
-    """Add cross-language equivalents so either language can reach the other."""
+    """Add cross-language equivalents so either language can reach the other.
+
+    Without the English->Nepali direction the municipal documents, which are
+    all Devanagari, were unreachable from an English question: "business tax"
+    scored zero against the Act that sets the business tax rate.
+    """
     out = list(tokens)
     for token in tokens:
-        out.extend(BILINGUAL.get(token, ()))
+        out.extend(equivalents(token))
     return out
 
 
@@ -150,6 +189,6 @@ def coverage(query, chunk):
     present = set(_useful(tokenize(f"{chunk['title']} {chunk['content']}")))
     matched = sum(
         1 for term in originals
-        if term in present or any(alt in present for alt in BILINGUAL.get(term, ()))
+        if term in present or any(alt in present for alt in equivalents(term))
     )
     return matched / len(originals)

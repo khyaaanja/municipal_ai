@@ -274,6 +274,13 @@ def _marked_read(d):
 
 def _knowledge(d):
     out = []
+    # Asked in English, answered from a Nepali document: say so up front. The
+    # text itself is left untranslated on purpose — these are fees and legal
+    # requirements, and a machine translation that drifts is worse than script
+    # the reader can copy to someone who reads it.
+    if d.get('answer_in_devanagari') and not d.get('asked_in_devanagari'):
+        out += ['_This answer is quoted from the municipality\'s official '
+                'Nepali-language records, unchanged._', '']
     for p in d['passages'][:3]:
         out.append(f"**{p['title']}**")
         out.append(p['text'])

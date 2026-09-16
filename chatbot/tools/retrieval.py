@@ -93,6 +93,34 @@ STOPWORDS = {
 # BILINGUAL is written Nepali-first because the source documents are Nepali,
 # but a question arrives in either language. The reverse index is derived from
 # it rather than maintained by hand, so the two cannot drift apart.
+# Ways visitors phrase the same need. The content existed for most of these
+# already — "Accommodation in Bhaktapur" scored 1.00 for "accommodation" and
+# 0.00 for "where to stay" — so this is reach, not new material.
+#
+# Kept deliberately tight. A loose synonym costs precision: mapping व्यवसाय to
+# "shop" once pulled a shopping guide above the Act that sets the business
+# tax rate.
+SYNONYMS = {
+    'accommodation': ('stay', 'overnight', 'hotel', 'lodge', 'guesthouse',
+                      'sleep', 'staying'),
+    'restaurant': ('eat', 'food', 'dining', 'meal', 'lunch', 'dinner',
+                   'breakfast', 'cuisine'),
+    'fee': ('cost', 'costs', 'price', 'charge'),
+    'transport': ('bus', 'taxi', 'reach', 'travel', 'arrive', 'journey'),
+    'festival': ('jatra', 'celebration', 'procession'),
+    'pottery': ('ceramic', 'clay', 'potter'),
+    'heritage': ('unesco', 'historic', 'historical', 'ancient'),
+    'dress': ('wear', 'clothing', 'clothes', 'attire', 'modest'),
+}
+
+# Expanded the same way as the bilingual map, in both directions.
+SYNONYM_INDEX = {}
+for _head, _forms in SYNONYMS.items():
+    for _form in _forms:
+        SYNONYM_INDEX.setdefault(_form, []).append(_head)
+        SYNONYM_INDEX.setdefault(_head, []).append(_form)
+
+
 ENGLISH_TO_NEPALI = {}
 for _nepali, _english_terms in BILINGUAL.items():
     for _english in _english_terms:
@@ -114,12 +142,58 @@ NEPALI_SUFFIXES = (
 MIN_STEM = 2
 
 
-def _stem(token):
-    """Trim a Nepali case ending when a real word is left behind."""
-    for suffix in NEPALI_SUFFIXES:
-        if token.endswith(suffix) and len(token) - len(suffix) >= MIN_STEM:
-            return token[: -len(suffix)]
+# English needs the same treatment Nepali already had. "where can I eat"
+# returned nothing at all -- not a weak match, nothing -- against a chunk
+# reading "Best restaurants near Durbar Square. Avoid eating near temples",
+# because "eat" is not "eating" and "restaurant" is not "restaurants". The
+# same silent miss applied to fee/fees, temple/temples, hotel/hotels.
+#
+# This is a matcher, not a dictionary: both the question and the document go
+# through it, so agreeing with itself matters more than being right about
+# English. "buses" -> "buse" is wrong and still matches another "buses".
+ENGLISH_SUFFIXES = ('ing', 'ed', 'es', 's')
+# Enough must survive that the word is still itself: "bus" must not become
+# "bu". Three is the shortest English noun that still reads as one.
+MIN_STEM_EN = 3
+
+
+def _stem_en(token):
+    """Trim an English inflection when a real word is left behind."""
+    for suffix in ENGLISH_SUFFIXES:
+        if not token.endswith(suffix):
+            continue
+        if len(token) - len(suffix) < MIN_STEM_EN:
+            continue
+        # "address" and "process" are not plurals.
+        if suffix == 's' and token.endswith('ss'):
+            continue
+        # Only a sibilant takes "es": taxes -> tax, but homes -> home, which
+        # the plain "s" rule below handles. Without this, "taxes" stemmed to
+        # "taxe" and could not reach a document saying "tax".
+        if suffix == 'es' and not token[:-2].endswith(('s', 'x', 'z', 'ch', 'sh')):
+            continue
+        return token[: -len(suffix)]
     return token
+
+
+def _stem(token):
+    """Trim case endings or an inflection until the token stops changing.
+
+    Stripping only once did not converge, and two spellings of one word
+    landed in different places: "नगरपालिकाको" lost "को" and stopped at
+    "नगरपालिका", while the bare "नगरपालिका" lost "का" and became
+    "नगरपालि". A question about the municipality could not reach a document
+    that named it. Repeating to a fixed point makes every form agree.
+    """
+    for _ in range(len(NEPALI_SUFFIXES)):
+        for suffix in NEPALI_SUFFIXES:
+            if token.endswith(suffix) and len(token) - len(suffix) >= MIN_STEM:
+                token = token[: -len(suffix)]
+                break
+        else:
+            break
+    # Devanagari has no ASCII suffixes, so this only ever touches English.
+    return _stem_en(token)
 
 
 def tokenize(text):
@@ -127,8 +201,10 @@ def tokenize(text):
 
 
 def equivalents(token):
-    """Cross-language forms of one word, in whichever direction applies."""
-    return tuple(BILINGUAL.get(token, ())) + tuple(ENGLISH_TO_NEPALI.get(token, ()))
+    """Other words for the same thing: across languages, and within English."""
+    return (tuple(BILINGUAL.get(token, ()))
+            + tuple(ENGLISH_TO_NEPALI.get(token, ()))
+            + tuple(SYNONYM_INDEX.get(token, ())))
 
 
 def expand(tokens):
@@ -146,6 +222,12 @@ def expand(tokens):
 
 def _useful(tokens):
     return [t for t in tokens if t not in STOPWORDS and len(t) > 1]
+
+
+# How many BM25 candidates to reconsider by coverage before cutting to
+# `limit`. Wide enough that a better answer ranked fifth can still win,
+# narrow enough that a weak match cannot climb on a single shared word.
+RERANK_POOL = 8
 
 
 def search(query, limit=5, chunks=None, with_scores=False):
@@ -200,7 +282,16 @@ def search(query, limit=5, chunks=None, with_scores=False):
             scored.append((score, chunk))
 
     scored.sort(key=lambda pair: pair[0], reverse=True)
-    top = scored[:limit]
+
+    # BM25 alone ranks by term weight, which is not the same as answering the
+    # question. "घर नक्सा पास कसरी गर्ने" put a hotel listing above the Act
+    # that sets the building-permit fee, because the listing repeated a
+    # common word often. Re-ranking the strongest candidates by how much of
+    # the question each one actually addresses puts the Act back on top and
+    # left every other probed query where it was.
+    pool = scored[: max(limit, RERANK_POOL)]
+    pool.sort(key=lambda pair: (coverage(query, pair[1]), pair[0]), reverse=True)
+    top = pool[:limit]
     if with_scores:
         return [(chunk, score) for score, chunk in top]
     return [chunk for _, chunk in top]

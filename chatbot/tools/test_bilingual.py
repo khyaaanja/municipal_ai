@@ -159,11 +159,33 @@ class NepaliStemmingTests(TestCase):
     the other.
     """
 
-    def test_common_case_endings_are_trimmed(self):
+    def test_inflected_and_bare_forms_agree(self):
+        """Both spellings must land on the same token.
+
+        This once asserted that "नगरपालिकाको" became "नगरपालिका", which the
+        bare "नगरपालिका" never did -- it lost "का" and became "नगरपालि". The
+        two forms stemmed to different strings, so the match this class
+        exists to guarantee did not happen. What matters is that the forms
+        agree, not which string they agree on.
+        """
         from chatbot.tools.retrieval import tokenize
-        self.assertEqual(tokenize('नगरपालिकाको'), ['नगरपालिका'])
-        self.assertEqual(tokenize('सिफारिसलाई'), ['सिफारिस'])
-        self.assertEqual(tokenize('पानीको'), ['पानी'])
+        for inflected, bare in [
+            ('नगरपालिकाको', 'नगरपालिका'),
+            ('सिफारिसलाई', 'सिफारिस'),
+            ('पानीको', 'पानी'),
+            ('करहरूको', 'कर'),
+        ]:
+            self.assertEqual(
+                tokenize(inflected), tokenize(bare),
+                f'{inflected} and {bare} must match each other',
+            )
+
+    def test_stemming_is_idempotent(self):
+        """Stemming an already-stemmed token must change nothing."""
+        from chatbot.tools.retrieval import tokenize
+        for word in ['नगरपालिकाको', 'करहरूको', 'restaurants', 'eating']:
+            once = tokenize(word)
+            self.assertEqual(tokenize(' '.join(once)), once)
 
     def test_plural_ending_is_trimmed_whole(self):
         """हरूको must not be left as हरू."""
@@ -212,3 +234,70 @@ class OfficialContactSeedTests(TestCase):
         before = KnowledgeBase.objects.count()
         call_command('seed_official_contacts', stdout=StringIO())
         self.assertEqual(KnowledgeBase.objects.count(), before)
+
+
+class EnglishStemmingTests(TestCase):
+    """English inflections hid content that was already indexed.
+
+    "where can I eat" returned nothing at all against a chunk reading
+    "Best restaurants near Durbar Square. Avoid eating near temples",
+    because "eat" is not "eating" and "restaurant" is not "restaurants".
+    """
+
+    def test_inflected_and_bare_forms_agree(self):
+        from chatbot.tools.retrieval import tokenize
+        for inflected, bare in [
+            ('restaurants', 'restaurant'),
+            ('fees', 'fee'),
+            ('temples', 'temple'),
+            ('eating', 'eat'),
+            ('taxes', 'tax'),
+        ]:
+            self.assertEqual(tokenize(inflected), tokenize(bare))
+
+    def test_short_words_are_not_destroyed(self):
+        """"bus" must not become "bu"."""
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('bus'), ['bus'])
+
+    def test_double_s_is_not_a_plural(self):
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('address'), ['address'])
+
+
+class CoverageRerankTests(TestCase):
+    """BM25 weight is not the same as answering the question.
+
+    A hotel listing that repeats one common word many times outranked the Act
+    that actually sets the building-permit fee. Reconsidering the strongest
+    candidates by how much of the question each addresses put the Act back on
+    top.
+    """
+
+    CHUNKS = [
+        {
+            'id': 1,
+            'title': 'Accommodation in Bhaktapur',
+            'content': 'Guest houses and home stays. Houses near the square. '
+                       'Home stay hosts. Guest house rooms. Houses.',
+            'source_type': 'tourism',
+        },
+        {
+            'id': 2,
+            'title': 'Building permit fee schedule',
+            'content': 'House map approval and building permit fees are set '
+                       'by the Act.',
+            'source_type': 'municipal',
+        },
+    ]
+
+    def test_document_that_answers_outranks_the_one_that_repeats(self):
+        from chatbot.tools.retrieval import search
+        hits = search('building permit fees for a house map',
+                      limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'Building permit fee schedule')
+
+    def test_reranking_does_not_invent_a_match(self):
+        """A query sharing nothing with either chunk still returns nothing."""
+        from chatbot.tools.retrieval import search
+        self.assertEqual(search('zzzz', limit=2, chunks=self.CHUNKS), [])

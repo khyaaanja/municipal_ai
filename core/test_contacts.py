@@ -40,9 +40,12 @@ class PublishedContactTests(TestCase):
                 continue
             if SKIP & set(path.relative_to(REPO).parts):
                 continue
+            # Two files name the number legitimately: the one explaining
+            # why it is gone, and the one that removes it from stored data.
             if path == pathlib.Path(contacts.__file__):
-                continue  # names it to explain why it is gone
-            if path.name == pathlib.Path(__file__).name:
+                continue
+            if path.name in {pathlib.Path(__file__).name,
+                             'correct_contact_numbers.py'}:
                 continue
             try:
                 text = path.read_text(encoding='utf-8')

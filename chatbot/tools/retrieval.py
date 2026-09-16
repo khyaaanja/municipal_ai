@@ -220,6 +220,27 @@ def expand(tokens):
     return out
 
 
+DEVANAGARI = re.compile(r'[\u0900-\u097F]')
+# A cited source is metadata, not language. Counting the letters in
+# "https://ntb.gov.np/en/plan-your-trip/tourist-police" made a two-line
+# Nepali entry read as English, which is the opposite of what citing a
+# source should do to it.
+URL = re.compile(r'https?://\S+|\b\S+\.(?:gov\.np|com|org|net)\S*')
+
+
+def _is_devanagari(text):
+    """True when the text is mostly Devanagari rather than Latin.
+
+    Counted rather than sniffed, with URLs removed first: a Nepali entry
+    citing an English source URL still reads as Nepali, and an English entry
+    naming a Nepali place still reads as English.
+    """
+    body = URL.sub(' ', text or '')
+    nepali = len(DEVANAGARI.findall(body))
+    latin = sum(1 for ch in body if 'a' <= ch.lower() <= 'z')
+    return nepali > latin
+
+
 def _useful(tokens):
     return [t for t in tokens if t not in STOPWORDS and len(t) > 1]
 
@@ -289,8 +310,22 @@ def search(query, limit=5, chunks=None, with_scores=False):
     # common word often. Re-ranking the strongest candidates by how much of
     # the question each one actually addresses puts the Act back on top and
     # left every other probed query where it was.
+    # Answer first, then the language the question was asked in, then BM25.
+    # "tourist police" returned the Nepali entry to an English speaker,
+    # because that entry cites its source -- ntb.gov.np/.../tourist-police --
+    # and a URL tokenises into English words. Script is only a tiebreaker: a
+    # citizen asking in Nepali about something documented only in English
+    # must still be able to reach it.
+    asked_in_nepali = _is_devanagari(query)
     pool = scored[: max(limit, RERANK_POOL)]
-    pool.sort(key=lambda pair: (coverage(query, pair[1]), pair[0]), reverse=True)
+    pool.sort(
+        key=lambda pair: (
+            coverage(query, pair[1]),
+            _is_devanagari(pair[1]['content']) == asked_in_nepali,
+            pair[0],
+        ),
+        reverse=True,
+    )
     top = pool[:limit]
     if with_scores:
         return [(chunk, score) for score, chunk in top]

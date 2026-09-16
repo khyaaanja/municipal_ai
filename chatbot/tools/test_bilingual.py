@@ -301,3 +301,57 @@ class CoverageRerankTests(TestCase):
         """A query sharing nothing with either chunk still returns nothing."""
         from chatbot.tools.retrieval import search
         self.assertEqual(search('zzzz', limit=2, chunks=self.CHUNKS), [])
+
+
+class ScriptPreferenceTests(TestCase):
+    """Answer in the script the question was asked in, where there is a choice.
+
+    "tourist police" returned the Nepali entry to an English speaker. That
+    entry cites its source -- ntb.gov.np/.../tourist-police -- and a URL
+    tokenises into English words, so it matched an English query as well as
+    the English entry did and won the tie.
+    """
+
+    CHUNKS = [
+        {
+            'id': 1,
+            'title': 'आपतकालीन सम्पर्क नम्बर',
+            'content': 'पर्यटक प्रहरी ११४४। स्रोत: '
+                       'https://ntb.gov.np/en/plan-your-trip/tourist-police',
+            'source_type': 'municipal',
+        },
+        {
+            'id': 2,
+            'title': 'Emergency Contacts',
+            'content': 'Tourist Police, toll free 1144. Source: '
+                       'https://ntb.gov.np/en/plan-your-trip/tourist-police',
+            'source_type': 'municipal',
+        },
+    ]
+
+    def test_english_question_prefers_english_content(self):
+        from chatbot.tools.retrieval import search
+        hits = search('tourist police', limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'Emergency Contacts')
+
+    def test_nepali_question_prefers_nepali_content(self):
+        from chatbot.tools.retrieval import search
+        hits = search('पर्यटक प्रहरी', limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'आपतकालीन सम्पर्क नम्बर')
+
+    def test_script_only_breaks_ties(self):
+        """Content in the other script must still be reachable.
+
+        A citizen asking in Nepali about something documented only in
+        English has to be able to find it; preference is not a filter.
+        """
+        from chatbot.tools.retrieval import search
+        english_only = [self.CHUNKS[1]]
+        hits = search('पर्यटक प्रहरी tourist police',
+                      limit=2, chunks=english_only)
+        self.assertEqual(len(hits), 1)
+
+    def test_source_url_does_not_make_a_nepali_entry_english(self):
+        from chatbot.tools.retrieval import _is_devanagari
+        self.assertTrue(_is_devanagari(self.CHUNKS[0]['content']))
+        self.assertFalse(_is_devanagari(self.CHUNKS[1]['content']))

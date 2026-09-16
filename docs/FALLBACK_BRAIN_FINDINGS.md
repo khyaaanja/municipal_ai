@@ -228,3 +228,64 @@ an invented accessibility claim is worse than an honest refusal.
 - activities for children
 
 Each needs a source from the municipality before it is written down.
+
+---
+
+# Contact details the assistant stated as fact
+
+## A number nobody published
+
+`+977-1-6610000` was in twelve places: complaint confirmations,
+password-reset mail, marketplace order mail, dashboard notifications, seeded
+knowledge, and the assistant's own reply when it has no answer. The
+municipality publishes `977-01-6613957` and `977-01-6610096`, and nothing
+else. The discrepancy only surfaced because `seed_official_contacts` had
+already recorded the real ones with their source, so two different numbers
+for one office existed side by side in the same database.
+
+The no-answer reply was the worst placement. Someone who has already failed
+to get an answer is exactly the person who will act on whatever it says
+next. That reply also placed the office at Dattatreya Square — not published
+either — and pointed an emergency at an office switchboard.
+
+**Correcting the source files did not fix it.** The database had been seeded
+from the old files, so three indexed chunks kept serving the number after
+every `.py` was clean. `correct_contact_numbers` fixes stored rows and is
+idempotent; `core/test_contacts` fails if the number reappears in source.
+
+## The tourist police number was wrong too
+
+Three entries listed `+977-1-4247041` as "Tourist Police Bhaktapur". The
+Nepal Tourism Board publishes:
+
+| | |
+|---|---|
+| Bhaktapur | 9851289448 |
+| Nagarkot | 9851289447 |
+| Toll free, nationwide | **1144** |
+
+`4247041` is not in that list. The toll-free line — the one number a
+visitor in trouble can actually remember — appeared nowhere in the app.
+
+`Bhaktapur Hospital 01-6610798` checked out against independent sources.
+Five numbers could not be verified either way and were left alone and
+listed by the command, because deleting an emergency number leaves a visitor
+with nothing and inventing one is worse.
+
+Sources are now cited inline in the entry itself, so the next person to
+doubt a number can check it without re-doing this.
+
+## An English question got a Devanagari answer
+
+`tourist police` returned the Nepali entry. That entry cites its source —
+`ntb.gov.np/en/plan-your-trip/.../tourist-police` — and a URL tokenises into
+English words, so it matched an English query exactly as well as the English
+entry and won the tie.
+
+Ranking is now coverage, then script agreement, then BM25. Script is a
+tiebreaker and not a filter: a citizen asking in Nepali about something
+documented only in English must still reach it.
+
+Detecting the script by counting letters had the same bug in miniature — the
+URL's letters outvoted the Nepali text in a short entry, so a *cited source*
+made an entry look English. URLs are excluded before counting.

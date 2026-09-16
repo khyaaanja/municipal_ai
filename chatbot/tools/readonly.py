@@ -116,7 +116,10 @@ def search_municipal_knowledge(request, query='', lang='en'):
         # should be told what they are about to read rather than met with a
         # wall of script they cannot place.
         'asked_in_devanagari': _is_devanagari(query),
-        'answer_in_devanagari': _is_devanagari(' '.join(r['content'][:400] for r in rows)),
+        # Judged on the top passage alone. Averaging across the shown hits
+        # labelled an English answer as Nepali whenever a lower-ranked hit
+        # happened to be Devanagari, which is the opposite of helpful.
+        'answer_in_devanagari': bool(rows) and _is_devanagari(rows[0]['content'][:400]),
         # A weak best match is still the best match, but the citizen should be
         # told it is weak rather than shown it with full confidence.
         'confidence': _confidence_band(best),

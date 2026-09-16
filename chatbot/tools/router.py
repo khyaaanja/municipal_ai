@@ -79,6 +79,10 @@ def route(message, claim_token=''):
 
     for name, phrases in _ROUTES:
         if any(p in lowered for p in phrases):
+            if name == 'find_on_map' and not _place_from(lowered):
+                # No place named — let knowledge or the model answer instead
+                # of replying "that looks empty".
+                continue
             if (name.startswith('get_my_') or name == 'mark_notifications_read') \
                     and not any(m in lowered for m in _MINE):
                 # "notifications" alone is ambiguous; "my notifications" is not.
@@ -98,9 +102,27 @@ def _when_from(lowered):
     return 'upcoming'
 
 
+PLACE_AFTER = re.compile(
+    r'(?:where is|location of|directions to|how do i get to|on the map|show me on the map)\s+'
+    r'(?:the\s+)?([a-z\u0900-\u097F][\w\s\u0900-\u097F]{2,40})')
+
+
+def _place_from(lowered):
+    """The place name a map lookup needs, or '' when the question names none."""
+    match = PLACE_AFTER.search(lowered)
+    if not match:
+        return ''
+    # Trim a trailing clause: "get to Bhaktapur from Kathmandu" asks about
+    # Bhaktapur, and "from Kathmandu" is not part of the place name.
+    place = re.split(r'\b(?:from|by|in|near|at|via)\b', match.group(1))[0]
+    return place.strip(' ?.!,')
+
+
 def _kwargs_for(name, lowered):
     if name == 'list_events':
         return {'when': _when_from(lowered)}
+    if name == 'find_on_map':
+        return {'query': _place_from(lowered)}
     if name == 'get_my_notifications':
         return {'unread_only': 'unread' in lowered}
     if name in ('find_businesses', 'find_attractions'):

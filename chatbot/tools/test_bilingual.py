@@ -99,3 +99,53 @@ class ScriptFramingTests(TestCase):
         nepali, _ = present('search_municipal_knowledge', self._ask('व्यवसाय कर'))
         self.assertIn('official Nepali-language records', english)
         self.assertNotIn('official Nepali-language records', nepali)
+
+
+class MapPlaceExtractionTests(TestCase):
+    """A map lookup needs a place; without one it is not a map question."""
+
+    def test_place_is_extracted(self):
+        from chatbot.tools.router import _place_from
+        self.assertEqual(_place_from('where is nyatapola temple'), 'nyatapola temple')
+        self.assertEqual(_place_from('directions to pottery square'), 'pottery square')
+
+    def test_trailing_clause_is_trimmed(self):
+        """"get to Bhaktapur from Kathmandu" asks about Bhaktapur."""
+        from chatbot.tools.router import _place_from
+        self.assertEqual(_place_from('how do i get to bhaktapur from kathmandu'), 'bhaktapur')
+
+    def test_question_with_no_place_does_not_route_to_the_map(self):
+        from chatbot.tools.router import route
+        routed = route('how do i get there')
+        self.assertTrue(routed is None or routed[0] != 'find_on_map')
+
+    def test_named_place_still_routes_to_the_map(self):
+        from chatbot.tools.router import route
+        self.assertEqual(route('where is nyatapola temple')[0], 'find_on_map')
+
+
+class ScriptFlagPrecisionTests(TestCase):
+    """The note must follow the passage the reader actually sees first."""
+
+    def setUp(self):
+        KnowledgeChunk.objects.create(
+            source_type='emergency', title='Emergency Contacts',
+            content='Police: 100, Fire Brigade: 101, Ambulance: 102 in Bhaktapur city.',
+            is_active=True)
+        KnowledgeChunk.objects.create(
+            source_type='emergency', title='आपतकालीन सम्पर्क',
+            content='प्रहरी सम्पर्क नम्बर १०० हो । एम्बुलेन्स १०२ ।', is_active=True)
+
+    def test_english_top_hit_is_not_labelled_nepali(self):
+        from django.test import RequestFactory
+
+        from chatbot.tools import run_tool
+
+        class Anon:
+            is_authenticated = False; is_staff = False; pk = None; role = None
+        req = RequestFactory().post('/chat/')
+        req.user = Anon()
+        data = run_tool('search_municipal_knowledge', req,
+                        query='emergency police ambulance contacts').data
+        if data['passages'] and 'Emergency Contacts' in data['passages'][0]['title']:
+            self.assertFalse(data['answer_in_devanagari'])

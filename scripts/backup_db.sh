@@ -1,41 +1,65 @@
 #!/usr/bin/env bash
-# Daily MySQL backup — run via cron: 0 2 * * * /path/to/backup_db.sh
+# Nightly database backup.
+#
+# There was no backup and no binary logging when the database was wiped on
+# 2026-09-15, which is why the citizen complaints in it were unrecoverable.
+# Schema and seeded content can be rebuilt from the importers; filed
+# complaints and real accounts cannot.
+#
+# Install:  crontab -e
+#   15 2 * * *  /home/kali-linux/Desktop/municipal_ai/scripts/backup_db.sh
 set -euo pipefail
 
-BACKUP_DIR="/backups/municipal_ai"
-DATE=$(date +%Y%m%d_%H%M%S)
-DAYS_TO_KEEP=30
-
-# Load .env if running outside Docker
-if [ -f "$(dirname "$0")/../.env" ]; then
-    export $(grep -v '^#' "$(dirname "$0")/../.env" | xargs)
-fi
-
-DB_NAME="${DB_NAME:-municipal_ai_db}"
-DB_USER="${DB_USER:-root}"
-DB_PASSWORD="${DB_PASSWORD:-}"
-DB_HOST="${DB_HOST:-127.0.0.1}"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BACKUP_DIR="${MUNICIPAL_AI_BACKUP_DIR:-$HOME/backups/municipal_ai}"
+KEEP_DAYS="${MUNICIPAL_AI_BACKUP_KEEP_DAYS:-14}"
 
 mkdir -p "$BACKUP_DIR"
 
-BACKUP_FILE="$BACKUP_DIR/db_${DATE}.sql.gz"
+# Credentials come from Django's settings so they are never duplicated here
+# and never appear in the process list.
+read -r DB_NAME DB_USER DB_HOST DB_PORT <<<"$(
+  cd "$PROJECT_DIR" && \
+  "${PYTHON_BIN:-$PROJECT_DIR/venv/bin/python}" -c "
+import os, django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'municipal_ai.settings')
+django.setup()
+from django.conf import settings
+d = settings.DATABASES['default']
+print(d['NAME'], d['USER'], d['HOST'] or 'localhost', d['PORT'] or '3306')
+")"
 
-echo "[$(date)] Starting backup of $DB_NAME..."
-mysqldump \
-    -h "$DB_HOST" \
-    -u "$DB_USER" \
-    -p"$DB_PASSWORD" \
-    --single-transaction \
-    --routines \
-    --triggers \
-    "$DB_NAME" | gzip > "$BACKUP_FILE"
+STAMP="$(date +%Y%m%d-%H%M%S)"
+OUT="$BACKUP_DIR/${DB_NAME}-${STAMP}.sql.gz"
 
-echo "[$(date)] Backup saved: $BACKUP_FILE ($(du -sh "$BACKUP_FILE" | cut -f1))"
+# --defaults-file keeps the password out of argv, where `ps` would show it.
+CNF="$(mktemp)"
+trap 'rm -f "$CNF"' EXIT
+chmod 600 "$CNF"
+{
+  echo "[client]"
+  echo "user=${DB_USER}"
+  printf 'password=%s\n' "$(cd "$PROJECT_DIR" && "${PYTHON_BIN:-$PROJECT_DIR/venv/bin/python}" -c "
+import os, django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'municipal_ai.settings')
+django.setup()
+from django.conf import settings
+print(settings.DATABASES['default']['PASSWORD'])
+")"
+  echo "host=${DB_HOST}"
+  echo "port=${DB_PORT}"
+} > "$CNF"
 
-# Remove backups older than DAYS_TO_KEEP days
-find "$BACKUP_DIR" -name "db_*.sql.gz" -mtime +"$DAYS_TO_KEEP" -delete
-echo "[$(date)] Old backups pruned (kept last $DAYS_TO_KEEP days)"
+mariadb-dump --defaults-file="$CNF" \
+  --single-transaction --quick --routines --triggers --events \
+  "$DB_NAME" | gzip -9 > "$OUT"
 
-# Optional: sync to remote storage (uncomment and configure)
-# rsync -az "$BACKUP_DIR/" user@remote-server:/backups/municipal_ai/
-# aws s3 sync "$BACKUP_DIR/" s3://your-bucket/backups/
+# A dump that failed midway is worse than none, because it looks like a backup.
+if ! gzip -t "$OUT" 2>/dev/null; then
+  echo "backup failed verification, removing: $OUT" >&2
+  rm -f "$OUT"
+  exit 1
+fi
+
+find "$BACKUP_DIR" -name "${DB_NAME}-*.sql.gz" -mtime "+${KEEP_DAYS}" -delete
+echo "$(date -Is) ok $(du -h "$OUT" | cut -f1) $OUT"

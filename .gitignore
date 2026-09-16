@@ -78,3 +78,6 @@ test_reports/
 
 # npm
 node_modules/
+
+# Local database backups
+backups/

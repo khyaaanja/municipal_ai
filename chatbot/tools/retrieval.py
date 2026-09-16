@@ -99,8 +99,31 @@ for _nepali, _english_terms in BILINGUAL.items():
         ENGLISH_TO_NEPALI.setdefault(_english, []).append(_nepali)
 
 
+# Nepali attaches case endings to the noun, so "नगरपालिकाको" and
+# "नगरपालिका" are the same word to a reader and different strings to a
+# matcher. Trimming the common endings lets a question reach a document that
+# uses the other form. Longest first, so "हरूको" is not left as "हरू".
+NEPALI_SUFFIXES = (
+    'हरूको', 'हरूलाई', 'हरूमा', 'हरूसँग', 'कोलागि',
+    'सँग', 'देखि', 'बाट', 'लाई', 'हरू',
+    'को', 'का', 'की', 'ले', 'मा',
+)
+# Two, not three: कर (tax) is a two-codepoint word, so a longer minimum
+# silently refused to stem करको and left the question unable to reach the
+# Act that sets the rate.
+MIN_STEM = 2
+
+
+def _stem(token):
+    """Trim a Nepali case ending when a real word is left behind."""
+    for suffix in NEPALI_SUFFIXES:
+        if token.endswith(suffix) and len(token) - len(suffix) >= MIN_STEM:
+            return token[: -len(suffix)]
+    return token
+
+
 def tokenize(text):
-    return [t.lower() for t in TOKEN.findall(text or '')]
+    return [_stem(t.lower()) for t in TOKEN.findall(text or '')]
 
 
 def equivalents(token):

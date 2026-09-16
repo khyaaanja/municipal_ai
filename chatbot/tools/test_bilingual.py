@@ -149,3 +149,66 @@ class ScriptFlagPrecisionTests(TestCase):
                         query='emergency police ambulance contacts').data
         if data['passages'] and 'Emergency Contacts' in data['passages'][0]['title']:
             self.assertFalse(data['answer_in_devanagari'])
+
+
+class NepaliStemmingTests(TestCase):
+    """Nepali attaches case endings to the noun.
+
+    "नगरपालिकाको" and "नगरपालिका" are one word to a reader and two strings to
+    a matcher, so a question using one form could not reach a document using
+    the other.
+    """
+
+    def test_common_case_endings_are_trimmed(self):
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('नगरपालिकाको'), ['नगरपालिका'])
+        self.assertEqual(tokenize('सिफारिसलाई'), ['सिफारिस'])
+        self.assertEqual(tokenize('पानीको'), ['पानी'])
+
+    def test_plural_ending_is_trimmed_whole(self):
+        """हरूको must not be left as हरू."""
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('वडाहरूको'), ['वडा'])
+
+    def test_two_letter_stems_survive(self):
+        """कर is a real two-codepoint word; a longer minimum lost it."""
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('करको'), ['कर'])
+
+    def test_short_words_are_not_destroyed(self):
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('को'), ['को'])
+        self.assertEqual(tokenize('मा'), ['मा'])
+
+    def test_english_is_untouched(self):
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('business tax rate'), ['business', 'tax', 'rate'])
+
+
+class OfficialContactSeedTests(TestCase):
+    """Facts read from the municipality's own site, never inferred."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        from io import StringIO
+        call_command('seed_official_contacts', stdout=StringIO())
+
+    def test_contact_and_officials_are_curated_not_generated(self):
+        from chatbot.models import KnowledgeBase
+        seeded = KnowledgeBase.objects.filter(source_query__icontains='bhaktapurmun')
+        self.assertGreaterEqual(seeded.count(), 4)
+        self.assertFalse(seeded.filter(auto_generated=True).exists())
+
+    def test_every_seeded_entry_cites_its_source(self):
+        from chatbot.models import KnowledgeBase
+        for entry in KnowledgeBase.objects.filter(source_query__icontains='bhaktapurmun'):
+            self.assertIn('bhaktapurmun.gov.np', entry.content)
+
+    def test_seeding_twice_does_not_duplicate(self):
+        from django.core.management import call_command
+        from io import StringIO
+
+        from chatbot.models import KnowledgeBase
+        before = KnowledgeBase.objects.count()
+        call_command('seed_official_contacts', stdout=StringIO())
+        self.assertEqual(KnowledgeBase.objects.count(), before)

@@ -107,5 +107,33 @@ The signal already exists: the chat has 👍/👎 buttons writing to
 learning loop grounded in real usefulness rather than in the model's own
 confidence.
 
-**Not yet built.** Recorded here so the next pass starts from a decision
-rather than from the current implicit behaviour.
+**Built.** `promote_helpful_answers` turns 👍-rated answers into `FAQEntry`
+rows; the fallback searches them after municipal documents and serves them
+under "From an earlier answer that a resident marked helpful — not an
+official municipal record". Refusals and errors are never promoted, and a
+learned answer must cover at least half the question before it is offered.
+
+Nothing has been promoted yet, because **no citizen has pressed 👍**:
+`ResponseFeedback` is empty. The loop is wired but unfed.
+
+---
+
+## Free tier limits, measured
+
+Read from Groq's own response headers:
+
+| Limit | Value |
+|---|---|
+| Requests | 1,000 / day |
+| Tokens | **8,000 / minute** |
+| Token window reset | ~1 second |
+| Request window reset | ~1 minute |
+
+The binding constraint is tokens per minute, not requests per day. With
+`AI_MAX_TOKENS = 1500` plus prompt context, that is roughly **two to four
+generative answers per minute** before throttling — a handful of
+simultaneous citizens.
+
+This is why the tool layer matters more than the model: it answers from
+municipal records at no token cost, so the questions that exhaust the quota
+are only the open-ended ones.

@@ -77,11 +77,46 @@ class LocalRetrieverAdapter:
         answer, like the business tax rate, came back as no information.
         """
         chunks = self._municipal_chunks(query, top_k)
+        chunks += self._learned_chunks(query, top_k)
         city_data = self.retriever.retrieve(query, semantic_hits=self.semantic_hits)
         chunks += self.chunks_from_city_data(
             city_data, semantic_hits=self.semantic_hits, query=query, top_k=top_k
         )
         return chunks[:top_k]
+
+    @staticmethod
+    def _learned_chunks(query: str, top_k: int) -> list:
+        """Answers citizens previously marked helpful.
+
+        Ranked below municipal documents on purpose: these are the
+        assistant's own past output, kept because someone found them useful,
+        not because the municipality published them. They carry their own
+        source so nothing downstream can present them as record.
+        """
+        try:
+            from chatbot.models import FAQEntry
+            from chatbot.tools.retrieval import coverage
+        except Exception:
+            return []
+
+        out = []
+        try:
+            for entry in FAQEntry.objects.filter(is_active=True).iterator():
+                row = {'title': entry.question, 'content': entry.answer}
+                score = coverage(query, row)
+                if score < 0.5:          # a learned answer must closely match
+                    continue
+                # The marker is bookkeeping, not something a citizen reads.
+                text = entry.answer.replace(LEARNED_MARKER, '', 1).strip()
+                out.append(LocalChunk(
+                    text=text, score=score, title=entry.question,
+                    source='learned_answer', citation=entry.question[:80],
+                ))
+        except Exception:
+            logger.exception('learned-answer lookup failed')
+            return []
+        out.sort(key=lambda c: c.score, reverse=True)
+        return out[:top_k]
 
     @staticmethod
     def _municipal_chunks(query: str, top_k: int) -> list:
@@ -238,6 +273,14 @@ class LocalRetrieverAdapter:
 # A passage must address at least this much of the question before it can be
 # offered as the municipality's answer.
 ANSWER_COVERAGE_MIN = 0.35
+
+# Written by promote_helpful_answers; stripped before display.
+LEARNED_MARKER = '[learned]'
+
+
+def _strip_marker(text: str) -> str:
+    """Remove internal bookkeeping before a citizen sees the text."""
+    return (text or '').replace(LEARNED_MARKER, '', 1).strip()
 
 
 def _covers_question(query: str, chunk) -> float:
@@ -445,18 +488,42 @@ class AnswerEngine:
 
         return response_factory(self._extractive_answer(local_chunks), 'local_db', True)
 
+    @staticmethod
+    def _dedupe(chunks: list) -> list:
+        """One entry per passage.
+
+        The same FAQ row can arrive from the learned lookup and from the
+        keyword retriever, which put it in the answer and again under
+        "Related information".
+        """
+        seen, out = set(), []
+        for c in chunks:
+            key = _strip_marker(getattr(c, 'text', ''))[:160]
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(c)
+        return out
+
     def _extractive_answer(self, chunks: list) -> str:
         """Build a readable answer from the top local chunks — no LLM needed."""
+        chunks = self._dedupe(chunks)
         best = chunks[0]
         lines = []
         if getattr(best, 'title', ''):
             lines.append(f"**{best.title}**")
-        lines.append(f"Based on our municipal records:\n\n{best.text}")
+        if getattr(best, 'source', '') == 'learned_answer':
+            lines.append(
+                "From an earlier answer that a resident marked helpful — not "
+                "an official municipal record:\n\n" + _strip_marker(best.text))
+        else:
+            lines.append(
+                f"Based on our municipal records:\n\n{_strip_marker(best.text)}")
 
         if len(chunks) > 1:
             lines.append("\nRelated information:")
             for c in chunks[1:3]:
-                snippet = c.text[:200]
+                snippet = _strip_marker(c.text)[:200]
                 if getattr(c, 'title', ''):
                     snippet = f"{c.title}: {snippet}"
                 lines.append(f"- {snippet}...")

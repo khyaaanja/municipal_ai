@@ -151,8 +151,44 @@ def _attractions(rows):
 
 
 
+# A citizen who described the problem in Nepali was shown the draft, and the
+# confirmation, entirely in English. The description is the citizen's own
+# words, so it decides the language of the reply.
+STATUS_NE = {
+    'Pending': 'प्रक्रियामा',
+    'In Progress': 'काम भइरहेको',
+    'Resolved': 'समाधान भएको',
+    'Rejected': 'अस्वीकृत',
+    'Closed': 'बन्द',
+}
+
+
 def _draft_complaint(d):
+    from chatbot.tools.flow import CATEGORY_NE
+    from chatbot.tools.retrieval import _is_devanagari
+
     p = d['draft']
+    ne = _is_devanagari(p.get('description', ''))
+    if ne:
+        label = CATEGORY_NE.get(p['category'].upper(), p['category'].title())
+        lines = [
+            'यो उजुरी दर्ता गर्न लागेको छु। पठाउनु अघि एकपटक हेर्नुहोस्:',
+            '',
+            f"**विषय:** {label}",
+            f"**शीर्षक:** {p['title']}",
+            f"**स्थान:** {p['location']}",
+        ]
+        if p.get('ward_number'):
+            lines.append(f"**वडा:** {p['ward_number']}")
+        lines += [
+            f"**उजुरीकर्ता:** {p['submitter_name']}",
+            '',
+            f"**विवरण:** {p['description']}",
+            '',
+            '**अहिलेसम्म केही पनि दर्ता भएको छैन।** पठाउन **हो** '
+            'लेख्नुहोस्, वा के फेर्ने हो भन्नुहोस्।',
+        ]
+        return '\n'.join(lines)
     lines = [
         "Here's the complaint I'll file. Please check it before I send it:",
         '',
@@ -174,6 +210,24 @@ def _draft_complaint(d):
 
 
 def _confirm_complaint(d):
+    if d.get('ne'):
+        status = STATUS_NE.get(d['status'], d['status'])
+        lines = [
+            f"दर्ता भयो। तपाईंको सन्दर्भ नम्बर **{d['complaint_id']}** हो।",
+            '',
+            f"**अवस्था:** {status}",
+            '',
+            f"[यहाँबाट हेर्नुहोस्](/complaint/status/{d['complaint_id']}/)",
+        ]
+        if d.get('photos_attached'):
+            lines.insert(3, f"**संलग्न फोटो:** {d['photos_attached']}")
+        if d.get('claim_token'):
+            lines += [
+                '',
+                '_यो लिङ्क सुरक्षित राख्नुहोस् — खाता नबनाई यही उजुरीमा '
+                'फर्कने बाटो यही हो।_',
+            ]
+        return '\n'.join(lines)
     lines = [
         f"Filed. Your reference is **{d['complaint_id']}**.",
         '',

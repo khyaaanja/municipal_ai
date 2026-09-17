@@ -13,15 +13,32 @@ ACTION = 'create_complaint'
 
 TITLE_MAX = 200
 DESC_MIN, DESC_MAX = 20, 2000
+# Devanagari reaches the same content in fewer codepoints -- vowels attach to
+# the consonant instead of standing beside it -- so one flat minimum is a
+# harder test in Nepali than in English. "सडक बत्ती बिग्रियो" is 18
+# characters and was refused; "my street light is broken" says the same thing
+# in 25 and passed. The floor exists to reject one-word non-descriptions like
+# "broken", and 12 Devanagari characters is about three words, which does
+# that job without asking a Nepali speaker to pad.
+DESC_MIN_NE = 12
 LOCATION_MAX = 300
+
+
+def _minimum_for(text, minimum):
+    """Scale a character minimum to the script it is being applied to."""
+    if minimum <= 1:
+        return minimum
+    from chatbot.tools.retrieval import _is_devanagari
+    return DESC_MIN_NE if _is_devanagari(text) and minimum == DESC_MIN else minimum
 
 
 def _require(value, field, minimum=1, maximum=2000):
     text = (value or '').strip()
-    if len(text) < minimum:
+    required = _minimum_for(text, minimum)
+    if len(text) < required:
         raise ToolInputError(
-            f'I need a bit more for the {field} — at least {minimum} characters.'
-            if minimum > 1 else f'The {field} is required.'
+            f'I need a bit more for the {field} — at least {required} characters.'
+            if required > 1 else f'The {field} is required.'
         )
     return text[:maximum]
 
@@ -117,12 +134,18 @@ def confirm_complaint(request, token=''):
         complaint.complaint_id, complaint.ward_number,
     )
 
+    from chatbot.tools.retrieval import _is_devanagari
+
     return {
         'stage': 'filed',
         'photos_attached': complaint.photos.count(),
         'complaint_id': complaint.complaint_id,
         'claim_token': str(complaint.claim_token) if complaint.claim_token else None,
         'status': complaint.get_status_display(),
+        # The confirmation carries no description, so the presenter cannot
+        # tell what language the citizen used. Decided here, where the
+        # citizen's own words are still in hand.
+        'ne': _is_devanagari(payload['description']),
     }
 
 

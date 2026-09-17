@@ -80,3 +80,83 @@ class QuestionDetectionTests(TestCase):
     def test_a_statement_is_not_a_question(self):
         self.assertFalse(_is_a_question('सडकमा खाल्डो छ'))
         self.assertFalse(_is_a_question('there is garbage on my street'))
+
+
+class NepaliParityTests(TestCase):
+    """A resident writing in Nepali must get the same service, in Nepali.
+
+    Reporting a broken street light in Devanagari went wrong at every step:
+    it was filed under the wrong category, the whole conversation came back
+    in English, the description was refused as too short, and confirming it
+    with "हो" threw the draft away.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.rf = RequestFactory()
+
+    def _session_request(self):
+        req = self.rf.post('/chat/')
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session.save()
+        req.user = Anon()
+        return req
+
+    def say(self, req, message):
+        result = handle(req, message)
+        return result[0] if result else None
+
+    def test_street_light_is_electricity_in_both_languages(self):
+        """"सडक बत्ती" is a street light, not a road.
+
+        "सडक" (road) and "बत्ती" (light) both match; the longer keyword is
+        the more specific claim, so ELECTRICITY wins.
+        """
+        self.assertEqual(detect_category('सडक बत्ती बिग्रियो'), 'ELECTRICITY')
+        self.assertEqual(detect_category('my street light is broken'),
+                         'ELECTRICITY')
+        # The plain road cases must not have moved.
+        self.assertEqual(detect_category('सडकमा खाल्डो छ'), 'ROAD')
+
+    def test_a_nepali_report_is_answered_in_nepali(self):
+        from chatbot.tools.retrieval import _is_devanagari
+        req = self._session_request()
+        reply = self.say(req, 'सडक बत्ती बिग्रियो')
+        self.assertIsNotNone(reply)
+        self.assertTrue(_is_devanagari(reply), reply)
+
+    def test_an_english_report_is_still_answered_in_english(self):
+        from chatbot.tools.retrieval import _is_devanagari
+        req = self._session_request()
+        reply = self.say(req, 'my street light is broken')
+        self.assertIsNotNone(reply)
+        self.assertFalse(_is_devanagari(reply), reply)
+
+    def test_devanagari_confirmation_files_rather_than_discards(self):
+        """"हो" must submit. An unrecognised reply throws the draft away."""
+        from chatbot.tools.flow import AFFIRMATIVE, NEGATIVE
+        for word in ['हो', 'हुन्छ', 'ठीक छ', 'पठाउनुहोस्']:
+            self.assertIn(word, AFFIRMATIVE)
+        for word in ['होइन', 'छैन', 'रद्द']:
+            self.assertIn(word, NEGATIVE)
+
+    def test_a_short_nepali_description_is_not_refused(self):
+        """Devanagari says the same thing in fewer codepoints.
+
+        "सडक बत्ती बिग्रियो" is 18 characters and was refused by a flat
+        20-character floor; "my street light is broken" says the same in 25
+        and passed.
+        """
+        from chatbot.tools.write import _minimum_for, DESC_MIN, DESC_MIN_NE
+        self.assertEqual(_minimum_for('सडक बत्ती बिग्रियो', DESC_MIN),
+                         DESC_MIN_NE)
+        self.assertEqual(_minimum_for('my street light is broken', DESC_MIN),
+                         DESC_MIN)
+        self.assertLess(len('सडक बत्ती बिग्रियो'), DESC_MIN)
+        self.assertGreaterEqual(len('सडक बत्ती बिग्रियो'), DESC_MIN_NE)
+
+    def test_a_one_word_nepali_description_is_still_refused(self):
+        """Lowering the floor must not let "बिग्रियो" through as a report."""
+        from chatbot.tools.write import _minimum_for, DESC_MIN, DESC_MIN_NE
+        self.assertLess(len('बिग्रियो'), DESC_MIN_NE)
+        self.assertEqual(_minimum_for('बिग्रियो', DESC_MIN), DESC_MIN_NE)

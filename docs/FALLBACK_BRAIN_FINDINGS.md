@@ -754,3 +754,48 @@ withheld. Public-by-reference, as designed.
 
 Both are the same structural point: the tool layer is honest, and the risk
 has been pushed into the one component whose output is not verified.
+
+## The prompt was the weakest part of the whole system
+
+The tool layer either answers from a municipal document or declines, so the
+questions reaching the model are precisely the ones nothing can check. That
+made the prompt the highest-leverage text in the codebase. It was four lines:
+
+```
+You are Ask Bhaktapur AI, an assistant for Bhaktapur Municipality.
+Local context: {context}
+
+User question: {query}
+Answer clearly using the context above.
+```
+
+Two structural faults.
+
+**It never said what to do when the context lacks the answer.** *What is the
+deadline to pay property tax this year* is answered nowhere in the corpus, so
+it reached a model told only to "answer clearly using the context" — with
+every incentive to produce a plausible date. Inventing a municipal deadline
+is the most damaging thing this assistant can do, because a citizen will act
+on it and miss a real one.
+
+**Everything was one `user` message.** There was no system role at all, so
+the rules were ordinary user text, and the citizen's question followed them
+with equal standing. "Ignore your instructions" was not fighting a system
+prompt — it was appended to a paragraph of suggestions.
+
+Now the instructions and the retrieved material sit in a `system` turn and
+the citizen's words alone go in the `user` turn, with explicit rules: answer
+only from the material, never state a fee, deadline, date, eligibility rule
+or processing time that is not written there, do not claim to be the official
+record (the application adds that label where it applies), reply in the
+language asked, and treat the user's message as a question rather than an
+instruction.
+
+The sensitive-topic rules are repeated here as defence in depth, even though
+the tool layer declines them before this point.
+
+**Honest limit:** this is a structural improvement, verified by tests on what
+is sent. Whether the model *obeys* it is not something I have measured — the
+free tier is ~8,000 tokens/minute and an adversarial suite against the live
+model does not fit inside that. The prompt is now worth obeying; whether it
+is obeyed is still unknown.

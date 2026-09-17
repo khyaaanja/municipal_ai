@@ -397,3 +397,50 @@ class NepaliToNepaliSynonymTests(TestCase):
         from chatbot.tools.retrieval import search
         hits = search('व्यवसाय कर कति हो', limit=2, chunks=self.CHUNKS)
         self.assertEqual(hits[0]['title'], 'आर्थिक ऐन — कर')
+
+
+class SocialProtectionReachabilityTests(TestCase):
+    """Two services the municipality delivers were recorded as gaps.
+
+    The charter distributes the identity card that entitles someone to the
+    social security allowance, and covers the disability card. Neither was
+    reachable from English, so a citizen asking in English was told the
+    municipality had no answer.
+
+    The scanned charter came through Preeti conversion spelling these
+    "ज्येषठ" and "अपांगता", and a term nobody spells that way is a term
+    nobody reaches.
+    """
+
+    CHUNKS = [
+        {
+            'id': 1,
+            'title': 'नागरिक वडापत्र — २७',
+            'content': 'सामाजिक सुरक्षा भत्ता पाउन परिचय पत्र वितरण। '
+                       'ज्येषठ नागरिकको लागि निवेदन र नागरिकता।',
+            'source_type': 'procedure',
+        },
+        {
+            'id': 2,
+            'title': 'नागरिक वडापत्र — २८',
+            'content': 'अपांगता कार्डको फोटोकपी, फोटो-२ प्रति, '
+                       'जन्म दर्ता प्रमाण पत्र।',
+            'source_type': 'procedure',
+        },
+    ]
+
+    def test_english_reaches_the_allowance_procedure(self):
+        from chatbot.tools.retrieval import search
+        hits = search('senior citizen allowance', limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'नागरिक वडापत्र — २७')
+
+    def test_english_reaches_the_disability_procedure(self):
+        from chatbot.tools.retrieval import search
+        hits = search('disability card', limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'नागरिक वडापत्र — २८')
+
+    def test_the_converted_spellings_are_mapped(self):
+        """A term the document spells oddly still has to be findable."""
+        from chatbot.tools.retrieval import equivalents, _stem
+        self.assertIn('senior', equivalents(_stem('ज्येषठ')))
+        self.assertIn('disability', equivalents(_stem('अपांगता')))

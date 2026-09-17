@@ -43,6 +43,21 @@ BILINGUAL = {
     'मन्दिर': ('temple', 'heritage'),
     'जात्रा': ('festival', 'jatra'),
     'वडा': ('ward',),
+    # Social-protection services. The charter documents both -- section 27
+    # distributes the identity card that entitles someone to the social
+    # security allowance, section 28 covers the disability card -- and
+    # neither was reachable from English, so two services the municipality
+    # actually delivers were being reported as gaps.
+    'भत्ता': ('allowance', 'benefit', 'pension'),
+    'ज्येष्ठ': ('senior', 'elderly', 'old'),
+    'सुरक्षा': ('security', 'protection'),
+    'अपाङ्गता': ('disability', 'disabled', 'handicap'),
+    'परिचयपत्र': ('card', 'identity'),
+    # The scanned charter came through Preeti conversion with these
+    # spellings, and a term nobody spells that way is a term nobody reaches.
+    'ज्येषठ': ('senior', 'elderly', 'old'),
+    'अपांगता': ('disability', 'disabled', 'handicap'),
+    'अपांग': ('disability', 'disabled', 'handicap'),
     'कार्यालय': ('office', 'municipality'),
     'शुल्क': ('fee', 'charge', 'cost'),
     'कागजात': ('document', 'documents'),

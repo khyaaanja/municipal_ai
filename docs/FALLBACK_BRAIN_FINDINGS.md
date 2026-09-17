@@ -537,3 +537,34 @@ sitting at 0.50 on one matched word. Three heuristics have now been measured
 against this corpus — corpus frequency, top-two margin, and absolute matched
 terms — and none separates the good answers from the bad. Retrieval scores
 are not where this is fixable. The schedule is.
+
+## Re-checking the whole gap list in the document's words
+
+Applying that lesson to every remaining gap found two more services that
+were never missing, only unreachable:
+
+| Recorded as | Actually in the charter |
+|---|---|
+| senior citizen allowance | §27 — `सामाजिक सुरक्षा भत्ता पाउन परिचय पत्र वितरण` |
+| disability allowance | §28 — `अपांगता कार्डको फोटोकपी`, severe-disability procedures |
+
+Neither was reachable from English: `भत्ता`, `ज्येष्ठ` and `अपांगता` were
+not in the bilingual map. Mapped, both answer in both languages, and every
+tax, permit, registration and tourism query is unchanged.
+
+Preeti conversion matters here. The scanned charter renders these as
+**ज्येषठ** and **अपांगता**, not the standard `ज्येष्ठ` / `अपाङ्गता`. A term
+nobody spells the way the document spells it is a term nobody reaches, so
+both spellings are mapped.
+
+### What is genuinely absent
+
+Checked the same way and confirmed missing: waste-collection schedule,
+wheelchair and step-free access, ATMs and card payment as a visitor service,
+luggage storage, drinking-water safety, and how long to spend in the town.
+`शौचालय` appears only as a fee for renting mobile toilets, and `एटिएम` only
+as a business registration charge — the fee for operating one, not where a
+visitor finds one.
+
+These need content from the municipality. The list is now trustworthy,
+which the previous one was not.

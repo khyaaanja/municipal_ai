@@ -328,3 +328,34 @@ class NamedFestivalTests(TestCase):
     def test_a_partial_match_does_not_displace_the_calendar(self):
         """"Gai Jatra" must not be answered with the Bisket Jatra page."""
         self.assertEqual(self.ask('Gai Jatra'), 'list_events')
+
+
+class BusinessHoursTests(TestCase):
+    """The hours were fetched and then dropped on the floor.
+
+    find_businesses already returns opening_hours and the attraction listing
+    renders them, so "what time do the shops close" was answered with a list
+    of addresses while the answer sat unused in the same payload.
+    """
+
+    def test_the_listing_shows_opening_hours(self):
+        from chatbot.tools.present import present
+        from chatbot.tools.base import ToolResult
+
+        rows = [{'name': 'Peacock Restaurant', 'category': 'Restaurant',
+                 'address': 'Durbar Square Area', 'rating': None,
+                 'opening_hours': '8:00 AM - 9:00 PM'}]
+        # find_businesses returns a plain list, which present() hands
+        # straight to the renderer.
+        reply, _ = present('find_businesses', ToolResult(ok=True, data=rows))
+        self.assertIn('8:00 AM - 9:00 PM', reply)
+
+    def test_a_business_without_hours_still_renders(self):
+        from chatbot.tools.present import present
+        from chatbot.tools.base import ToolResult
+
+        rows = [{'name': 'Corner Shop', 'category': 'Retail',
+                 'address': 'Taumadhi', 'rating': None,
+                 'opening_hours': None}]
+        reply, _ = present('find_businesses', ToolResult(ok=True, data=rows))
+        self.assertIn('Corner Shop', reply)

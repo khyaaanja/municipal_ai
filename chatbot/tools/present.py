@@ -136,7 +136,11 @@ def _businesses(rows):
     for b in rows:
         rating = f" · {b['rating']:.1f}★" if b.get('rating') else ''
         addr = f" — {b['address']}" if b['address'] else ''
-        out.append(f"- **{b['name']}** ({b['category']}){addr}{rating}")
+        # The tool already fetches these and the attraction listing shows
+        # them, so "what time do the shops close" was answered with a list
+        # of addresses while the hours sat unused in the same payload.
+        hours = f" · {b['opening_hours']}" if b.get('opening_hours') else ''
+        out.append(f"- **{b['name']}** ({b['category']}){addr}{hours}{rating}")
     return '\n'.join(out)
 
 

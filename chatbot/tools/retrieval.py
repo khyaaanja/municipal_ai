@@ -111,14 +111,11 @@ SYNONYMS = {
     'pottery': ('ceramic', 'clay', 'potter'),
     'heritage': ('unesco', 'historic', 'historical', 'ancient'),
     'dress': ('wear', 'clothing', 'clothes', 'attire', 'modest'),
+    # The lost-document entry says "theft"; a visitor says "stolen".
+    'theft': ('stolen', 'stole', 'robbed', 'pickpocket', 'snatched'),
+    'lost': ('missing', 'misplaced'),
 }
 
-# Expanded the same way as the bilingual map, in both directions.
-SYNONYM_INDEX = {}
-for _head, _forms in SYNONYMS.items():
-    for _form in _forms:
-        SYNONYM_INDEX.setdefault(_form, []).append(_head)
-        SYNONYM_INDEX.setdefault(_head, []).append(_form)
 
 
 ENGLISH_TO_NEPALI = {}
@@ -198,6 +195,26 @@ def _stem(token):
 
 def tokenize(text):
     return [_stem(t.lower()) for t in TOKEN.findall(text or '')]
+
+
+# Built here rather than beside SYNONYMS because it has to agree with the
+# stemmer. Documents are matched on stemmed tokens, so an entry keyed on the
+# raw word is simply unreachable: "robbed" stems to "robb", and the synonym
+# written as "robbed" was never once consulted. Both directions, and both
+# sides of each pair, go through the same stemmer the text does.
+# Deduplicated: "stay" and "staying" both stem to "stay", so an expansion
+# listed twice would count twice in the BM25 sum and quietly overweight it.
+SYNONYM_INDEX = {}
+for _head, _forms in SYNONYMS.items():
+    _stemmed_head = _stem(_head)
+    for _form in _forms:
+        _stemmed_form = _stem(_form)
+        if _stemmed_form == _stemmed_head:
+            continue
+        SYNONYM_INDEX.setdefault(_stemmed_form, set()).add(_stemmed_head)
+        SYNONYM_INDEX.setdefault(_stemmed_head, set()).add(_stemmed_form)
+SYNONYM_INDEX = {_key: tuple(sorted(_values))
+                 for _key, _values in SYNONYM_INDEX.items()}
 
 
 def equivalents(token):

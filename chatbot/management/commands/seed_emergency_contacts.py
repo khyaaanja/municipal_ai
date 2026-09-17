@@ -16,6 +16,7 @@ from django.core.management.base import BaseCommand
 from core import contacts
 
 NTB = 'https://ntb.gov.np/en/plan-your-trip/before-you-come/tourist-police'
+POLICE = 'https://www.nepalpolice.gov.np/tourist-police/'
 HOSPITAL = 'https://bhaktapurhospital.gov.np'
 
 ENTRIES = [
@@ -65,6 +66,41 @@ ENTRIES = [
             'आपतकालीन लाइन होइन:\n'
             f'{contacts.PHONES_NE}\n'
             f'स्रोत: {contacts.SOURCE}'
+        ),
+    },
+    {
+        'title': 'Lost passport, documents or theft — what to do',
+        'category': 'emergency',
+        'language': 'en',
+        'content': (
+            'Report it to the Tourist Police first. They register the '
+            'complaint and issue the Police Report you will need before a '
+            'passport can be replaced.\n\n'
+            'Tourist Police, toll free: 1144\n'
+            'Tourist Police, Bhaktapur: 9851289448\n'
+            'Email: policetourist@nepalpolice.gov.np\n'
+            f'Source: Nepal Police, {POLICE}\n\n'
+            'Then contact your own embassy or consulate in Kathmandu with '
+            'that Police Report — only they can issue a replacement or '
+            'emergency travel document.\n\n'
+            'Nepal Police advise carrying certified copies of your documents '
+            'and keeping the originals separately.'
+        ),
+    },
+    {
+        'title': 'राहदानी वा कागजात हराए के गर्ने',
+        'category': 'emergency',
+        'language': 'ne',
+        'content': (
+            'पहिले पर्यटक प्रहरीमा जानकारी गराउनुहोस्। उनीहरूले उजुरी दर्ता '
+            'गरी प्रहरी प्रतिवेदन दिन्छन्, जुन राहदानी बनाउन आवश्यक पर्छ।\n\n'
+            'पर्यटक प्रहरी (निःशुल्क): ११४४\n'
+            'पर्यटक प्रहरी, भक्तपुर: 9851289448\n'
+            'इमेल: policetourist@nepalpolice.gov.np\n'
+            f'स्रोत: नेपाल प्रहरी, {POLICE}\n\n'
+            'त्यसपछि सो प्रतिवेदन लिएर काठमाडौंस्थित आफ्नो दूतावासमा '
+            'सम्पर्क गर्नुहोस् — नयाँ राहदानी वा यात्रा कागजात उनीहरूले मात्र '
+            'दिन सक्छन्।'
         ),
     },
 ]

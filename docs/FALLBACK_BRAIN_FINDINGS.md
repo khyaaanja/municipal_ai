@@ -376,3 +376,49 @@ The underlying problem stands: coverage over a one-word query carries no
 evidence, and there is no tour-guide content to find. Recorded rather than
 patched, because a fix that is not measured is how the gate above got
 written.
+
+---
+
+# The index had tripled, and retrieval was paying for it
+
+`index_knowledge_base` appended by default. Running it three times in one
+session turned 189 entries into **873 byte-identical chunks**, every title
+present three times.
+
+The cost is not storage. `search()` reconsiders its top 8 candidates by
+coverage, so three copies of one document occupy three of those slots:
+
+```
+building permit fees
+  cov=0.33  Visitor Rules & Entry Fees     <- x3
+  cov=0.33  Visitor Guidelines             <- x3
+  cov=0.33  Getting Around Bhaktapur       <- x2
+```
+
+Eight slots, three documents, and the Act that sets building-permit fees
+never entered the pool. It had been reaching it at 0.67 an hour earlier.
+
+This also produced a false alarm. Deduplicating the synonym expansions looked
+like it had caused the regression, because that was the change in hand when
+the symptom appeared. It had not — the third index run had.
+
+The command is the only writer of `KnowledgeChunk`, so the table is entirely
+derived and replacing it is always correct. Replacing is now the default,
+`--append` is available and documented as almost never wanted.
+
+## Withdrawn content never left the index
+
+Writing the idempotence test surfaced a second bug. With no active entries
+the command wrote "KnowledgeBase is empty" and returned **before** deleting
+anything, so chunks whose source had been deactivated stayed indexed and
+kept being served. A superseded fee schedule would have outlived its own
+withdrawal. The index is derived; when the source goes, the chunks go.
+
+## Synonyms have to agree with the stemmer
+
+`SYNONYM_INDEX` was keyed on raw words while documents are matched on stemmed
+tokens. "robbed" stems to "robb", so the synonym written as `robbed` was
+never once consulted — it could not be. The index is now built after `_stem`
+and passes both keys and values through it, and deduplicates: "stay" and
+"staying" both stem to "stay", and an expansion listed twice counts twice in
+the BM25 sum.

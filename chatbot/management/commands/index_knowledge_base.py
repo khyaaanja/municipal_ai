@@ -3,6 +3,15 @@
 KnowledgeBase holds the authored municipal content; KnowledgeChunk is what
 retrieval actually reads. Until this runs, the assistant's knowledge search
 falls back to substring matching over an empty table.
+
+This command is the only writer of KnowledgeChunk, so the table is entirely
+derived and replacing it is always correct. It used to append by default,
+which meant running it twice silently doubled the index: 189 entries had
+become 873 byte-identical chunks. That is not merely wasteful. Retrieval
+reconsiders its top candidates by coverage, and three copies of one document
+fill that pool and crowd out the document that actually answers -- "building
+permit fees" stopped reaching the Act that sets them because the pool held
+three copies each of two visitor pages.
 """
 import re
 
@@ -60,7 +69,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--rebuild', action='store_true',
-                            help='Delete existing chunks before indexing.')
+                            help='Deprecated: replacing is now the default.')
+        parser.add_argument('--append', action='store_true',
+                            help='Add to the existing index instead of '
+                                 'replacing it. Duplicates whatever is '
+                                 'already there; almost never what you want.')
         parser.add_argument('--include-auto', action='store_true',
                             help='Also index AI-generated entries (not municipal record).')
         parser.add_argument('--dry-run', action='store_true',
@@ -80,8 +93,19 @@ class Command(BaseCommand):
                     '(pass --include-auto to index them anyway).'))
         total = entries.count()
         if not total:
+            # Returning here left withdrawn content in the index forever. The
+            # chunks are derived from KnowledgeBase and nothing else, so an
+            # entry the municipality deactivates -- a superseded fee schedule,
+            # say -- must stop being served, not linger because the source it
+            # came from is now empty.
             self.stdout.write(self.style.WARNING(
-                'KnowledgeBase is empty — run the seed command first.'))
+                'No active KnowledgeBase entries — run the seed command first.'))
+            if not options['append']:
+                removed = KnowledgeChunk.objects.all().delete()[0]
+                if removed:
+                    self.stdout.write(self.style.WARNING(
+                        f'Cleared {removed} chunks that no longer have a '
+                        'source entry.'))
             return
 
         planned = []
@@ -97,14 +121,18 @@ class Command(BaseCommand):
                 ))
 
         if options['dry_run']:
+            existing = KnowledgeChunk.objects.count()
+            verb = 'added to' if options['append'] else 'replacing'
             self.stdout.write(
-                f'{total} active entries would produce {len(planned)} chunks.')
+                f'{total} active entries would produce {len(planned)} chunks, '
+                f'{verb} {existing} already indexed.')
             return
 
         with transaction.atomic():
-            if options['rebuild']:
+            if not options['append']:
                 removed = KnowledgeChunk.objects.all().delete()[0]
-                self.stdout.write(f'Removed {removed} existing chunks.')
+                if removed:
+                    self.stdout.write(f'Replaced {removed} existing chunks.')
             KnowledgeChunk.objects.bulk_create(planned, batch_size=200)
 
         self.stdout.write(self.style.SUCCESS(

@@ -422,3 +422,70 @@ never once consulted — it could not be. The index is now built after `_stem`
 and passes both keys and values through it, and deduplicates: "stay" and
 "staying" both stem to "stay", and an expansion listed twice counts twice in
 the BM25 sum.
+
+---
+
+# Questions no document can answer
+
+"How many complaints are open" came back as the **lost-passport guide**,
+with full confidence. "What is the complaint resolution rate" did the same.
+These were the worst answers in the system.
+
+## Two scoring fixes tried, measured, and rejected
+
+The instinct is to treat this as a confidence problem. It is not, and the
+numbers say so. Over a dozen known-good and known-bad answers:
+
+| | coverage | margin (top vs 2nd) |
+|---|---|---|
+| `birth certificate` (right) | 1.00 | **0.02** |
+| `complaint resolution rate` (wrong) | 0.33 | **0.20** |
+| `व्यवसाय कर कति हो` (right) | 0.67 | 0.05 |
+| `do I need a guide` (wrong) | 1.00 | 0.01 |
+
+Neither signal separates them. A correct answer can be a hair ahead of the
+runner-up, and a wrong one can win comfortably.
+
+A second attempt — "a *when* question needs a passage containing a time" —
+failed the same way. It correctly rejected the garbage-collection answers,
+then rejected *when is Bisket Jatra* (the festival page names no clock time)
+and accepted *opening hours of Durbar Square* → Emergency Contacts, which
+happens to contain the word "hours".
+
+Recorded rather than shipped. The earlier corpus-frequency gate was written
+without measuring and demoted every correct answer in the app; these two
+were measured first and did not earn their place.
+
+## What did work: ask what kind of thing is being asked for
+
+Caseload questions are not a document question at all. They are caught by
+what they ask for — a measure word plus a record noun — and declined:
+
+> I can't report on how many complaints or requests the municipality is
+> handling — those figures are not something I have access to, and other
+> people's cases are not public.
+
+The reply names where the figures do live (the dashboard for staff, *my
+complaints* for one's own, a `BK-` reference for a single case) and leaks no
+counts. Both languages.
+
+It is checked after the filing flow, so "garbage is piling up and many
+complaints are ignored" is still heard as a report, and it steps aside for
+"my complaints", which has a tool behind it. "How many days for a birth
+certificate" is untouched: it has a measure word and no record noun.
+
+## Still content gaps, not retrieval gaps
+
+There is **no procedural content** for either of these:
+
+- how to get a water connection (`पानीको धारा कसरी जोड्ने`)
+- when household waste is collected (`फोहोर कहिले उठाउँछ`)
+
+The only matches are fee-schedule lines from the आर्थिक ऐन. So a resident
+asking when their rubbish is collected is shown *फोहोर फ्याँक्न जरिवाना* —
+the littering fine for tourists — or a monthly cleaning charge levied on
+NGOs, framed as quoted from municipal records.
+
+No amount of ranking fixes this. The municipality publishes a collection
+schedule and a connection procedure; until those are in the corpus, the
+honest outcome is the no-answer reply, and the honest fix is the content.

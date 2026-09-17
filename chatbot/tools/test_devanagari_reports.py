@@ -208,3 +208,70 @@ class BrowseVersusQuestionTests(TestCase):
 
     def test_a_plain_topic_word_still_browses(self):
         self.assertEqual(self.ask('temples in Bhaktapur'), 'find_attractions')
+
+
+class CaseloadQuestionTests(TestCase):
+    """Figures about the municipality's caseload are not a document question.
+
+    "how many complaints are open" came back as the lost-passport guide, with
+    full confidence. No retrieval score separated these from good answers:
+    measured over a dozen known-good and known-bad cases, neither coverage
+    nor the margin between the top two hits told them apart -- a correct
+    "birth certificate" had a 0.02 margin and a wrong "complaint resolution
+    rate" had 0.20. The mismatch is one of kind, not of confidence.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.rf = RequestFactory()
+        from chatbot.models import KnowledgeChunk
+        KnowledgeChunk.objects.create(
+            source_type='emergency',
+            title='Lost passport, documents or theft',
+            content='Report it to the Tourist Police, who register the '
+                    'complaint and issue a Police Report. Toll free 1144.',
+            is_active=True,
+        )
+
+    def ask(self, message):
+        req = self.rf.post('/chat/')
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session.save()
+        req.user = Anon()
+        result = handle(req, message)
+        return result if result else (None, None, None)
+
+    def test_caseload_questions_are_declined(self):
+        for message in ['how many complaints are open',
+                        'what is the complaint resolution rate',
+                        'show me pending service requests',
+                        'total complaints this month',
+                        'कति उजुरी छन्']:
+            _reply, _followups, intent = self.ask(message)
+            self.assertEqual(intent, 'caseload_unavailable', message)
+
+    def test_the_refusal_leaks_no_figures(self):
+        reply, _f, _i = self.ask('how many complaints are open')
+        self.assertNotRegex(reply, r'\d+\s+(complaints|open|pending)')
+
+    def test_a_nepali_question_is_declined_in_nepali(self):
+        from chatbot.tools.retrieval import _is_devanagari
+        reply, _f, _i = self.ask('कति उजुरी छन्')
+        self.assertTrue(_is_devanagari(reply), reply)
+
+    def test_ordinary_questions_are_not_swallowed(self):
+        """"how many days" is a question about a service, not a caseload."""
+        for message in ['how many days for a birth certificate',
+                        'how much is property tax',
+                        'व्यवसाय कर कति हो']:
+            _r, _f, intent = self.ask(message)
+            self.assertNotEqual(intent, 'caseload_unavailable', message)
+
+    def test_a_report_mentioning_complaints_is_still_a_report(self):
+        _r, _f, intent = self.ask(
+            'garbage is piling up and many complaints are ignored')
+        self.assertEqual(intent, 'complaint_filing')
+
+    def test_a_personal_lookup_is_not_swallowed(self):
+        _r, _f, intent = self.ask('my complaints')
+        self.assertEqual(intent, 'get_my_complaints')

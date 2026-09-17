@@ -133,6 +133,63 @@ def _say(nepali, english, ne):
     return nepali if ne else english
 
 
+# Questions about the municipality's own caseload -- how many complaints are
+# open, what the resolution rate is -- cannot be answered by a document, and
+# letting knowledge try produced the worst answers in the system: "how many
+# complaints are open" came back as the lost-passport guide, confidently.
+#
+# No retrieval score separates these. Measured against a dozen known-good
+# and known-bad answers, neither coverage nor the margin between the top two
+# hits told them apart: a correct "birth certificate" scored a 0.02 margin
+# and a wrong "complaint resolution rate" scored 0.20. The mismatch is one
+# of kind, not of confidence -- so it is caught by what is being asked for
+# rather than by how well some paragraph happens to match.
+#
+# Figures about other people's cases are not public, and no tool exposes
+# them, so the honest answer names where they live and stops there.
+CASELOAD_MEASURES = (
+    'how many', 'how much', 'total', 'count', 'statistic', 'rate',
+    'average', 'breakdown', 'trend', 'percentage', 'summary of',
+    'pending', 'all open', 'list all',
+    # The English list alone let "कति उजुरी छन्" through to a document.
+    'कति', 'कुल', 'तथ्याङ्क', 'प्रतिशत', 'औसत', 'जम्मा',
+)
+CASELOAD_RECORDS = (
+    'complaint', 'complaints', 'service request', 'service requests',
+    'proposal', 'proposals', 'case', 'cases', 'ticket', 'tickets',
+    'उजुरी', 'निवेदन',
+)
+
+
+def _asks_for_caseload_figures(lowered):
+    """True for "how many complaints are open", false for "how many days"."""
+    if not any(word in lowered for word in CASELOAD_RECORDS):
+        return False
+    if not any(word in lowered for word in CASELOAD_MEASURES):
+        return False
+    # "my complaints" is a personal lookup with a tool behind it; the router
+    # has already had its chance at those and they must not be swallowed.
+    return not any(word in lowered for word in _MINE_WORDS)
+
+
+_MINE_WORDS = ('my ', 'mine', 'i filed', 'i submitted', 'मेरो')
+
+CASELOAD_REPLY_EN = (
+    "I can't report on how many complaints or requests the municipality is "
+    "handling — those figures are not something I have access to, and other "
+    "people's cases are not public.\n\n"
+    'If you are staff, the dashboard has them. If you want your own, sign in '
+    'and ask for **my complaints** or **my service requests**. To look up a '
+    'single complaint you have the reference for, give me the **BK-** number.'
+)
+CASELOAD_REPLY_NE = (
+    'नगरपालिकाले हेरिरहेका कति उजुरी वा निवेदन छन् भन्ने तथ्याङ्क म दिन '
+    'सक्दिनँ — त्यो मसँग छैन, र अरूको उजुरी सार्वजनिक हुँदैन।\n\n'
+    'कर्मचारी हुनुहुन्छ भने ड्यासबोर्डमा हेर्नुहोस्। आफ्नै हेर्न लगइन गरी '
+    '**मेरो उजुरी** भन्नुहोस्। कुनै एउटा उजुरीको **BK-** नम्बर छ भने '
+    'त्यही दिनुहोस्।'
+)
+
 def _normalise(message):
     return (message or '').strip().lower().rstrip('.!?')
 
@@ -231,6 +288,13 @@ def handle(request, message, claim_token=''):
     handled = _filing_flow(request, session, message, lowered)
     if handled is not None:
         return handled
+
+    # Checked after filing so "there are too many complaints about this road"
+    # is still heard as a report, and before knowledge so no document is
+    # offered as an answer about caseload.
+    if _asks_for_caseload_figures(lowered):
+        return (_say(CASELOAD_REPLY_NE, CASELOAD_REPLY_EN,
+                     _in_nepali(message)), [], 'caseload_unavailable')
 
     # Retrieval before the model: if the municipality has a verified answer,
     # use it rather than paying for a generated one (sections 42-43). A weak

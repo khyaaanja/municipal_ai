@@ -4,6 +4,8 @@ Rendering is deterministic and never routes tool output back through the
 model. Retrieved text cannot be read as an instruction if no model reads
 it, so this is also where §28 is strongest.
 """
+import re
+
 
 EMPTY = {
     'find_on_map': "I couldn't find that place on the map.",
@@ -330,6 +332,63 @@ def _marked_read(d):
 
 
 
+# Documents in the corpus span seven fiscal years. The citizen charter is
+# 2076/077 -- roughly 2019 -- and the tax Act is 2083/084, the current year,
+# and both were presented with the same words: "quoted from the
+# municipality's official records, unchanged". A citizen reading a rु.१२५
+# fee from a seven-year-old charter has no way to know it might have moved,
+# and acts on it.
+#
+# The newest year is read from the corpus rather than hardcoded, so importing
+# a fresh document updates the baseline instead of leaving a constant to rot.
+FISCAL_YEAR = re.compile(r'\b(20\d\d)/0?(\d\d)\b')
+STALE_AFTER_YEARS = 2
+_NEWEST_CACHE_KEY = 'kb_newest_fiscal_year'
+
+
+def _fiscal_year_of(title):
+    """The leading fiscal year in a document title, as an integer."""
+    found = FISCAL_YEAR.search(title or '')
+    return int(found.group(1)) if found else None
+
+
+def _newest_fiscal_year():
+    """The most recent fiscal year anywhere in the indexed corpus."""
+    from django.core.cache import cache
+
+    cached = cache.get(_NEWEST_CACHE_KEY)
+    if cached is not None:
+        return cached
+    from chatbot.models import KnowledgeChunk
+
+    newest = None
+    for title in KnowledgeChunk.objects.filter(
+            is_active=True).values_list('title', flat=True):
+        year = _fiscal_year_of(title)
+        if year and (newest is None or year > newest):
+            newest = year
+    cache.set(_NEWEST_CACHE_KEY, newest, timeout=3600)
+    return newest
+
+
+def _age_note(titles):
+    """Warn when an answer rests on a materially older document."""
+    newest = _newest_fiscal_year()
+    if not newest:
+        return ''
+    oldest = None
+    for title in titles:
+        year = _fiscal_year_of(title)
+        if year and (oldest is None or year < oldest):
+            oldest = year
+    if oldest is None or newest - oldest < STALE_AFTER_YEARS:
+        return ''
+    return (f'_This comes from a {oldest}/0{str(oldest + 1)[-2:]} document, '
+            f'{newest - oldest} years older than the municipality\'s current '
+            'records. Fees and requirements may have changed since — confirm '
+            'with the ward office before you rely on it._')
+
+
 def _knowledge(d):
     out = []
     # Asked in English, answered from a Nepali document: say so up front. The
@@ -346,6 +405,9 @@ def _knowledge(d):
     if d.get('confidence') == 'medium':
         out.append('_This is the closest match in the municipal records — '
                    'check with the ward office if you need certainty._')
+    aged = _age_note([p['title'] for p in d['passages'][:3]])
+    if aged:
+        out.append(aged)
     return '\n'.join(out).strip()
 
 

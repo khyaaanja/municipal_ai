@@ -289,3 +289,90 @@ documented only in English must still reach it.
 Detecting the script by counting letters had the same bug in miniature — the
 URL's letters outvoted the Nepali text in a short entry, so a *cited source*
 made an entry look English. URLs are excluded before counting.
+
+---
+
+# Measuring the assistant instead of measuring retrieval
+
+Probing `search()` directly had been scoring the wrong thing in both
+directions. It counted a miss whenever the router was always going to
+handle the message — "my street light is broken" files a complaint and
+retrieves nothing — and counted a hit whenever a query merely shared a word,
+as "do I need a guide" did against *Newari Cuisine Guide*.
+
+`scripts/persona_probe.py` now goes through the path a real message takes:
+router, then knowledge, then the no-answer reply. Every finding below came
+from that and not from retrieval scores.
+
+## Reporting a problem in Nepali failed at four separate steps
+
+One message — "सडक बत्ती बिग्रियो", a broken street light — and every stage
+mishandled it.
+
+| Step | What happened |
+|---|---|
+| Category | Filed as **ROAD**. "सडक" (road) and "बत्ती" (light) both match, and the category was decided by dict order |
+| Language | The entire conversation replied in English |
+| Validation | Refused: 18 characters against a 20-character floor |
+| Confirmation | "हो" **discarded the draft** |
+
+The English phrasing was right only by accident: "street light" is one
+ELECTRICITY phrase and "street" alone is not a ROAD keyword, so nothing
+competed. `detect_category` now takes the longest matching keyword, which is
+the more specific claim about the message in either language.
+
+The character floor deserves its own note. Devanagari attaches vowels to the
+consonant rather than setting them beside it, so it reaches the same content
+in fewer codepoints. A flat minimum is therefore a *stricter* test in Nepali:
+18 characters of Nepali said exactly what 25 characters of English said, and
+only the Nepali was rejected. The floor exists to refuse one-word
+non-descriptions, and 12 still refuses "बिग्रियो".
+
+The confirmation bug was the worst of them. `AFFIRMATIVE` held romanised
+Nepali but no Devanagari, and an unrecognised reply is treated as a
+correction that throws the draft away — so a resident who described a
+problem in Nepali and agreed to file it in Nepali lost the complaint.
+
+## A catalogue is not an answer
+
+`find_attractions` and `find_businesses` take no arguments: they return the
+whole list and cannot narrow it. Matching the bare word "temple" meant
+
+> *What should I wear to the temples?* → **Places to visit**
+
+A question now gets first refusal from knowledge, and the listing stands in
+when nothing answers it.
+
+The first version of that rule was too broad. Handing *every* question to
+knowledge first turned "what things to do in Bhaktapur" into **Emergency
+Contacts**, which matched on the place name and answered confidently. Asking
+for the list is itself a question, so phrases that *are* the browse intent
+("things to do", "what to see") go straight to the listing, while a topic
+noun that can sit inside a specific question does not.
+
+## A gate that made things worse, and was reverted
+
+"do I need a guide" reduces to one content word once stopwords are removed,
+so its coverage is 1.00 against anything containing "guide" — hence a
+confident answer about Newari cuisine.
+
+The attempted fix was to discount query words appearing in more than 10% of
+the corpus, on the theory that a common word cannot identify a document.
+Measured, it did the opposite:
+
+| Question | Before | After the "fix" |
+|---|---|---|
+| व्यवसाय कर कति हो | high | **low** |
+| birth certificate | high | **low** |
+| property tax rate | high | **low** |
+| do I need a guide | high | high |
+
+In a municipal corpus the important words *are* the frequent ones — "tax",
+"certificate", "business" appear everywhere precisely because they matter.
+The gate demoted every correct answer and left the wrong one untouched. It
+was reverted.
+
+The underlying problem stands: coverage over a one-word query carries no
+evidence, and there is no tour-guide content to find. Recorded rather than
+patched, because a fix that is not measured is how the gate above got
+written.

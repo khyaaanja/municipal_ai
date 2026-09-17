@@ -63,6 +63,21 @@ REPORT_INTENT = ('report a', 'report the', 'complain', 'file a', 'there is a',
 # dress modestly and remove your shoes -- was never consulted.
 BROWSE_ROUTES = {'find_attractions', 'find_businesses'}
 
+# Asking for the list *is* the question here, so these go straight to it.
+# Handing every question to knowledge first was too broad: "what things to
+# do in Bhaktapur" came back as Emergency Contacts, which matched on the
+# place name and answered with confidence. A topic noun like "temple" can
+# sit inside a specific question; "things to do" cannot.
+BROWSE_INTENT = (
+    'what to see', 'there to see', 'things to do', 'what to do',
+    'worth visiting', 'show me', 'list', 'attraction', 'घुम्न', 'हेर्न',
+    'restaurants', 'where to eat', 'businesses', 'shops',
+)
+
+
+def _wants_the_list(lowered):
+    return any(phrase in lowered for phrase in BROWSE_INTENT)
+
 
 
 # "when is garbage collected" names a category but asks a question about the
@@ -205,7 +220,8 @@ def handle(request, message, claim_token=''):
             if name.startswith('get_') or not reporting:
                 # A question deserves an answer before a catalogue. The
                 # listing still stands in when nothing answers it.
-                if name in BROWSE_ROUTES and _is_a_question(lowered):
+                if (name in BROWSE_ROUTES and _is_a_question(lowered)
+                        and not _wants_the_list(lowered)):
                     answered = _knowledge_fallback(request, message)
                     if answered is not None:
                         return answered

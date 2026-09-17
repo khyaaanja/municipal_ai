@@ -57,7 +57,11 @@ _ROUTES = [
     ('find_attractions', (
         'temple', 'heritage', 'museum', 'what to see', 'tourist',
         'durbar square', 'attraction', 'mandir',
-        'मन्दिर', 'दरबार', 'सम्पदा', 'घुम्न',
+        # "what to see" did not cover the way visitors actually phrase it:
+        # "what is there to see" matched no route and no knowledge, so the
+        # commonest opening question of all fell through to nothing.
+        'there to see', 'things to do', 'what to do', 'worth visiting',
+        'मन्दिर', 'दरबार', 'सम्पदा', 'घुम्न', 'हेर्न',
     )),
 ]
 

@@ -160,3 +160,51 @@ class NepaliParityTests(TestCase):
         from chatbot.tools.write import _minimum_for, DESC_MIN, DESC_MIN_NE
         self.assertLess(len('बिग्रियो'), DESC_MIN_NE)
         self.assertEqual(_minimum_for('बिग्रियो', DESC_MIN), DESC_MIN_NE)
+
+
+class BrowseVersusQuestionTests(TestCase):
+    """A catalogue answers "what is there to see", not "what should I wear".
+
+    find_attractions and find_businesses take no arguments: they return the
+    whole list and cannot narrow it. Matching the bare word "temple" meant a
+    question about temple dress code came back as a list of places to visit.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.rf = RequestFactory()
+        # Without indexed content the fallback has nothing to return and the
+        # listing correctly stands in, so the rule under test never fires.
+        from chatbot.models import KnowledgeChunk
+        KnowledgeChunk.objects.create(
+            source_type='tourism',
+            title='Visitor Guidelines',
+            content='Dress modestly at temples and remove your shoes before '
+                    'entering. Photography is restricted inside shrines.',
+            is_active=True,
+        )
+
+    def ask(self, message):
+        req = self.rf.post('/chat/')
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session.save()
+        req.user = Anon()
+        result = handle(req, message)
+        return result[2] if result else None
+
+    def test_a_specific_question_reaches_knowledge(self):
+        self.assertEqual(self.ask('what should I wear to the temples'),
+                         'search_municipal_knowledge')
+
+    def test_asking_for_the_list_still_gets_the_list(self):
+        """Handing every question to knowledge first was too broad.
+
+        "what things to do in Bhaktapur" came back as Emergency Contacts,
+        which matched on the place name and answered confidently.
+        """
+        for message in ['what is there to see', 'what things to do in Bhaktapur',
+                        'what to do here', 'show me attractions']:
+            self.assertEqual(self.ask(message), 'find_attractions', message)
+
+    def test_a_plain_topic_word_still_browses(self):
+        self.assertEqual(self.ask('temples in Bhaktapur'), 'find_attractions')

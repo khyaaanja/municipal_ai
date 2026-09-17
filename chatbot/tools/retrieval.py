@@ -111,6 +111,15 @@ SYNONYMS = {
     'pottery': ('ceramic', 'clay', 'potter'),
     'heritage': ('unesco', 'historic', 'historical', 'ancient'),
     'dress': ('wear', 'clothing', 'clothes', 'attire', 'modest'),
+    # Nepali to Nepali. Until now the map only crossed languages, so a
+    # citizen and the citizen charter could use two words for one thing and
+    # never meet. The charter documents a water connection as "धारा/विद्ुत
+    # जडान सिफारिस"; a resident asks "पानीको धारा कसरी जोड्ने". Only "धारा"
+    # was shared, one word of three, which scored below the gate and the
+    # procedure -- which is written down, with its documents and its fee --
+    # was reported as something the municipality has no answer for.
+    'धारा': ('पानी', 'खानेपानी'),
+    'जडान': ('जोड्ने', 'जोड्न', 'जोडने', 'connection'),
     # The lost-document entry says "theft"; a visitor says "stolen".
     'theft': ('stolen', 'stole', 'robbed', 'pickpocket', 'snatched'),
     'lost': ('missing', 'misplaced'),

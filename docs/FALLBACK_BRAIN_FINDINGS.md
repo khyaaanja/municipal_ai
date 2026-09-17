@@ -489,3 +489,51 @@ NGOs, framed as quoted from municipal records.
 No amount of ranking fixes this. The municipality publishes a collection
 schedule and a connection procedure; until those are in the corpus, the
 honest outcome is the no-answer reply, and the honest fix is the content.
+
+---
+
+# The water-connection procedure was there all along
+
+The previous pass recorded "how to get a water connection" as a content gap.
+It was not. The citizen charter documents it, in section 5:
+
+> **ड धारा/विद्ुत जडान सिफारिस** — क_ निवेदन, ख_ जग्गाधनी प्रमाण पूर्जा,
+> ग_ चालु आ.ब.को मालपोत तिरेको
+
+The procedure, the documents required, the fee and the responsible officer
+are all written down. A resident asks `पानीको धारा कसरी जोड्ने`. Of three
+words only `धारा` is shared — the charter never says `पानी`, and `जोड्ने`
+is not the string `जडान`. One word of three scores 0.33, below the gate, so
+the assistant reported that the municipality had no answer for a service it
+publishes a full procedure for.
+
+The expansion map had only ever crossed languages. Nothing connected two
+Nepali words for one thing. Adding `धारा`↔`पानी` and `जडान`↔`जोड्ने` takes
+the query to 1.00 against the charter, and every tax, permit and
+registration query is unchanged — `धारा` also means a legal article, and the
+Act still wins those.
+
+**The lesson is about the gap list, not the vocabulary.** "No content" was
+asserted from a search that used the citizen's words. The corpus had to be
+searched in the *document's* words to tell a real absence from an unreachable
+presence.
+
+## Waste collection is a real absence
+
+Searched the same way — `फोहोर`, `सरसफाइ`, `कुहिने`, `संकलन` — and there is
+no schedule and no procedure anywhere in the corpus, only fee lines and the
+visitor code of conduct. The municipality does not appear to publish a
+collection schedule online either.
+
+Correcting the previous entry: the **Nepali** question falls through
+honestly (`confidence=low`, no answer given). It is the **English** *when is
+garbage collected* that returns the wrong thing — the tourist littering
+fine — at `medium`, because `garbage` matches and `collect` does not, and
+one word of two is 0.50.
+
+A third scoring idea was tested here: require two matched content words for
+`medium`. It would demote *emergency number*, which is a correct answer also
+sitting at 0.50 on one matched word. Three heuristics have now been measured
+against this corpus — corpus frequency, top-two margin, and absolute matched
+terms — and none separates the good answers from the bad. Retrieval scores
+are not where this is fixable. The schedule is.

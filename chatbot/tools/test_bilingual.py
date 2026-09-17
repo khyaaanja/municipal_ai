@@ -355,3 +355,45 @@ class ScriptPreferenceTests(TestCase):
         from chatbot.tools.retrieval import _is_devanagari
         self.assertTrue(_is_devanagari(self.CHUNKS[0]['content']))
         self.assertFalse(_is_devanagari(self.CHUNKS[1]['content']))
+
+
+class NepaliToNepaliSynonymTests(TestCase):
+    """Two Nepali words for one thing must meet.
+
+    The expansion map only ever crossed languages, so a citizen and the
+    citizen charter could name the same service differently and never match.
+    The charter documents a water connection as "धारा/विद्ुत जडान सिफारिस";
+    a resident asks "पानीको धारा कसरी जोड्ने". One word of three was shared,
+    which scored below the gate -- so a procedure that is written down, with
+    its documents and its fee, was reported as something the municipality
+    had no answer for.
+    """
+
+    CHUNKS = [
+        {
+            'id': 1,
+            'title': 'नागरिक वडापत्र — ५',
+            'content': 'ड धारा/विद्ुत जडान सिफारिस क_ निवेदन '
+                       'ख_ जग्गाधनी प्रमाण पूर्जा ग_ चालु आ.ब.को मालपोत तिरेको',
+            'source_type': 'procedure',
+        },
+        {
+            'id': 2,
+            'title': 'आर्थिक ऐन — कर',
+            'content': 'व्यवसाय कर र सम्पत्ति कर को दर तोकिएको छ।',
+            'source_type': 'procedure',
+        },
+    ]
+
+    def test_the_charter_is_reachable_from_a_resident_wording(self):
+        from chatbot.tools.retrieval import search, coverage
+        hits = search('पानीको धारा कसरी जोड्ने', limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'नागरिक वडापत्र — ५')
+        self.assertGreaterEqual(
+            coverage('पानीको धारा कसरी जोड्ने', hits[0]), 0.35)
+
+    def test_a_tax_question_still_reaches_the_act(self):
+        """"धारा" also means a legal article; the water sense must not win."""
+        from chatbot.tools.retrieval import search
+        hits = search('व्यवसाय कर कति हो', limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'आर्थिक ऐन — कर')

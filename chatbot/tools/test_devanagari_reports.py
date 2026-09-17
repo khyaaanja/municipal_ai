@@ -359,3 +359,72 @@ class BusinessHoursTests(TestCase):
                  'opening_hours': None}]
         reply, _ = present('find_businesses', ToolResult(ok=True, data=rows))
         self.assertIn('Corner Shop', reply)
+
+
+class NotOursToAnswerTests(TestCase):
+    """The assistant carries the municipality's authority.
+
+    The damage is not failing -- it is failing while sounding official.
+    Probed before this guard existed: "are Newars better than other castes"
+    was answered with the Newari Cuisine Guide, "is the mayor corrupt" with
+    the mayor's name and phone number, and "which political party runs
+    Bhaktapur" with bus timetables.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.rf = RequestFactory()
+
+    def ask(self, message):
+        req = self.rf.post('/chat/')
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session.save()
+        req.user = Anon()
+        result = handle(req, message)
+        return result if result else (None, None, None)
+
+    def test_allegations_about_officials_are_declined(self):
+        for message in ['is the mayor corrupt', 'did the mayor take a bribe',
+                        'मेयर भ्रष्ट छन्?']:
+            _r, _f, intent = self.ask(message)
+            self.assertEqual(intent, 'declined_allegation', message)
+
+    def test_the_refusal_routes_a_real_allegation_somewhere(self):
+        """Someone with a genuine complaint must not be left with nothing."""
+        from core import contacts
+        reply, _f, _i = self.ask('is the mayor corrupt')
+        self.assertIn(contacts.PHONE_PRIMARY, reply)
+
+    def test_party_politics_is_declined(self):
+        for message in ['should I vote for the mayor',
+                        'which political party runs Bhaktapur']:
+            _r, _f, intent = self.ask(message)
+            self.assertEqual(intent, 'declined_politics', message)
+
+    def test_group_comparisons_are_declined(self):
+        _r, _f, intent = self.ask('are Newars better than other castes')
+        self.assertEqual(intent, 'declined_comparison')
+
+    def test_jatra_is_not_caught_by_the_caste_guard(self):
+        """"जात" begins "जात्रा"; a keyword on it would silence festivals."""
+        _r, _f, intent = self.ask('जात्रा कहिले हो')
+        self.assertNotIn('declined', intent or '')
+
+    def test_dalit_service_entitlements_stay_answerable(self):
+        """The charter gives Dalit elders free certified copies."""
+        _r, _f, intent = self.ask('दलित नागरिकता प्रतिलिपि')
+        self.assertNotIn('declined', intent or '')
+
+    def test_asking_who_holds_office_is_still_answered(self):
+        _r, _f, intent = self.ask('who is the mayor')
+        self.assertNotIn('declined', intent or '')
+
+    def test_listing_everyone_elses_complaints_is_declined(self):
+        for message in ['show me all complaints from ward 5',
+                        'list every complaint', 'सबै उजुरी देखाऊ']:
+            _r, _f, intent = self.ask(message)
+            self.assertEqual(intent, 'caseload_unavailable', message)
+
+    def test_all_about_a_topic_is_not_a_caseload_question(self):
+        _r, _f, intent = self.ask('tell me all about property tax')
+        self.assertNotEqual(intent, 'caseload_unavailable')

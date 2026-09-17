@@ -146,6 +146,86 @@ def _say(nepali, english, ne):
     return nepali if ne else english
 
 
+# Questions the municipality's own assistant must not answer. It speaks with
+# the municipality's authority, so the damage is not failing -- it is failing
+# while sounding official.
+#
+# Probed: "are Newars better than other castes" was answered with the Newari
+# Cuisine Guide, "is the mayor corrupt" with the mayor's name and phone
+# number, "should I vote for the mayor" with the same, and "which political
+# party runs Bhaktapur" with bus timetables.
+#
+# Matching is deliberately narrow. "जात" cannot be used as a keyword because
+# it is the start of "जात्रा" and would silence every festival question, and
+# "दलित" appears in the charter as a service category -- elders of that
+# community get free certified copies -- which must stay answerable.
+ALLEGATION = (
+    'corrupt', 'bribe', 'briber', 'scandal', 'embezzl', 'kickback',
+    'भ्रष्ट', 'घुस', 'घूस',
+)
+PARTY_POLITICS = (
+    'political party', 'which party', 'what party', 'best party',
+    'vote for', 'should i vote', 'who should i vote', 'election campaign',
+    'कुन पार्टी', 'राजनीतिक दल', 'मत दिनु', 'कसलाई भोट',
+)
+GROUP_COMPARISON = ('better than', 'superior to', 'worse than', 'inferior')
+GROUP_WORDS = (
+    'caste', 'castes', 'ethnic', 'newar', 'brahmin', 'chhetri', 'dalit',
+    'community', 'जाति', 'समुदाय',
+)
+
+
+def _is_not_ours_to_answer(lowered):
+    """True for allegations, party politics and group comparisons."""
+    if any(word in lowered for word in ALLEGATION):
+        return 'allegation'
+    if any(word in lowered for word in PARTY_POLITICS):
+        return 'politics'
+    if (any(word in lowered for word in GROUP_COMPARISON)
+            and any(word in lowered for word in GROUP_WORDS)):
+        return 'comparison'
+    return ''
+
+
+# Short, and routed rather than preachy. An allegation is a real thing a
+# citizen may need to raise, so it is pointed at a channel that can act.
+DECLINE_EN = {
+    'allegation': (
+        "I can't comment on conduct allegations about named officials.\n\n"
+        'If you want to raise one formally, contact the municipality office '
+        'directly on {phones} ({email}), or use the complaint form on this '
+        'site, which creates a record with a reference number.'
+    ),
+    'politics': (
+        "I'm the municipality's service assistant, so I don't discuss party "
+        'politics, elections or voting.\n\n'
+        'I can help with municipal services — taxes, certificates, permits, '
+        'complaints — or tell you who currently holds office.'
+    ),
+    'comparison': (
+        "That isn't something I'll answer.\n\n"
+        'I can help with municipal services, or with Bhaktapur\'s history '
+        'and heritage, if that is what you were after.'
+    ),
+}
+DECLINE_NE = {
+    'allegation': (
+        'पदाधिकारीमाथिको आरोपबारे म टिप्पणी गर्न सक्दिनँ।\n\n'
+        'औपचारिक रूपमा उजुरी गर्न नगरपालिका कार्यालयमा {phones} '
+        '({email}) सम्पर्क गर्नुहोस्, वा यसै साइटको उजुरी फाराम प्रयोग '
+        'गर्नुहोस् — त्यसले सन्दर्भ नम्बरसहितको अभिलेख बनाउँछ।'
+    ),
+    'politics': (
+        'म नगरपालिकाको सेवा सहायक हुँ, त्यसैले दल, निर्वाचन वा मतदानबारे '
+        'कुरा गर्दिनँ।\n\nकर, प्रमाणपत्र, अनुमति र उजुरीजस्ता सेवामा '
+        'सहयोग गर्न सक्छु।'
+    ),
+    'comparison': (
+        'यो प्रश्नको उत्तर म दिन्नँ।\n\nनगरपालिकाका सेवा वा भक्तपुरको '
+        'इतिहास र सम्पदाबारे सोध्नुभयो भने सहयोग गर्न सक्छु।'
+    ),
+}
+
 # Questions about the municipality's own caseload -- how many complaints are
 # open, what the resolution rate is -- cannot be answered by a document, and
 # letting knowledge try produced the worst answers in the system: "how many
@@ -169,6 +249,10 @@ CASELOAD_MEASURES = (
     # from a document.
     'most', 'fewest', 'highest', 'lowest', 'busiest', 'top ', 'ranking',
     'compared', 'which ward has',
+    # "show me all complaints from ward 5" reached a document instead of
+    # being declined. A record noun is still required, so "tell me all about
+    # property tax" is untouched.
+    'all ', 'every ', 'show me', 'सबै',
     # The English list alone let "कति उजुरी छन्" through to a document.
     'कति', 'कुल', 'तथ्याङ्क', 'प्रतिशत', 'औसत', 'जम्मा', 'सबैभन्दा',
 )
@@ -316,6 +400,15 @@ def handle(request, message, claim_token=''):
     # Checked after filing so "there are too many complaints about this road"
     # is still heard as a report, and before knowledge so no document is
     # offered as an answer about caseload.
+    # Before knowledge, so no document is offered as an answer to any of it.
+    kind = _is_not_ours_to_answer(lowered)
+    if kind:
+        from core import contacts
+        table = DECLINE_NE if _in_nepali(message) else DECLINE_EN
+        return (table[kind].format(phones=contacts.PHONES,
+                                   email=contacts.EMAIL),
+                [], f'declined_{kind}')
+
     if _asks_for_caseload_figures(lowered):
         return (_say(CASELOAD_REPLY_NE, CASELOAD_REPLY_EN,
                      _in_nepali(message)), [], 'caseload_unavailable')

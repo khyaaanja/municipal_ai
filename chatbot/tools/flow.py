@@ -151,8 +151,13 @@ CASELOAD_MEASURES = (
     'how many', 'how much', 'total', 'count', 'statistic', 'rate',
     'average', 'breakdown', 'trend', 'percentage', 'summary of',
     'pending', 'all open', 'list all',
+    # A superlative is the same question asked by ranking rather than by
+    # counting: "which ward has most complaints" was still being answered
+    # from a document.
+    'most', 'fewest', 'highest', 'lowest', 'busiest', 'top ', 'ranking',
+    'compared', 'which ward has',
     # The English list alone let "कति उजुरी छन्" through to a document.
-    'कति', 'कुल', 'तथ्याङ्क', 'प्रतिशत', 'औसत', 'जम्मा',
+    'कति', 'कुल', 'तथ्याङ्क', 'प्रतिशत', 'औसत', 'जम्मा', 'सबैभन्दा',
 )
 CASELOAD_RECORDS = (
     'complaint', 'complaints', 'service request', 'service requests',

@@ -250,6 +250,18 @@ class CaseloadQuestionTests(TestCase):
             _reply, _followups, intent = self.ask(message)
             self.assertEqual(intent, 'caseload_unavailable', message)
 
+    def test_a_superlative_is_the_same_question(self):
+        """Ranking instead of counting asks for the same unavailable figure."""
+        for message in ['which ward has most complaints',
+                        'सबैभन्दा धेरै उजुरी कुन वडामा']:
+            _r, _f, intent = self.ask(message)
+            self.assertEqual(intent, 'caseload_unavailable', message)
+
+    def test_a_superlative_without_a_record_noun_is_untouched(self):
+        """"most popular temple" is a question about temples."""
+        _r, _f, intent = self.ask('most popular temple')
+        self.assertNotEqual(intent, 'caseload_unavailable')
+
     def test_the_refusal_leaks_no_figures(self):
         reply, _f, _i = self.ask('how many complaints are open')
         self.assertNotRegex(reply, r'\d+\s+(complaints|open|pending)')

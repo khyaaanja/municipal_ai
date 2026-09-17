@@ -91,6 +91,64 @@ _NUMERIC_RUN = re.compile(
 _SENTINEL = '\uE000'
 
 
+# The unshifted number row carries consonants in this layout, so a digit that
+# survived conversion between two letters was never a figure: "व८ा" is वडा.
+# The numeric-run guard lifts figures out before conversion, and it cannot
+# tell a consonant-digit from a real one, so it occasionally protects the
+# wrong thing and hands back a Devanagari numeral wedged inside a word.
+_LETTER = '\u0900-\u0939\u093E-\u094D'
+_DIGIT_CONSONANT = {'\u0969': '\u0918', '\u096B': '\u091B', '\u096C': '\u091F',
+                    '\u096D': '\u0920', '\u096E': '\u0921', '\u096F': '\u0922'}
+# '0f' was ण: the zero became ० and the 'f' became the long-a matra.
+_LOST_NA = re.compile(f'(?<=[{_LETTER}])\u0966\u093E')
+# A short-i typed before the consonant could not hop over a protected digit,
+# so it is still on the wrong side: "एि६एम" is एटिएम.
+#
+# Only where the matra is on an independent vowel, which Devanagari does not
+# allow -- "ए" cannot carry one, so the matra must belong to the consonant
+# the digit is hiding. After an ordinary consonant the matra is already where
+# it belongs: "मि६र" is मिटर, not मटिर.
+_INDEPENDENT_VOWEL = '\u0905-\u0914'
+_MATRA_BEFORE_DIGIT = re.compile(
+    f'(?<=[{_INDEPENDENT_VOWEL}])\u093F([{"".join(_DIGIT_CONSONANT)}])'
+    f'(?=[{_LETTER}])')
+_DIGIT_IN_WORD = re.compile(
+    f'(?<=[{_LETTER}])([{"".join(_DIGIT_CONSONANT)}])(?=[{_LETTER}])')
+
+
+# A digit at the edge of a word cannot be judged by position alone. Nine of
+# the thirty-three candidates in this corpus are Preeti's own encoding of
+# brackets around English that was mangled by being converted at all --
+# "९द्गषति ग्उ ब्च०" is "(Square feet)", where ९ is "(" and not ढ. Mapping
+# those to consonants would corrupt text that is merely untranslated.
+#
+# So the edge cases are listed, not inferred, and each was read in context
+# before being added here.
+_EDGE_WORDS = {
+    'पर्ने५': 'पर्नेछ', 'लाग्ने५': 'लाग्नेछ', 'सक्ने५': 'सक्नेछ',
+    'हुने५': 'हुनेछ', 'गर्ने५': 'गर्नेछ',
+    'बुझाएपि५': 'बुझाएपछि',
+    'बजे६': 'बजेट', 'कम्पोष६': 'कम्पोषट',
+    '३न': 'घन',      # घन मिटर -- the unit a water tariff is charged in
+    '९ल': 'ढल',      # ढल जोडाय् शुल्क -- the sewer connection charge
+}
+_EDGE = re.compile('|'.join(sorted(map(re.escape, _EDGE_WORDS), key=len,
+                                   reverse=True)))
+
+
+def repair_edge_digits(text):
+    """Fix words whose digit sits at the edge, from a verified list."""
+    return _EDGE.sub(lambda m: _EDGE_WORDS[m.group(0)], text or '')
+
+
+def repair_digit_consonants(text):
+    """Turn a digit wedged between letters back into its consonant."""
+    text = _LOST_NA.sub('\u0923', text or '')
+    text = _MATRA_BEFORE_DIGIT.sub(
+        lambda m: _DIGIT_CONSONANT[m.group(1)] + '\u093F', text)
+    return _DIGIT_IN_WORD.sub(lambda m: _DIGIT_CONSONANT[m.group(1)], text)
+
+
 # A halant followed by a vowel sign is not valid Devanagari: the consonant
 # that belonged between them was lost. The table above maps 'E' to भ् with
 # nothing to complete it, and the scanned documents came through full of the
@@ -103,6 +161,17 @@ _VOWEL_SIGNS = '\u093E-\u094C\u0962\u0963'
 _LOST_JHA = re.compile(f'\u092D\u094D(?=[{_VOWEL_SIGNS}])')
 # Every other orphaned halant lost a य: उद्ोग -> उद्योग.
 _LOST_YA = re.compile(f'([\u0915-\u0939])\u094D(?=[{_VOWEL_SIGNS}])')
+
+
+def repair_text(text):
+    """Every repair that is safe to re-apply to already-correct text.
+
+    The short-i hop in `convert` is deliberately not here: it moves a matra
+    that sits before a consonant, which is exactly what correct Unicode looks
+    like, so running it twice would break "मिति" into "मति".
+    """
+    return repair_conjuncts(
+        repair_edge_digits(repair_digit_consonants(text)))
 
 
 def repair_conjuncts(text):
@@ -136,6 +205,9 @@ def convert(text):
     out = _TOKEN.sub(lambda m: table[m.group(0)], text)
     for figure in figures:
         out = out.replace(_SENTINEL, figure.translate(_ASCII_TO_DEV), 1)
+    # Before the matra hop: a short-i cannot move across a protected digit,
+    # which is how "एटिएम" came out as "एि६एम".
+    out = repair_digit_consonants(out)
     out = _I_MATRA.sub(r'\1ि', out)
     out = _REPH.sub(r'र्\1\2', out)
     out = _DIGIT_CONTEXT.sub('१', out)

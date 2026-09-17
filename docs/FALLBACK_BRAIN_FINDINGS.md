@@ -619,3 +619,66 @@ words left byte-identical.
 **Not fixed:** other artifacts remain, notably digits standing in for
 consonants — `व८ा` for वडा — where the Preeti number row carries letters.
 Those need the same treatment and a separate pass.
+
+---
+
+# Digits that were really consonants
+
+The second Preeti fault. The legacy number row carries consonants — `8` is
+ड, `6` is ट, `9` is ढ — and the converter lifts figures out before
+converting to stop a fee schedule turning into letters. It cannot tell a
+consonant-digit from a real one, so it occasionally protects the wrong thing
+and hands back a Devanagari numeral wedged inside a word.
+
+`व८ा` is **वडा** — *ward*, one of the most common words in a municipal
+document.
+
+Eight distinct words, 14 occurrences, all repaired: `मि६र`→मिटर,
+`ब९ी`→बढी, `प्रमा०ा`→प्रमाण (the zero plus long-a was ण), `प्रतिगो६ा`→प्रतिगोटा.
+
+## A second-order bug fell out of it
+
+`प्रतिएि६एम` should be प्रति-एटिएम. The short-i is typed before its
+consonant in Preeti and hops right during conversion — but it could not hop
+over a *protected figure*, so it was left stranded on the wrong side. Fixed
+by restoring the consonants **before** the matra hop.
+
+The hop itself must not be reapplied later: it moves a matra that sits
+before a consonant, which is exactly what correct Unicode looks like, so
+running it twice turns `मिति` into `मति`. Only the idempotent repairs are
+exposed to the matcher and to stored text.
+
+Deciding where a stranded matra belongs needs one distinction: a matra
+cannot attach to an independent vowel. `ए` cannot carry one, so in `एि६एम`
+it belongs to the hidden consonant. After an ordinary consonant it is
+already right — `मि६र` is मिटर, not मटिर, which is what the first attempt
+produced.
+
+## Enumerating the edge cases prevented corrupting the corpus
+
+A digit at the edge of a word cannot be judged by position. Listing all 33
+candidates and reading them showed **nine were not Nepali at all**:
+
+```
+९द्गषति ग्उ ब्च०   = (Square feet)
+९ऋषचअगबितषयल०      = (Circulation)
+९एबिललषलन०         = (Planning)
+```
+
+`९` and `०` are Preeti's brackets, around English that was mangled by being
+run through the conversion at all. A positional rule would have "repaired"
+those into consonants and made them worse.
+
+So edge digits are **listed, not inferred**, each read in context first. That
+recovered `प्रति ३न मिटर` (घन मिटर, the unit a water tariff is charged in),
+`९ल जोडाय्` (ढल — the sewer connection charge), `कम्पोष६ विन` (compost bin),
+and the verb ending `पर्ने५` → पर्नेछ, which appears throughout the
+procedure text.
+
+Content that had been unreachable in **either** language is now reachable in
+both: compost bins, sewer connection charges, and water charged by the cubic
+metre.
+
+**Still not repaired:** the mangled-English runs themselves. They are
+untranslated Preeti, not corrupted Nepali, and they need the conversion not
+to have been applied rather than a repair after the fact.

@@ -13,10 +13,15 @@ import re
 
 from django.core.management.base import BaseCommand
 
-from chatbot.tools.retrieval import repair_preeti
+from chatbot.services.preeti import repair_text
 
 # A halant followed by a vowel sign: the marker of a dropped consonant.
-BROKEN = re.compile('[क-ह]्[ा-ौॢॣ]')
+# Two markers of a consonant lost in conversion: a halant with no
+# consonant after it, and a digit wedged between letters -- the Preeti
+# number row carries consonants, so "व८ा" is वडा.
+BROKEN = re.compile('[क-ह]्[ा-ौॢॣ]|[ऄ-ह‌ा-्][०-९][ऄ-ह‌ा-्]'
+                    '|पर्ने५|लाग्ने५|सक्ने५|हुने५|गर्ने५|बुझाएपि५'
+                    '|बजे६|कम्पोष६|३न|९ल')
 
 
 class Command(BaseCommand):
@@ -37,7 +42,7 @@ class Command(BaseCommand):
                 body = row.content or ''
                 if not BROKEN.search(body):
                     continue
-                fixed = repair_preeti(body)
+                fixed = repair_text(body)
                 if fixed == body:
                     continue
                 changed += 1

@@ -58,6 +58,13 @@ BILINGUAL = {
     'ज्येषठ': ('senior', 'elderly', 'old'),
     'अपांगता': ('disability', 'disabled', 'handicap'),
     'अपांग': ('disability', 'disabled', 'handicap'),
+    # Recovered by repairing the scanned text: these were spelled with a
+    # digit standing in for a consonant and could not be reached in either
+    # language until the conversion was fixed.
+    'कम्पोषट': ('compost', 'composting'),
+    'कम्पोस्ट': ('compost', 'composting'),
+    'ढल': ('sewer', 'drain', 'drainage'),
+    'जडान': ('connection',),
     'कार्यालय': ('office', 'municipality'),
     'शुल्क': ('fee', 'charge', 'cost'),
     'कागजात': ('document', 'documents'),
@@ -134,7 +141,7 @@ SYNONYMS = {
     # procedure -- which is written down, with its documents and its fee --
     # was reported as something the municipality has no answer for.
     'धारा': ('पानी', 'खानेपानी'),
-    'जडान': ('जोड्ने', 'जोड्न', 'जोडने', 'connection'),
+    'जडान': ('जोड्ने', 'जोड्न', 'जोडने'),
     # The lost-document entry says "theft"; a visitor says "stolen".
     'theft': ('stolen', 'stole', 'robbed', 'pickpocket', 'snatched'),
     'lost': ('missing', 'misplaced'),
@@ -221,7 +228,7 @@ def _stem(token):
 # conversion drops conjuncts. The rules live with the converter; the matcher
 # applies them too, so a document imported before the converter was fixed
 # still meets a question that uses the correct spelling.
-from chatbot.services.preeti import repair_conjuncts as repair_preeti
+from chatbot.services.preeti import repair_text as repair_preeti
 
 
 def tokenize(text):

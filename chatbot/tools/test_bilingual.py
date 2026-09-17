@@ -487,3 +487,60 @@ class PreetiConjunctRepairTests(TestCase):
         from chatbot.services.preeti import convert
         broken = re.compile('[\u0915-\u0939]\u094D[\u093E-\u094C]')
         self.assertIsNone(broken.search(convert('ljBfno')))
+
+
+class PreetiDigitRepairTests(TestCase):
+    """The legacy number row carries consonants, so a digit can be a letter.
+
+    The converter lifts figures out before converting, and it cannot tell a
+    consonant-digit from a real one, so it sometimes protected the wrong
+    thing and handed back a Devanagari numeral wedged inside a word: "व८ा"
+    is वडा.
+    """
+
+    def test_a_digit_between_letters_becomes_its_consonant(self):
+        from chatbot.services.preeti import repair_text
+        self.assertEqual(repair_text('व८ा'), 'वडा')
+        self.assertEqual(repair_text('मि६र'), 'मिटर')
+        self.assertEqual(repair_text('ब९ी'), 'बढी')
+        self.assertEqual(repair_text('प्रमा०ा'), 'प्रमाण')
+
+    def test_the_short_i_is_only_moved_off_an_independent_vowel(self):
+        """A matra cannot sit on ए, so there it belongs to the hidden letter.
+
+        After an ordinary consonant it is already in place: "मि६र" is मिटर,
+        not मटिर.
+        """
+        from chatbot.services.preeti import repair_text
+        self.assertEqual(repair_text('एि६एम'), 'एटिएम')
+        self.assertEqual(repair_text('मि६र'), 'मिटर')
+
+    def test_real_numbers_are_never_touched(self):
+        from chatbot.services.preeti import repair_text
+        for text in ['२०७६/०७७', '१,५००.००', 'रु.१०।-', '२०८३/०८४',
+                     'मिति२०७६', '५००.००']:
+            self.assertEqual(repair_text(text), text, text)
+
+    def test_mangled_english_is_left_alone(self):
+        """९ and ० are Preeti's brackets around text that is not Nepali.
+
+        "९द्गषति ग्उ ब्च०" is "(Square feet)" run through the wrong table.
+        Nine of thirty-three edge candidates in this corpus were of that
+        kind, which is why edge digits are listed rather than inferred.
+        """
+        from chatbot.services.preeti import repair_text
+        for text in ['९द्गषति ग्उ ब्च०', '९ऋषचअगबितषयल०', '९एबिललषलन०']:
+            self.assertEqual(repair_text(text), text, text)
+
+    def test_verified_edge_words_are_repaired(self):
+        from chatbot.services.preeti import repair_text
+        self.assertEqual(repair_text('प्रति ३न मिटर'), 'प्रति घन मिटर')
+        self.assertEqual(repair_text('९ल जोडाय्'), 'ढल जोडाय्')
+        self.assertEqual(repair_text('कम्पोष६ विन'), 'कम्पोषट विन')
+        self.assertEqual(repair_text('पर्ने५ ।'), 'पर्नेछ ।')
+
+    def test_repair_is_idempotent(self):
+        from chatbot.services.preeti import repair_text
+        for text in ['व८ा', 'मिति', 'प्रति ३न मिटर', 'विद्यालय', '२०७६/०७७']:
+            once = repair_text(text)
+            self.assertEqual(repair_text(once), once, text)

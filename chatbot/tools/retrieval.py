@@ -144,6 +144,10 @@ SYNONYMS = {
     'जडान': ('जोड्ने', 'जोड्न', 'जोडने'),
     # The lost-document entry says "theft"; a visitor says "stolen".
     'theft': ('stolen', 'stole', 'robbed', 'pickpocket', 'snatched'),
+    # The rules say "Photography allowed"; a visitor asks about "photos".
+    # Different stems, so the entry that answers scored only on the word
+    # "temple" and lost to a list of temples.
+    'photography': ('photo', 'picture', 'camera', 'photograph', 'filming'),
     'lost': ('missing', 'misplaced'),
 }
 

@@ -68,10 +68,23 @@ BROWSE_ROUTES = {'find_attractions', 'find_businesses'}
 # do in Bhaktapur" came back as Emergency Contacts, which matched on the
 # place name and answered with confidence. A topic noun like "temple" can
 # sit inside a specific question; "things to do" cannot.
+# list_events returns the calendar and cannot filter it, so asking about one
+# named festival got a list of whatever happens to be coming up: "Bisket
+# Jatra" -- the festival Bhaktapur is known for -- returned a photography
+# walk and two thangka workshops.
+#
+# Only where knowledge answers the whole question. A broader version of this
+# rule was measured and dropped: it sent "Durbar Square opening hours" to
+# Emergency Contacts at 0.50 coverage when the catalogue was already giving
+# the right answer, and "Gai Jatra" to the Bisket Jatra page.
+NAMED_OVER_CALENDAR = {'list_events'}
+FULL_COVERAGE = 0.999
+
 BROWSE_INTENT = (
     'what to see', 'there to see', 'things to do', 'what to do',
     'worth visiting', 'show me', 'list', 'attraction', 'घुम्न', 'हेर्न',
     'restaurants', 'where to eat', 'businesses', 'shops',
+    'events', 'festivals', "what's on", 'whats on', 'upcoming', 'calendar',
 )
 
 
@@ -287,6 +300,12 @@ def handle(request, message, claim_token=''):
                     answered = _knowledge_fallback(request, message)
                     if answered is not None:
                         return answered
+                if (name in NAMED_OVER_CALENDAR
+                        and not _wants_the_list(lowered)
+                        and _knowledge_covers_all(message)):
+                    answered = _knowledge_fallback(request, message)
+                    if answered is not None:
+                        return answered
                 return _with_intent(
                     present(name, run_tool(name, request, **kwargs)), name)
 
@@ -306,6 +325,18 @@ def handle(request, message, claim_token=''):
     # match falls through, so the assistant never presents a poor retrieval
     # hit as though it were an answer.
     return _knowledge_fallback(request, message)
+
+
+def _knowledge_covers_all(message):
+    """True when a passage addresses every word the citizen used.
+
+    A partial match is how "Gai Jatra" reached the Bisket Jatra page, so
+    nothing short of the whole question displaces the calendar.
+    """
+    from chatbot.tools.retrieval import coverage, search
+
+    hits = search(message, limit=1)
+    return bool(hits) and coverage(message, hits[0]) >= FULL_COVERAGE
 
 
 def _knowledge_fallback(request, message):

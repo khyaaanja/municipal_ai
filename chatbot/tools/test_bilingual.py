@@ -544,3 +544,31 @@ class PreetiDigitRepairTests(TestCase):
         for text in ['व८ा', 'मिति', 'प्रति ३न मिटर', 'विद्यालय', '२०७६/०७७']:
             once = repair_text(text)
             self.assertEqual(repair_text(once), once, text)
+
+
+class PhotographyVocabularyTests(TestCase):
+    """The rules say "Photography"; a visitor says "photos"."""
+
+    CHUNKS = [
+        # The real entry, verbatim: it names temples several times, which is
+        # why it can outrank a temple page on a question about both.
+        {'id': 1, 'title': 'Visitor Guidelines',
+         'content': 'Dress modestly when visiting temples. Remove shoes '
+                    'before entering temples. Photography allowed but '
+                    'respect local customs.',
+         'source_type': 'tourism'},
+        {'id': 2, 'title': 'Nyatapola Temple',
+         'content': 'A five-storey temple in Taumadhi Square.',
+         'source_type': 'heritage'},
+    ]
+
+    def test_photos_reaches_the_photography_rule(self):
+        from chatbot.tools.retrieval import search
+        hits = search('can I take photos inside temples', limit=2,
+                      chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'Visitor Guidelines')
+
+    def test_camera_reaches_it_too(self):
+        from chatbot.tools.retrieval import search
+        hits = search('can I use my camera', limit=2, chunks=self.CHUNKS)
+        self.assertEqual(hits[0]['title'], 'Visitor Guidelines')

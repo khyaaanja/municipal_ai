@@ -287,3 +287,44 @@ class CaseloadQuestionTests(TestCase):
     def test_a_personal_lookup_is_not_swallowed(self):
         _r, _f, intent = self.ask('my complaints')
         self.assertEqual(intent, 'get_my_complaints')
+
+
+class NamedFestivalTests(TestCase):
+    """A named festival is not a request for the calendar.
+
+    list_events returns what is coming up and cannot filter it, so "Bisket
+    Jatra" -- the festival Bhaktapur is known for -- came back as a
+    photography walk and two thangka workshops.
+    """
+
+    def setUp(self):
+        cache.clear()
+        self.rf = RequestFactory()
+        from chatbot.models import KnowledgeChunk
+        KnowledgeChunk.objects.create(
+            source_type='culture',
+            title='Bisket Jatra Festival',
+            content='Bisket Jatra is the Nepali new year festival of '
+                    'Bhaktapur, with chariot processions in Taumadhi Square.',
+            is_active=True,
+        )
+
+    def ask(self, message):
+        req = self.rf.post('/chat/')
+        SessionMiddleware(lambda r: None).process_request(req)
+        req.session.save()
+        req.user = Anon()
+        result = handle(req, message)
+        return result[2] if result else None
+
+    def test_a_named_festival_reaches_knowledge(self):
+        self.assertEqual(self.ask('Bisket Jatra'), 'search_municipal_knowledge')
+
+    def test_asking_for_the_calendar_still_gets_the_calendar(self):
+        for message in ['upcoming events', 'what events are on',
+                        'festivals in Bhaktapur']:
+            self.assertEqual(self.ask(message), 'list_events', message)
+
+    def test_a_partial_match_does_not_displace_the_calendar(self):
+        """"Gai Jatra" must not be answered with the Bisket Jatra page."""
+        self.assertEqual(self.ask('Gai Jatra'), 'list_events')

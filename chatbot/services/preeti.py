@@ -91,6 +91,31 @@ _NUMERIC_RUN = re.compile(
 _SENTINEL = '\uE000'
 
 
+# A halant followed by a vowel sign is not valid Devanagari: the consonant
+# that belonged between them was lost. The table above maps 'E' to भ् with
+# nothing to complete it, and the scanned documents came through full of the
+# result -- "उद्योग" appeared 33 times and never once spelled correctly,
+# "विद्यालय" 10 times, never correctly. A term nobody spells the way the
+# document spells it is a term nobody can search for.
+_VOWEL_SIGNS = '\u093E-\u094C\u0962\u0963'
+# झ lands as भ + halant before a vowel. भ् before a *consonant* is ordinary
+# Nepali -- अभ्यास -- and must be left alone.
+_LOST_JHA = re.compile(f'\u092D\u094D(?=[{_VOWEL_SIGNS}])')
+# Every other orphaned halant lost a य: उद्ोग -> उद्योग.
+_LOST_YA = re.compile(f'([\u0915-\u0939])\u094D(?=[{_VOWEL_SIGNS}])')
+
+
+def repair_conjuncts(text):
+    """Restore conjuncts the conversion dropped.
+
+    Applied to converted output, and again by the matcher, so a document
+    imported before this existed still meets a question that uses the
+    correct spelling.
+    """
+    text = _LOST_JHA.sub('\u091D', text or '')
+    return _LOST_YA.sub('\\1\u094D\u092F', text)
+
+
 def convert(text):
     """Return Unicode Devanagari for Preeti-encoded `text`."""
     if not text:
@@ -114,6 +139,7 @@ def convert(text):
     out = _I_MATRA.sub(r'\1ि', out)
     out = _REPH.sub(r'र्\1\2', out)
     out = _DIGIT_CONTEXT.sub('१', out)
+    out = repair_conjuncts(out)
     return _normalise_digits(out)
 
 

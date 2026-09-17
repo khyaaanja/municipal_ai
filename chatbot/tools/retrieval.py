@@ -217,8 +217,16 @@ def _stem(token):
     return _stem_en(token)
 
 
+# The municipal documents were scanned out of the legacy Preeti font and the
+# conversion drops conjuncts. The rules live with the converter; the matcher
+# applies them too, so a document imported before the converter was fixed
+# still meets a question that uses the correct spelling.
+from chatbot.services.preeti import repair_conjuncts as repair_preeti
+
+
 def tokenize(text):
-    return [_stem(t.lower()) for t in TOKEN.findall(text or '')]
+    text = repair_preeti(text or '')
+    return [_stem(t.lower()) for t in TOKEN.findall(text)]
 
 
 # Built here rather than beside SYNONYMS because it has to agree with the

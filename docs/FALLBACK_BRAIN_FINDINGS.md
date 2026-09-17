@@ -568,3 +568,54 @@ visitor finds one.
 
 These need content from the municipality. The list is now trustworthy,
 which the previous one was not.
+
+---
+
+# The scanned documents had lost their conjuncts
+
+Chasing why `विद्यालय` (school) never matched anything turned up a data
+fault underneath the whole Nepali corpus.
+
+A halant followed by a vowel sign is not valid Devanagari — the consonant
+that belonged between them was dropped in the Preeti conversion. **80
+distinct words, 170 occurrences.**
+
+| Word | In the corpus | Times | Correct spelling present |
+|---|---|---|---|
+| industry | `उद्ोग` | 33 | **0** |
+| school | `विद्ालय` | 10 | **0** |
+| electricity | `विद्ुत` | 6 | **0** |
+| agreement | `सम्भ्ौता` | 7 | **0** |
+| to submit | `बुभ्ाउनु` | 5 | **0** |
+
+Not "mostly misspelled" — the correct spelling appears **zero** times. So
+the bilingual map's entry for `विद्यालय` had never once matched, and a
+citizen asking about industry registration in correct Nepali could not reach
+33 mentions of it.
+
+Two faults, both systematic:
+
+- **A dropped य.** `उद्ोग` → उद्योग, `विद्ालय` → विद्यालय.
+- **झ arriving as भ्.** The table maps `E` to `भ्` with nothing to complete
+  it, so `सम्भ्ौता` → सम्झौता, `बुभ्ाउनु` → बुझाउनु. `भ्` before a
+  *consonant* is ordinary Nepali — अभ्यास — and is left alone.
+
+Fixed in three places, because each one is needed:
+
+1. **The converter** now guarantees valid Devanagari on the way out, so a
+   fresh import is clean.
+2. **The matcher** applies the same rules, so a document imported before the
+   converter was fixed still meets a question spelled correctly. The rules
+   live with the converter; retrieval imports them rather than keeping a
+   second copy that could drift.
+3. **The stored text** was repaired — 163 rows. This one is about reading,
+   not matching: an answer quoted as the municipal record should not show
+   `विद्ालय` to someone who knows the word. A document that looks
+   mistranscribed looks untrustworthy.
+
+Verified on 170/170 occurrences repaired, and on a list of ordinary Nepali
+words left byte-identical.
+
+**Not fixed:** other artifacts remain, notably digits standing in for
+consonants — `व८ा` for वडा — where the Preeti number row carries letters.
+Those need the same treatment and a separate pass.

@@ -444,3 +444,46 @@ class SocialProtectionReachabilityTests(TestCase):
         from chatbot.tools.retrieval import equivalents, _stem
         self.assertIn('senior', equivalents(_stem('ज्येषठ')))
         self.assertIn('disability', equivalents(_stem('अपांगता')))
+
+
+class PreetiConjunctRepairTests(TestCase):
+    """The scanned documents lost conjuncts, and took whole words with them.
+
+    A halant followed by a vowel sign is not valid Devanagari -- the
+    consonant between them was dropped. The corpus was full of it:
+    "उद्योग" (industry) appeared 33 times and never once spelled correctly,
+    "विद्यालय" (school) 10 times, never correctly. The bilingual map's entry
+    for विद्यालय had therefore never matched anything at all.
+    """
+
+    def test_dropped_ya_is_restored(self):
+        from chatbot.services.preeti import repair_conjuncts
+        self.assertEqual(repair_conjuncts('उद्ोग'), 'उद्योग')
+        self.assertEqual(repair_conjuncts('विद्ालय'), 'विद्यालय')
+        self.assertEqual(repair_conjuncts('विद्ुतीय'), 'विद्युतीय')
+
+    def test_jha_is_restored(self):
+        """झ lands as भ + halant before a vowel."""
+        from chatbot.services.preeti import repair_conjuncts
+        self.assertEqual(repair_conjuncts('सम्भ्ौता'), 'सम्झौता')
+        self.assertEqual(repair_conjuncts('बुभ्ाउनु'), 'बुझाउनु')
+
+    def test_ordinary_nepali_is_untouched(self):
+        """भ् before a consonant is a real cluster: अभ्यास."""
+        from chatbot.services.preeti import repair_conjuncts
+        for word in ['अभ्यास', 'व्यवसाय', 'सम्पत्ति', 'नागरिकता',
+                     'विद्यालय', 'ज्येष्ठ', 'कर']:
+            self.assertEqual(repair_conjuncts(word), word, word)
+
+    def test_both_spellings_reach_the_same_token(self):
+        """The point of repairing inside the matcher."""
+        from chatbot.tools.retrieval import tokenize
+        self.assertEqual(tokenize('उद्ोग'), tokenize('उद्योग'))
+        self.assertEqual(tokenize('विद्ालय'), tokenize('विद्यालय'))
+
+    def test_the_converter_emits_valid_devanagari(self):
+        """Conversion output must not contain an orphaned halant."""
+        import re
+        from chatbot.services.preeti import convert
+        broken = re.compile('[\u0915-\u0939]\u094D[\u093E-\u094C]')
+        self.assertIsNone(broken.search(convert('ljBfno')))

@@ -92,3 +92,6 @@ log/.current_failures.txt
 
 # Local database backups
 backups/
+
+# Runtime logs
+log/

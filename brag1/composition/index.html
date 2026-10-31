@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>BhaktapurAI — Pitch Cut</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family:"Syne"; src:url("assets/fonts/syne-700.woff2") format("woff2"); font-weight:700; font-display:block; }
+      @font-face { font-family:"Syne"; src:url("assets/fonts/syne-800.woff2") format("woff2"); font-weight:800; font-display:block; }
+      @font-face { font-family:"DM Sans"; src:url("assets/fonts/dmsans-300.woff2") format("woff2"); font-weight:300; font-display:block; }
+      @font-face { font-family:"DM Sans"; src:url("assets/fonts/dmsans-400.woff2") format("woff2"); font-weight:400; font-display:block; }
+      @font-face { font-family:"DM Sans"; src:url("assets/fonts/dmsans-500.woff2") format("woff2"); font-weight:500; font-display:block; }
+      @font-face { font-family:"Noto Deva"; src:url("assets/fonts/notodeva-500.woff2") format("woff2"); font-weight:500; font-display:block; }
+      @font-face { font-family:"Noto Deva"; src:url("assets/fonts/notodeva-700.woff2") format("woff2"); font-weight:700; font-display:block; }
+      :root{--ink:#0C0C14;--cream:#F6F1E9;--stone:#A8A29E;--red:#EF4444;--gold:#F59E0B;
+            --surf:#17171f;--surf2:#1e1e28;--bd:rgba(255,255,255,0.10);--ok:#6EE7B7;}
+      *{margin:0;padding:0;box-sizing:border-box;}
+      html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:var(--ink);}
+      #root{width:100%;height:100%;position:relative;overflow:hidden;background:var(--ink);
+            font-family:"DM Sans",sans-serif;color:var(--cream);}
+      #bg{position:absolute;inset:0;overflow:hidden;}
+      #dots{position:absolute;inset:-12%;background-image:radial-gradient(rgba(246,241,233,0.13) 1.7px,transparent 1.8px);background-size:52px 52px;opacity:.5;}
+      #alarm{position:absolute;left:50%;top:50%;width:1500px;height:1500px;margin:-750px 0 0 -750px;border-radius:50%;opacity:0;
+             background:radial-gradient(circle,rgba(239,68,68,.55) 0%,rgba(239,68,68,.16) 38%,rgba(12,12,20,0) 68%);}
+      #warm{position:absolute;left:50%;top:50%;width:1600px;height:1600px;margin:-800px 0 0 -800px;border-radius:50%;opacity:0;
+            background:radial-gradient(circle,rgba(245,158,11,.44) 0%,rgba(239,68,68,.14) 40%,rgba(12,12,20,0) 70%);}
+      #vign{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(12,12,20,0) 36%,rgba(12,12,20,.86) 100%);}
+      .stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:200px 70px;text-align:center;}
+      .deva{font-family:"Noto Deva",sans-serif;font-weight:700;line-height:1.36;}
+      .lede{font-size:74px;color:var(--cream);}
+      .sub{margin-top:34px;font-size:40px;font-weight:300;color:var(--stone);line-height:1.4;}
+      .kicker{font-size:27px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);}
+      .grad{background:linear-gradient(96deg,var(--red) 8%,var(--gold) 50%,var(--red) 92%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;}
+      .card{width:100%;background:var(--surf);border:2px solid var(--bd);border-radius:26px;padding:42px 44px;text-align:left;}
+      .row{display:flex;align-items:center;justify-content:space-between;gap:26px;}
+      .chip{padding:16px 34px;border-radius:9999px;font-size:27px;font-weight:500;letter-spacing:.12em;white-space:nowrap;}
+      .chip-ok{background:rgba(5,150,105,.20);border:2px solid rgba(16,185,129,.60);color:var(--ok);}
+      .chip-bad{background:rgba(239,68,68,.18);border:2px solid rgba(239,68,68,.62);color:#FCA5A5;}
+      .mono{font-family:"Syne",sans-serif;font-weight:700;letter-spacing:.02em;}
+      /* S1 */
+      #s1-card{margin-top:64px;width:100%;}
+      #s1-days{font-family:"Syne",sans-serif;font-weight:800;font-size:132px;color:var(--red);line-height:1;
+               font-variant-numeric:tabular-nums;display:inline-block;transform-origin:left center;}
+      #s1-dlabel{margin-top:10px;font-size:26px;letter-spacing:.26em;text-transform:uppercase;color:var(--stone);}
+      /* S2 */
+      .pchip{width:100%;margin-top:26px;padding:32px 40px;background:var(--surf2);border:2px solid var(--bd);
+             border-left:7px solid var(--red);border-radius:18px;font-size:46px;font-weight:500;text-align:left;color:var(--cream);}
+      /* S5-S8 shared */
+      .scr-lbl{font-size:27px;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);}
+      .scr-ne{margin-top:26px;font-size:50px;line-height:1.34;}
+      .scr-ui{margin-top:52px;width:100%;}
+      .ui-sub{margin-top:14px;font-size:25px;letter-spacing:.24em;text-transform:uppercase;color:var(--stone);}
+      /* S6 */
+      #s6-bar{display:flex;align-items:center;gap:22px;padding:26px 26px 26px 34px;background:var(--surf);border:2px solid var(--bd);border-radius:9999px;}
+      #s6-q{flex:1;font-size:34px;color:var(--cream);text-align:left;white-space:nowrap;}
+      #s6-go{padding:15px 30px;border-radius:9999px;background:var(--red);color:#fff;font-size:24px;font-weight:500;white-space:nowrap;}
+      /* S7 / S8 rows */
+      .qrow{width:100%;margin-top:22px;padding:30px 36px;background:var(--surf2);border:2px solid var(--bd);border-radius:18px;
+            display:flex;align-items:center;justify-content:space-between;gap:22px;font-size:34px;}
+      .slarow{width:100%;margin-top:20px;padding:26px 34px;background:var(--surf2);border:2px solid var(--bd);border-radius:16px;
+              display:flex;align-items:center;justify-content:space-between;font-size:32px;}
+      /* S9 */
+      #s9-pills{margin-top:46px;display:flex;flex-wrap:wrap;gap:18px;justify-content:center;}
+      .pill{padding:20px 34px;border-radius:9999px;background:var(--surf2);border:2px solid var(--bd);font-size:32px;font-weight:500;}
+      .claim{margin-top:30px;font-size:42px;font-weight:400;color:var(--cream);line-height:1.38;}
+      /* S10 */
+      /* brand lockup */
+      #s10-prod{margin-top:58px;font-family:"Syne",sans-serif;font-weight:800;font-size:96px;line-height:1;white-space:nowrap;}
+      #s10-by{margin-top:26px;font-size:30px;font-weight:300;color:var(--stone);letter-spacing:.06em;}
+      #s10-co2{margin-top:10px;font-family:"Syne",sans-serif;font-weight:700;font-size:50px;color:var(--cream);white-space:nowrap;letter-spacing:-.01em;}
+      #s10-rule{margin-top:40px;width:220px;height:2px;background:var(--bd);}
+      /* glitch stack (headfake) */
+      .gstack{display:grid;}
+      .gstack>*{grid-area:1/1;}
+      .gbase{z-index:2;}
+      .gcopy{z-index:1;opacity:0;will-change:transform;mix-blend-mode:screen;}
+      .gwarm{color:#EF4444;} .gcool{color:#38BDF8;}
+      /* footage slot — real people video sits behind the UI card */
+      .fslot{position:absolute;inset:0;overflow:hidden;border-radius:26px;opacity:0;}
+      .fslot video{width:100%;height:100%;object-fit:cover;filter:saturate(.85) contrast(1.05);}
+      .fscrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,12,20,.55) 0%,rgba(12,12,20,.88) 100%);}
+      .brandbar{margin-top:40px;font-size:27px;font-weight:400;color:var(--stone);letter-spacing:.04em;}
+      .brandbar b{color:var(--cream);font-weight:500;}
+      #s10-mark{margin-top:60px;font-family:"Syne",sans-serif;font-weight:800;font-size:76px;color:var(--cream);white-space:nowrap;}
+      #s10-co{margin-top:26px;font-size:25px;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:var(--stone);white-space:nowrap;}
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1080" data-height="1920"
+         data-duration="58.08">
+      <div id="bg"><div id="dots" data-layout-ignore="true"></div><div id="alarm" data-layout-allow-overflow="true"></div><div id="warm" data-layout-allow-overflow="true"></div><div id="vign"></div></div>
+
+      <section id="s1" class="clip" data-start="0" data-duration="6.03" data-track-index="0"><div class="stage">
+        <div id="s1-ne" class="deva lede">सबैभन्दा ठूलो समस्या पैसा होइन।</div>
+        <div id="s1-en" class="sub">It was never the budget.</div>
+        <div id="s1-card" class="card"><div class="row">
+          <div><div id="s1-days" class="mono">1</div><div id="s1-dlabel">days without a reply</div></div>
+          <div class="chip chip-bad">No owner</div>
+        </div></div>
+      </div></section>
+
+      <section id="s2" class="clip" data-start="6.03" data-duration="6.00" data-track-index="1"><div class="stage">
+        <div id="s2-ne" class="deva lede">कसको उजुरी कति दिन पुरानो भयो —<br>कसैलाई थाहा छैन।</div>
+        <div id="s2-en" class="sub">Nobody knows whose complaint is how old.</div>
+        <div id="p1" class="pchip">No deadline.</div>
+        <div id="p2" class="pchip">No owner.</div>
+        <div id="p3" class="pchip">No record.</div>
+      </div></section>
+
+      <section id="s3" class="clip" data-start="12.03" data-duration="4.01" data-track-index="2"><div class="stage">
+        <div id="s3-ne" class="deva lede">तर असली नोक्सान यो होइन…</div>
+        <div id="s3-en" class="sub">But this isn't the real loss.</div>
+      </div></section>
+
+      <section id="s4" class="clip" data-start="16.04" data-duration="4.00" data-track-index="3"><div class="stage">
+        <div id="s4-stack" class="gstack" style="font-size:96px;line-height:1.3;">
+          <span class="gcopy gwarm deva" aria-hidden="true">असली नोक्सान — भरोसा।</span>
+          <span class="gcopy gcool deva" aria-hidden="true">असली नोक्सान — भरोसा।</span>
+          <span id="s4-ne" class="gbase deva grad">असली नोक्सान — भरोसा।</span>
+        </div>
+        <div id="s4-en" class="sub" style="font-size:44px;color:var(--cream);">You don't lose complaints.<br>You lose the ones never filed.</div>
+      </div></section>
+
+      <section id="s5" class="clip" data-start="20.04" data-duration="6.01" data-track-index="4"><div class="stage">
+        <div id="s5-l" class="scr-lbl">01 · The alert system</div>
+        <div id="s5-ne" class="deva scr-ne">नागरिक: ३० सेकेन्डमा रिपोर्ट।</div>
+        <div id="s5-ui" class="scr-ui">
+          <div class="card" style="position:relative;overflow:hidden;">
+            <div id="s5-foot" class="fslot"><div class="fscrim"></div></div>
+            <div class="row" style="position:relative;">
+            <div><div id="s5-ref" class="mono" style="font-size:58px;">BK-I7LQN5</div>
+                 <div class="ui-sub">Civic report · Ward 7</div></div>
+            <div id="s5-chip" class="chip chip-ok">Submitted</div>
+          </div></div>
+          <div id="s5-sla" class="slarow" style="margin-top:24px;"><span>MEDIUM priority</span><span style="color:var(--gold);">due in 7 days</span></div>
+        </div>
+      </div></section>
+
+      <section id="s6" class="clip" data-start="26.05" data-duration="6.00" data-track-index="5"><div class="stage">
+        <div id="s6-l" class="scr-lbl">02 · The engagement engine</div>
+        <div id="s6-ne" class="deva scr-ne">पर्यटक: नेपाली वा अंग्रेजीमा सोध्नुहोस्।</div>
+        <div id="s6-ui" class="scr-ui">
+          <div id="s6-bar"><div style="font-size:30px;color:var(--red);">&#10022;</div>
+            <div id="s6-q"><span id="s6-typed"></span></div><div id="s6-go">Ask AI &#8594;</div></div>
+          <div id="s6-card" class="card" style="margin-top:28px;">
+            <div style="font-size:44px;font-weight:500;">Mid-April — Nepali New Year.</div>
+            <div class="ui-sub" style="letter-spacing:.06em;text-transform:none;font-size:26px;">&#128218; Municipal records</div>
+          </div>
+          <div id="s6-flip" class="card deva" style="margin-top:22px;font-weight:500;font-size:38px;">बिस्केट जात्रा कहिले हो? → वैशाख १, नयाँ वर्ष।</div>
+        </div>
+      </div></section>
+
+      <section id="s7" class="clip" data-start="32.05" data-duration="6.01" data-track-index="6"><div class="stage">
+        <div id="s7-l" class="scr-lbl">03 · The automation layer</div>
+        <div id="s7-ne" class="deva scr-ne">वडा अधिकारी: को ढिलो भयो, आफैं थाहा।</div>
+        <div id="s7-ui" class="scr-ui">
+          <div id="q1" class="qrow"><span>Street lighting</span><span class="chip chip-ok" style="font-size:23px;padding:11px 24px;">On time</span></div>
+          <div id="q2" class="qrow"><span>Water supply</span><span class="chip chip-ok" style="font-size:23px;padding:11px 24px;">On time</span></div>
+          <div id="q3" class="qrow"><span>Waste collection</span><span id="q3-chip" class="chip chip-ok" style="font-size:23px;padding:11px 24px;">On time</span></div>
+          <div id="s7-esc" class="ui-sub" style="margin-top:28px;color:var(--red);letter-spacing:.2em;">&#8593; auto-escalated to ward chair</div>
+        </div>
+      </div></section>
+
+      <section id="s8" class="clip" data-start="38.06" data-duration="6.00" data-track-index="7"><div class="stage">
+        <div id="s8-l" class="scr-lbl">04 · The accountability multiplier</div>
+        <div id="s8-ne" class="deva scr-ne">मेयर: हरेक वडाको प्रदर्शन, सार्वजनिक।</div>
+        <div id="s8-ui" class="scr-ui">
+          <div id="r1" class="slarow"><span style="color:#FCA5A5;">CRITICAL</span><span>1 day</span></div>
+          <div id="r2" class="slarow"><span style="color:var(--gold);">HIGH</span><span>3 days</span></div>
+          <div id="r3" class="slarow"><span style="color:#FDE68A;">MEDIUM</span><span>7 days</span></div>
+          <div id="r4" class="slarow"><span style="color:var(--ok);">LOW</span><span>14 days</span></div>
+          <div id="s8-note" class="ui-sub" style="margin-top:28px;">published on the public dashboard</div>
+        </div>
+      </div></section>
+
+      <section id="s9" class="clip" data-start="44.06" data-duration="6.01" data-track-index="8"><div class="stage">
+        <div id="s9-ne" class="deva lede" style="font-size:66px;">एउटै प्रणाली। चार प्रयोगकर्ता।</div>
+        <div id="s9-pills">
+          <div class="pill" id="pl1">Citizen</div><div class="pill" id="pl2">Tourist</div>
+          <div class="pill" id="pl3">Ward official</div><div class="pill" id="pl4">Mayor</div>
+        </div>
+        <div id="s9-c1" class="claim">Every answer cites its source.</div>
+        <div id="s9-c2" class="claim grad" style="font-weight:500;">1 · 3 · 7 · 14 days — measured, not promised.</div>
+        <div id="s9-brand" class="brandbar"><b>Bhaktapur AI</b> &nbsp;·&nbsp; built by <b>Hashtag Technology</b></div>
+      </div></section>
+
+      <section id="s10" class="clip" data-start="50.07" data-duration="8.01" data-track-index="9"><div class="stage">
+        <div id="s10-ne" class="deva lede" style="font-size:60px;">तपाईंको नगरपालिकामा कति उजुरी<br>बिनाजवाफ छन्?</div>
+        <div id="s10-en" class="sub">You don't know. That's the problem.</div>
+        <div id="s10-rule"></div>
+        <div id="s10-prod"><span style="color:var(--cream);">Bhaktapur</span><span class="grad"> AI</span></div>
+        <div id="s10-by">a product by</div>
+        <div id="s10-co2">Hashtag Technology</div>
+      </div></section>
+
+      <audio id="bgm" src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3" data-start="0" data-duration="58.08" data-track-index="20" data-volume="0.30"></audio>
+      <audio id="t1" src="assets/sfx/click2.ogg" data-start="3.02" data-duration="0.06" data-track-index="21" data-volume="0.30"></audio>
+      <audio id="t2" src="assets/sfx/click2.ogg" data-start="3.52" data-duration="0.06" data-track-index="21" data-volume="0.32"></audio>
+      <audio id="t3" src="assets/sfx/click2.ogg" data-start="4.02" data-duration="0.06" data-track-index="21" data-volume="0.34"></audio>
+      <audio id="t4" src="assets/sfx/click2.ogg" data-start="4.53" data-duration="0.06" data-track-index="21" data-volume="0.36"></audio>
+      <audio id="t5" src="assets/sfx/click2.ogg" data-start="5.03" data-duration="0.06" data-track-index="21" data-volume="0.40"></audio>
+      <audio id="c1" src="assets/sfx/impactSoft_medium_000.ogg" data-start="8.03" data-duration="0.12" data-track-index="22" data-volume="0.55"></audio>
+      <audio id="c2" src="assets/sfx/impactSoft_medium_002.ogg" data-start="10.03" data-duration="0.14" data-track-index="22" data-volume="0.58"></audio>
+      <audio id="c3" src="assets/sfx/impactSoft_medium_004.ogg" data-start="11.03" data-duration="0.15" data-track-index="22" data-volume="0.62"></audio>
+      <audio id="hf" src="assets/sfx/impactSoft_heavy_002.ogg" data-start="17.02" data-duration="0.57" data-track-index="23" data-volume="0.95"></audio>
+      <audio id="a1" src="assets/sfx/impactSoft_medium_000.ogg" data-start="21.54" data-duration="0.12" data-track-index="22" data-volume="0.55"></audio>
+      <audio id="a2" src="assets/sfx/click2.ogg" data-start="22.54" data-duration="0.06" data-track-index="21" data-volume="0.45"></audio>
+      <audio id="a3" src="assets/sfx/bong_001.ogg" data-start="28.56" data-duration="0.12" data-track-index="22" data-volume="0.50"></audio>
+      <audio id="a4" src="assets/sfx/impactSoft_heavy_004.ogg" data-start="35.06" data-duration="0.50" data-track-index="23" data-volume="0.70"></audio>
+      <audio id="d1" src="assets/sfx/impactSoft_medium_000.ogg" data-start="39.56" data-duration="0.12" data-track-index="22" data-volume="0.40"></audio>
+      <audio id="d2" src="assets/sfx/impactSoft_medium_002.ogg" data-start="40.06" data-duration="0.14" data-track-index="22" data-volume="0.42"></audio>
+      <audio id="d3" src="assets/sfx/impactSoft_medium_004.ogg" data-start="40.56" data-duration="0.15" data-track-index="22" data-volume="0.44"></audio>
+      <audio id="d4" src="assets/sfx/impactSoft_medium_000.ogg" data-start="41.06" data-duration="0.12" data-track-index="22" data-volume="0.46"></audio>
+      <audio id="st" src="assets/sfx/impactSoft_heavy_002.ogg" data-start="54.08" data-duration="0.57" data-track-index="23" data-volume="0.85"></audio>
+    </div>
+    <script>
+      var AUDIO_PLACEHOLDER = {"fps":30,"frames":[{"b":0.941,"r":0.479},{"b":0.459,"r":0.508},{"b":0.026,"r":0.433},{"b":0.027,"r":0.432},{"b":0.018,"r":0.406},{"b":0.015,"r":0.383},{"b":0.02,"r":0.382},{"b":0.035,"r":0.494},{"b":0.032,"r":0.481},{"b":0.011,"r":0.467},{"b":0.01,"r":0.45},{"b":0.005,"r":0.412},{"b":0.022,"r":0.355},{"b":0.012,"r":0.337},{"b":0.018,"r":0.349},{"b":0.024,"r":0.352},{"b":0.023,"r":0.345},{"b":0.013,"r":0.336},{"b":0.029,"r":0.331},{"b":0.014,"r":0.579},{"b":0.012,"r":0.484},{"b":0.01,"r":0.472},{"b":0.01,"r":0.492},{"b":0.008,"r":0.481},{"b":0.003,"r":0.454},{"b":0.012,"r":0.406},{"b":0.025,"r":0.395},{"b":0.009,"r":0.335},{"b":0.011,"r":0.304},{"b":0.038,"r":0.3},{"b":0.059,"r":0.53},{"b":0.013,"r":0.462},{"b":0.009,"r":0.433},{"b":0.012,"r":0.424},{"b":0.008,"r":0.313},{"b":0.008,"r":0.273},{"b":0.01,"r":0.288},{"b":0.019,"r":0.389},{"b":0.013,"r":0.368},{"b":0.009,"r":0.351},{"b":0.012,"r":0.32},{"b":0.01,"r":0.445},{"b":0.017,"r":0.435},{"b":0.012,"r":0.405},{"b":0.018,"r":0.414},{"b":0.011,"r":0.412},{"b":0.027,"r":0.294},{"b":0.014,"r":0.266},{"b":0.022,"r":0.283},{"b":0.026,"r":0.432},{"b":0.012,"r":0.344},{"b":0.017,"r":0.338},{"b":0.014,"r":0.468},{"b":0.013,"r":0.441},{"b":0.004,"r":0.438},{"b":0.001,"r":0.43},{"b":0.011,"r":0.378},{"b":0.008,"r":0.267},{"b":0.019,"r":0.276},{"b":0.045,"r":0.259},{"b":0.617,"r":0.559},{"b":0.956,"r":0.449},{"b":0.585,"r":0.45},{"b":0.48,"r":0.436},{"b":0.51,"r":0.412},{"b":0.514,"r":0.361},{"b":0.473,"r":0.393},{"b":0.541,"r":0.493},{"b":0.48,"r":0.622},{"b":0.498,"r":0.519},{"b":0.481,"r":0.468},{"b":0.476,"r":0.493},{"b":0.49,"r":0.337},{"b":0.477,"r":0.289},{"b":0.513,"r":0.282},{"b":0.471,"r":0.328},{"b":0.445,"r":0.278},{"b":0.475,"r":0.286},{"b":0.518,"r":0.288},{"b":0.44,"r":0.545},{"b":0.504,"r":0.478},{"b":0.486,"r":0.466},{"b":0.503,"r":0.498},{"b":0.505,"r":0.443},{"b":0.502,"r":0.368},{"b":0.519,"r":0.307},{"b":0.579,"r":0.383},{"b":0.535,"r":0.343},{"b":0.523,"r":0.338},{"b":0.547,"r":0.321},{"b":0.484,"r":0.528},{"b":0.514,"r":0.459},{"b":0.483,"r":0.43},{"b":0.509,"r":0.43},{"b":0.507,"r":0.362},{"b":0.525,"r":0.259},{"b":0.561,"r":0.245},{"b":0.627,"r":0.368},{"b":0.575,"r":0.368},{"b":0.5,"r":0.31},{"b":0.543,"r":0.31},{"b":0.496,"r":0.363},{"b":0.446,"r":0.382},{"b":0.442,"r":0.417},{"b":0.438,"r":0.402},{"b":0.429,"r":0.378},{"b":0.427,"r":0.313},{"b":0.45,"r":0.231},{"b":0.477,"r":0.21},{"b":0.498,"r":0.356},{"b":0.483,"r":0.288},{"b":0.475,"r":0.308},{"b":0.525,"r":0.449},{"b":0.45,"r":0.471},{"b":0.437,"r":0.454},{"b":0.443,"r":0.439},{"b":0.457,"r":0.426},{"b":0.455,"r":0.323},{"b":0.473,"r":0.233},{"b":0.499,"r":0.217},{"b":0.957,"r":0.54},{"b":0.578,"r":0.561},{"b":0.091,"r":0.493},{"b":0.035,"r":0.464},{"b":0.039,"r":0.406},{"b":0.038,"r":0.385},{"b":0.057,"r":0.401},{"b":0.026,"r":0.524},{"b":0.043,"r":0.533},{"b":0.036,"r":0.456},{"b":0.037,"r":0.474},{"b":0.029,"r":0.421},{"b":0.034,"r":0.344},{"b":0.038,"r":0.367},{"b":0.026,"r":0.362},{"b":0.058,"r":0.368},{"b":0.044,"r":0.36},{"b":0.034,"r":0.329},{"b":0.057,"r":0.363},{"b":0.063,"r":0.568},{"b":0.051,"r":0.497},{"b":0.029,"r":0.471},{"b":0.022,"r":0.512},{"b":0.031,"r":0.467},{"b":0.041,"r":0.402},{"b":0.032,"r":0.342},{"b":0.054,"r":0.401},{"b":0.063,"r":0.365},{"b":0.102,"r":0.41},{"b":0.159,"r":0.512},{"b":0.143,"r":0.572},{"b":0.05,"r":0.526},{"b":0.038,"r":0.466},{"b":0.026,"r":0.433},{"b":0.029,"r":0.359},{"b":0.051,"r":0.272},{"b":0.061,"r":0.289},{"b":0.02,"r":0.387},{"b":0.049,"r":0.382},{"b":0.068,"r":0.341},{"b":0.049,"r":0.329},{"b":0.01,"r":0.451},{"b":0.037,"r":0.422},{"b":0.037,"r":0.418},{"b":0.044,"r":0.406},{"b":0.029,"r":0.385},{"b":0.041,"r":0.329},{"b":0.031,"r":0.286},{"b":0.04,"r":0.309},{"b":0.034,"r":0.44},{"b":0.028,"r":0.359},{"b":0.03,"r":0.356},{"b":0.022,"r":0.526},{"b":0.022,"r":0.5},{"b":0.036,"r":0.48},{"b":0.03,"r":0.438},{"b":0.033,"r":0.388},{"b":0.022,"r":0.292},{"b":0.028,"r":0.281},{"b":0.043,"r":0.28},{"b":0.391,"r":0.59},{"b":0.826,"r":0.432},{"b":0.184,"r":0.48},{"b":0.217,"r":0.414},{"b":0.245,"r":0.388},{"b":0.232,"r":0.405},{"b":0.24,"r":0.349},{"b":0.232,"r":0.457},{"b":0.233,"r":0.471},{"b":0.21,"r":0.408},{"b":0.21,"r":0.445},{"b":0.218,"r":0.409},{"b":0.256,"r":0.351},{"b":0.232,"r":0.346},{"b":0.251,"r":0.306},{"b":0.206,"r":0.326},{"b":0.197,"r":0.309},{"b":0.235,"r":0.278},{"b":0.249,"r":0.32},{"b":0.203,"r":0.528},{"b":0.218,"r":0.382},{"b":0.228,"r":0.41},{"b":0.235,"r":0.386},{"b":0.215,"r":0.355},{"b":0.227,"r":0.305},{"b":0.24,"r":0.258},{"b":0.305,"r":0.393},{"b":0.234,"r":0.362},{"b":0.227,"r":0.281},{"b":0.234,"r":0.308},{"b":0.249,"r":0.542},{"b":0.196,"r":0.433},{"b":0.213,"r":0.451},{"b":0.207,"r":0.43},{"b":0.217,"r":0.387},{"b":0.197,"r":0.311},{"b":0.206,"r":0.26},{"b":0.299,"r":0.46},{"b":0.214,"r":0.505},{"b":0.175,"r":0.346},{"b":0.21,"r":0.382},{"b":0.218,"r":0.443},{"b":0.218,"r":0.403},{"b":0.183,"r":0.467},{"b":0.203,"r":0.406},{"b":0.194,"r":0.43},{"b":0.171,"r":0.396},{"b":0.213,"r":0.279},{"b":0.188,"r":0.272},{"b":0.224,"r":0.463},{"b":0.173,"r":0.373},{"b":0.192,"r":0.395},{"b":0.218,"r":0.372},{"b":0.164,"r":0.49},{"b":0.184,"r":0.374},{"b":0.156,"r":0.355},{"b":0.202,"r":0.356},{"b":0.181,"r":0.289},{"b":0.193,"r":0.213},{"b":0.182,"r":0.244},{"b":0.891,"r":0.534},{"b":0.452,"r":0.515},{"b":0.022,"r":0.46},{"b":0.029,"r":0.415},{"b":0.027,"r":0.424},{"b":0.022,"r":0.396},{"b":0.024,"r":0.401},{"b":0.029,"r":0.569},{"b":0.024,"r":0.537},{"b":0.015,"r":0.506},{"b":0.009,"r":0.502},{"b":0.016,"r":0.443},{"b":0.02,"r":0.35},{"b":0.018,"r":0.35},{"b":0.016,"r":0.34},{"b":0.03,"r":0.365},{"b":0.024,"r":0.319},{"b":0.023,"r":0.318},{"b":0.021,"r":0.332},{"b":0.015,"r":0.543},{"b":0.007,"r":0.467},{"b":0.004,"r":0.479},{"b":0.02,"r":0.492},{"b":0.024,"r":0.453},{"b":0.01,"r":0.423},{"b":0.007,"r":0.337},{"b":0.01,"r":0.37},{"b":0.007,"r":0.398},{"b":0.018,"r":0.384},{"b":0.027,"r":0.365},{"b":0.04,"r":0.591},{"b":0.015,"r":0.482},{"b":0.01,"r":0.472},{"b":0.017,"r":0.451},{"b":0.012,"r":0.359},{"b":0.008,"r":0.32},{"b":0.021,"r":0.32},{"b":0.016,"r":0.4},{"b":0.012,"r":0.421},{"b":0.009,"r":0.408},{"b":0.007,"r":0.381},{"b":0.018,"r":0.491},{"b":0.028,"r":0.417},{"b":0.02,"r":0.411},{"b":0.027,"r":0.398},{"b":0.022,"r":0.388},{"b":0.014,"r":0.323},{"b":0.016,"r":0.322},{"b":0.019,"r":0.324},{"b":0.032,"r":0.429},{"b":0.024,"r":0.392},{"b":0.015,"r":0.36},{"b":0.024,"r":0.447},{"b":0.029,"r":0.462},{"b":0.009,"r":0.448},{"b":0.007,"r":0.433},{"b":0.009,"r":0.385},{"b":0.012,"r":0.33},{"b":0.014,"r":0.371},{"b":0.062,"r":0.379},{"b":0.644,"r":0.533},{"b":1.0,"r":0.457},{"b":0.642,"r":0.469},{"b":0.474,"r":0.449},{"b":0.516,"r":0.423},{"b":0.518,"r":0.355},{"b":0.487,"r":0.388},{"b":0.546,"r":0.498},{"b":0.502,"r":0.612},{"b":0.501,"r":0.517},{"b":0.502,"r":0.465},{"b":0.504,"r":0.492},{"b":0.498,"r":0.325},{"b":0.505,"r":0.318},{"b":0.542,"r":0.291},{"b":0.499,"r":0.378},{"b":0.511,"r":0.314},{"b":0.494,"r":0.317},{"b":0.522,"r":0.28},{"b":0.509,"r":0.511},{"b":0.521,"r":0.469},{"b":0.524,"r":0.478},{"b":0.527,"r":0.54},{"b":0.527,"r":0.437},{"b":0.51,"r":0.355},{"b":0.506,"r":0.285},{"b":0.552,"r":0.383},{"b":0.484,"r":0.355},{"b":0.485,"r":0.355},{"b":0.561,"r":0.343},{"b":0.504,"r":0.545},{"b":0.526,"r":0.44},{"b":0.498,"r":0.415},{"b":0.493,"r":0.428},{"b":0.541,"r":0.378},{"b":0.535,"r":0.294},{"b":0.549,"r":0.26},{"b":0.63,"r":0.372},{"b":0.539,"r":0.393},{"b":0.542,"r":0.348},{"b":0.532,"r":0.329},{"b":0.542,"r":0.399},{"b":0.422,"r":0.45},{"b":0.457,"r":0.432},{"b":0.448,"r":0.456},{"b":0.45,"r":0.458},{"b":0.415,"r":0.342},{"b":0.427,"r":0.238},{"b":0.481,"r":0.243},{"b":0.512,"r":0.311},{"b":0.464,"r":0.269},{"b":0.507,"r":0.285},{"b":0.505,"r":0.401},{"b":0.473,"r":0.455},{"b":0.453,"r":0.415},{"b":0.439,"r":0.423},{"b":0.466,"r":0.387},{"b":0.462,"r":0.272},{"b":0.485,"r":0.239},{"b":0.493,"r":0.23},{"b":0.95,"r":0.554},{"b":0.634,"r":0.551},{"b":0.075,"r":0.438},{"b":0.026,"r":0.442},{"b":0.047,"r":0.407},{"b":0.049,"r":0.369},{"b":0.048,"r":0.39},{"b":0.031,"r":0.512},{"b":0.031,"r":0.55},{"b":0.033,"r":0.517},{"b":0.049,"r":0.492},{"b":0.024,"r":0.423},{"b":0.041,"r":0.337},{"b":0.037,"r":0.328},{"b":0.03,"r":0.342},{"b":0.038,"r":0.407},{"b":0.053,"r":0.364},{"b":0.034,"r":0.333},{"b":0.058,"r":0.345},{"b":0.067,"r":0.541},{"b":0.041,"r":0.478},{"b":0.029,"r":0.475},{"b":0.044,"r":0.517},{"b":0.03,"r":0.458},{"b":0.016,"r":0.383},{"b":0.045,"r":0.338},{"b":0.045,"r":0.373},{"b":0.044,"r":0.34},{"b":0.037,"r":0.333},{"b":0.051,"r":0.309},{"b":0.048,"r":0.534},{"b":0.03,"r":0.48},{"b":0.034,"r":0.424},{"b":0.029,"r":0.401},{"b":0.042,"r":0.342},{"b":0.055,"r":0.282},{"b":0.051,"r":0.296},{"b":0.013,"r":0.404},{"b":0.044,"r":0.383},{"b":0.054,"r":0.351},{"b":0.025,"r":0.339},{"b":0.036,"r":0.433},{"b":0.026,"r":0.407},{"b":0.025,"r":0.418},{"b":0.029,"r":0.407},{"b":0.027,"r":0.423},{"b":0.035,"r":0.328},{"b":0.037,"r":0.275},{"b":0.06,"r":0.315},{"b":0.057,"r":0.466},{"b":0.019,"r":0.405},{"b":0.035,"r":0.404},{"b":0.021,"r":0.504},{"b":0.019,"r":0.49},{"b":0.028,"r":0.462},{"b":0.023,"r":0.431},{"b":0.017,"r":0.371},{"b":0.023,"r":0.291},{"b":0.028,"r":0.313},{"b":0.032,"r":0.287},{"b":0.38,"r":0.58},{"b":0.632,"r":0.452},{"b":0.193,"r":0.466},{"b":0.249,"r":0.428},{"b":0.261,"r":0.414},{"b":0.245,"r":0.417},{"b":0.243,"r":0.375},{"b":0.258,"r":0.475},{"b":0.271,"r":0.464},{"b":0.247,"r":0.446},{"b":0.204,"r":0.457},{"b":0.243,"r":0.446},{"b":0.248,"r":0.34},{"b":0.243,"r":0.32},{"b":0.256,"r":0.3},{"b":0.25,"r":0.347},{"b":0.217,"r":0.301},{"b":0.229,"r":0.289},{"b":0.237,"r":0.318},{"b":0.235,"r":0.463},{"b":0.237,"r":0.341},{"b":0.227,"r":0.349},{"b":0.255,"r":0.339},{"b":0.244,"r":0.289},{"b":0.232,"r":0.293},{"b":0.226,"r":0.269},{"b":0.301,"r":0.446},{"b":0.245,"r":0.405},{"b":0.241,"r":0.328},{"b":0.319,"r":0.385},{"b":0.254,"r":0.553},{"b":0.231,"r":0.488},{"b":0.207,"r":0.475},{"b":0.203,"r":0.461},{"b":0.176,"r":0.446},{"b":0.17,"r":0.286},{"b":0.209,"r":0.286},{"b":0.213,"r":0.414},{"b":0.236,"r":0.416},{"b":0.214,"r":0.361},{"b":0.231,"r":0.361},{"b":0.231,"r":0.471},{"b":0.238,"r":0.42},{"b":0.187,"r":0.479},{"b":0.247,"r":0.457},{"b":0.217,"r":0.518},{"b":0.155,"r":0.338},{"b":0.2,"r":0.264},{"b":0.191,"r":0.261},{"b":0.192,"r":0.388},{"b":0.164,"r":0.292},{"b":0.227,"r":0.329},{"b":0.218,"r":0.391},{"b":0.184,"r":0.428},{"b":0.182,"r":0.367},{"b":0.191,"r":0.353},{"b":0.197,"r":0.343},{"b":0.205,"r":0.287},{"b":0.189,"r":0.218},{"b":0.282,"r":0.249},{"b":0.692,"r":0.874},{"b":0.623,"r":0.839},{"b":0.568,"r":0.579},{"b":0.636,"r":0.539},{"b":0.218,"r":0.406},{"b":0.04,"r":0.426},{"b":0.048,"r":0.451},{"b":0.019,"r":0.522},{"b":0.018,"r":0.547},{"b":0.018,"r":0.546},{"b":0.012,"r":0.536},{"b":0.008,"r":0.485},{"b":0.016,"r":0.415},{"b":0.024,"r":0.406},{"b":0.022,"r":0.427},{"b":0.163,"r":0.876},{"b":0.379,"r":0.708},{"b":0.475,"r":0.717},{"b":0.536,"r":0.347},{"b":0.233,"r":0.537},{"b":0.026,"r":0.516},{"b":0.02,"r":0.529},{"b":0.025,"r":0.622},{"b":0.01,"r":0.621},{"b":0.015,"r":0.505},{"b":0.012,"r":0.433},{"b":0.015,"r":0.413},{"b":0.024,"r":0.398},{"b":0.013,"r":0.384},{"b":0.041,"r":0.366},{"b":0.098,"r":0.839},{"b":0.44,"r":0.716},{"b":0.575,"r":0.654},{"b":0.501,"r":0.514},{"b":0.227,"r":0.356},{"b":0.024,"r":0.366},{"b":0.015,"r":0.388},{"b":0.041,"r":0.452},{"b":0.043,"r":0.446},{"b":0.009,"r":0.462},{"b":0.021,"r":0.418},{"b":0.032,"r":0.601},{"b":0.03,"r":0.596},{"b":0.022,"r":0.53},{"b":0.03,"r":0.469},{"b":0.114,"r":0.865},{"b":0.382,"r":0.736},{"b":0.467,"r":0.569},{"b":0.5,"r":0.461},{"b":0.228,"r":0.429},{"b":0.018,"r":0.415},{"b":0.021,"r":0.436},{"b":0.03,"r":0.625},{"b":0.026,"r":0.629},{"b":0.013,"r":0.522},{"b":0.01,"r":0.47},{"b":0.018,"r":0.438},{"b":0.013,"r":0.418},{"b":0.009,"r":0.391},{"b":0.041,"r":0.367},{"b":0.368,"r":0.84},{"b":0.697,"r":0.612},{"b":0.724,"r":0.671},{"b":0.691,"r":0.485},{"b":0.513,"r":0.439},{"b":0.506,"r":0.39},{"b":0.496,"r":0.435},{"b":0.555,"r":0.532},{"b":0.598,"r":0.622},{"b":0.562,"r":0.561},{"b":0.557,"r":0.518},{"b":0.584,"r":0.561},{"b":0.591,"r":0.373},{"b":0.608,"r":0.455},{"b":0.586,"r":0.346},{"b":0.571,"r":0.913},{"b":0.684,"r":0.686},{"b":0.683,"r":0.675},{"b":0.766,"r":0.438},{"b":0.54,"r":0.515},{"b":0.465,"r":0.51},{"b":0.491,"r":0.494},{"b":0.532,"r":0.646},{"b":0.545,"r":0.609},{"b":0.529,"r":0.523},{"b":0.574,"r":0.405},{"b":0.616,"r":0.446},{"b":0.598,"r":0.423},{"b":0.609,"r":0.391},{"b":0.602,"r":0.406},{"b":0.596,"r":0.812},{"b":0.427,"r":0.719},{"b":0.583,"r":0.659},{"b":0.674,"r":0.429},{"b":0.375,"r":0.361},{"b":0.454,"r":0.359},{"b":0.502,"r":0.365},{"b":0.531,"r":0.374},{"b":0.548,"r":0.425},{"b":0.549,"r":0.352},{"b":0.561,"r":0.393},{"b":0.613,"r":0.514},{"b":0.563,"r":0.59},{"b":0.586,"r":0.516},{"b":0.597,"r":0.488},{"b":0.409,"r":0.768},{"b":0.327,"r":0.656},{"b":0.383,"r":0.576},{"b":0.311,"r":0.343},{"b":0.134,"r":0.33},{"b":0.381,"r":0.309},{"b":0.527,"r":0.363},{"b":0.629,"r":0.464},{"b":0.509,"r":0.581},{"b":0.54,"r":0.504},{"b":0.518,"r":0.507},{"b":0.573,"r":0.484},{"b":0.564,"r":0.412},{"b":0.575,"r":0.395},{"b":0.61,"r":0.349},{"b":0.61,"r":0.884},{"b":0.482,"r":0.703},{"b":0.668,"r":0.678},{"b":0.521,"r":0.559},{"b":0.193,"r":0.424},{"b":0.048,"r":0.464},{"b":0.077,"r":0.503},{"b":0.07,"r":0.546},{"b":0.021,"r":0.582},{"b":0.039,"r":0.513},{"b":0.027,"r":0.492},{"b":0.056,"r":0.48},{"b":0.06,"r":0.378},{"b":0.054,"r":0.352},{"b":0.024,"r":0.378},{"b":0.039,"r":0.842},{"b":0.318,"r":0.732},{"b":0.503,"r":0.639},{"b":0.557,"r":0.37},{"b":0.216,"r":0.505},{"b":0.023,"r":0.493},{"b":0.047,"r":0.484},{"b":0.025,"r":0.609},{"b":0.028,"r":0.65},{"b":0.022,"r":0.519},{"b":0.036,"r":0.442},{"b":0.021,"r":0.463},{"b":0.04,"r":0.407},{"b":0.04,"r":0.4},{"b":0.057,"r":0.416},{"b":0.215,"r":0.863},{"b":0.452,"r":0.694},{"b":0.549,"r":0.649},{"b":0.531,"r":0.54},{"b":0.214,"r":0.358},{"b":0.057,"r":0.367},{"b":0.029,"r":0.393},{"b":0.053,"r":0.4},{"b":0.034,"r":0.444},{"b":0.031,"r":0.403},{"b":0.05,"r":0.397},{"b":0.045,"r":0.589},{"b":0.036,"r":0.556},{"b":0.055,"r":0.51},{"b":0.055,"r":0.49},{"b":0.106,"r":0.827},{"b":0.334,"r":0.717},{"b":0.47,"r":0.647},{"b":0.523,"r":0.369},{"b":0.189,"r":0.394},{"b":0.019,"r":0.387},{"b":0.044,"r":0.401},{"b":0.045,"r":0.529},{"b":0.065,"r":0.603},{"b":0.055,"r":0.518},{"b":0.027,"r":0.47},{"b":0.016,"r":0.444},{"b":0.024,"r":0.379},{"b":0.035,"r":0.354},{"b":0.041,"r":0.344},{"b":0.206,"r":0.871},{"b":0.609,"r":0.603},{"b":0.564,"r":0.645},{"b":0.425,"r":0.485},{"b":0.031,"r":0.369},{"b":0.185,"r":0.411},{"b":0.231,"r":0.392},{"b":0.267,"r":0.495},{"b":0.238,"r":0.516},{"b":0.221,"r":0.498},{"b":0.218,"r":0.49},{"b":0.234,"r":0.44},{"b":0.226,"r":0.379},{"b":0.248,"r":0.402},{"b":0.242,"r":0.354},{"b":0.292,"r":0.852},{"b":0.432,"r":0.741},{"b":0.564,"r":0.616},{"b":0.659,"r":0.353},{"b":0.38,"r":0.402},{"b":0.215,"r":0.404},{"b":0.221,"r":0.437},{"b":0.24,"r":0.503},{"b":0.227,"r":0.466},{"b":0.218,"r":0.389},{"b":0.214,"r":0.303},{"b":0.233,"r":0.466},{"b":0.199,"r":0.479},{"b":0.183,"r":0.411},{"b":0.198,"r":0.391},{"b":0.354,"r":0.863},{"b":0.446,"r":0.708},{"b":0.525,"r":0.706},{"b":0.466,"r":0.496},{"b":0.078,"r":0.347},{"b":0.134,"r":0.317},{"b":0.201,"r":0.328},{"b":0.217,"r":0.438},{"b":0.18,"r":0.527},{"b":0.232,"r":0.451},{"b":0.197,"r":0.428},{"b":0.272,"r":0.473},{"b":0.217,"r":0.451},{"b":0.226,"r":0.462},{"b":0.226,"r":0.436},{"b":0.318,"r":0.868},{"b":0.432,"r":0.732},{"b":0.456,"r":0.606},{"b":0.53,"r":0.371},{"b":0.3,"r":0.391},{"b":0.212,"r":0.332},{"b":0.168,"r":0.355},{"b":0.234,"r":0.37},{"b":0.187,"r":0.484},{"b":0.181,"r":0.415},{"b":0.17,"r":0.383},{"b":0.185,"r":0.402},{"b":0.182,"r":0.337},{"b":0.207,"r":0.309},{"b":0.242,"r":0.29},{"b":0.531,"r":0.855},{"b":0.244,"r":0.744},{"b":0.567,"r":0.566},{"b":0.626,"r":0.509},{"b":0.174,"r":0.341},{"b":0.009,"r":0.38},{"b":0.024,"r":0.412},{"b":0.035,"r":0.544},{"b":0.024,"r":0.524},{"b":0.008,"r":0.535},{"b":0.011,"r":0.534},{"b":0.018,"r":0.478},{"b":0.021,"r":0.424},{"b":0.024,"r":0.402},{"b":0.038,"r":0.386},{"b":0.185,"r":0.874},{"b":0.368,"r":0.765},{"b":0.49,"r":0.621},{"b":0.559,"r":0.43},{"b":0.19,"r":0.5},{"b":0.029,"r":0.486},{"b":0.031,"r":0.53},{"b":0.02,"r":0.587},{"b":0.022,"r":0.64},{"b":0.018,"r":0.528},{"b":0.02,"r":0.454},{"b":0.035,"r":0.479},{"b":0.019,"r":0.428},{"b":0.01,"r":0.395},{"b":0.028,"r":0.408},{"b":0.054,"r":0.858},{"b":0.418,"r":0.663},{"b":0.505,"r":0.707},{"b":0.515,"r":0.406},{"b":0.252,"r":0.395},{"b":0.036,"r":0.428},{"b":0.017,"r":0.467},{"b":0.02,"r":0.459},{"b":0.021,"r":0.421},{"b":0.023,"r":0.377},{"b":0.02,"r":0.399},{"b":0.017,"r":0.555},{"b":0.025,"r":0.582},{"b":0.017,"r":0.54},{"b":0.054,"r":0.494},{"b":0.106,"r":0.829},{"b":0.425,"r":0.689},{"b":0.488,"r":0.576},{"b":0.461,"r":0.474},{"b":0.176,"r":0.359},{"b":0.015,"r":0.379},{"b":0.018,"r":0.415},{"b":0.029,"r":0.556},{"b":0.004,"r":0.645},{"b":0.007,"r":0.523},{"b":0.015,"r":0.48},{"b":0.018,"r":0.434},{"b":0.019,"r":0.409},{"b":0.018,"r":0.369},{"b":0.024,"r":0.318},{"b":0.214,"r":0.847},{"b":0.673,"r":0.632},{"b":0.704,"r":0.682},{"b":0.686,"r":0.522},{"b":0.549,"r":0.474},{"b":0.497,"r":0.402},{"b":0.49,"r":0.437},{"b":0.556,"r":0.565},{"b":0.608,"r":0.622},{"b":0.564,"r":0.59},{"b":0.541,"r":0.512},{"b":0.56,"r":0.541},{"b":0.531,"r":0.355},{"b":0.57,"r":0.432},{"b":0.556,"r":0.337},{"b":0.581,"r":0.895},{"b":0.645,"r":0.671},{"b":0.719,"r":0.679},{"b":0.76,"r":0.446},{"b":0.557,"r":0.52},{"b":0.465,"r":0.476},{"b":0.522,"r":0.463},{"b":0.571,"r":0.652},{"b":0.559,"r":0.596},{"b":0.551,"r":0.506},{"b":0.584,"r":0.386},{"b":0.626,"r":0.424},{"b":0.599,"r":0.414},{"b":0.579,"r":0.392},{"b":0.588,"r":0.414},{"b":0.578,"r":0.813},{"b":0.434,"r":0.72},{"b":0.581,"r":0.646},{"b":0.698,"r":0.42},{"b":0.407,"r":0.344},{"b":0.447,"r":0.34},{"b":0.533,"r":0.372},{"b":0.55,"r":0.399},{"b":0.596,"r":0.474},{"b":0.621,"r":0.384},{"b":0.621,"r":0.424},{"b":0.649,"r":0.543},{"b":0.594,"r":0.596},{"b":0.619,"r":0.511},{"b":0.649,"r":0.481},{"b":0.443,"r":0.766},{"b":0.309,"r":0.66},{"b":0.367,"r":0.569},{"b":0.337,"r":0.329},{"b":0.139,"r":0.332},{"b":0.364,"r":0.318},{"b":0.511,"r":0.361},{"b":0.601,"r":0.454},{"b":0.525,"r":0.574},{"b":0.531,"r":0.503},{"b":0.519,"r":0.493},{"b":0.558,"r":0.472},{"b":0.566,"r":0.407},{"b":0.546,"r":0.381},{"b":0.573,"r":0.323},{"b":0.622,"r":0.871},{"b":0.512,"r":0.687},{"b":0.699,"r":0.681},{"b":0.568,"r":0.55},{"b":0.194,"r":0.385},{"b":0.065,"r":0.412},{"b":0.057,"r":0.445},{"b":0.032,"r":0.53},{"b":0.038,"r":0.583},{"b":0.018,"r":0.52},{"b":0.05,"r":0.524},{"b":0.056,"r":0.498},{"b":0.06,"r":0.4},{"b":0.051,"r":0.368},{"b":0.019,"r":0.399},{"b":0.084,"r":0.861},{"b":0.341,"r":0.748},{"b":0.565,"r":0.671},{"b":0.582,"r":0.369},{"b":0.227,"r":0.502},{"b":0.046,"r":0.503},{"b":0.042,"r":0.496},{"b":0.04,"r":0.603},{"b":0.035,"r":0.637},{"b":0.02,"r":0.504},{"b":0.039,"r":0.431},{"b":0.013,"r":0.428},{"b":0.04,"r":0.392},{"b":0.044,"r":0.393},{"b":0.05,"r":0.418},{"b":0.274,"r":0.868},{"b":0.454,"r":0.692},{"b":0.569,"r":0.632},{"b":0.514,"r":0.519},{"b":0.227,"r":0.371},{"b":0.064,"r":0.378},{"b":0.04,"r":0.404},{"b":0.036,"r":0.442},{"b":0.046,"r":0.426},{"b":0.017,"r":0.412},{"b":0.068,"r":0.404},{"b":0.026,"r":0.572},{"b":0.085,"r":0.623},{"b":0.036,"r":0.539},{"b":0.072,"r":0.478},{"b":0.086,"r":0.834},{"b":0.4,"r":0.71},{"b":0.446,"r":0.63},{"b":0.522,"r":0.37},{"b":0.175,"r":0.348},{"b":0.053,"r":0.367},{"b":0.043,"r":0.376},{"b":0.027,"r":0.584},{"b":0.043,"r":0.604},{"b":0.051,"r":0.524},{"b":0.019,"r":0.473},{"b":0.04,"r":0.436},{"b":0.034,"r":0.388},{"b":0.024,"r":0.356},{"b":0.099,"r":0.343},{"b":0.344,"r":0.495},{"b":0.233,"r":0.345},{"b":0.065,"r":0.35},{"b":0.145,"r":0.384},{"b":0.255,"r":0.378},{"b":0.267,"r":0.456},{"b":0.242,"r":0.474},{"b":0.32,"r":0.575},{"b":0.248,"r":0.568},{"b":0.241,"r":0.531},{"b":0.24,"r":0.52},{"b":0.242,"r":0.476},{"b":0.237,"r":0.387},{"b":0.244,"r":0.386},{"b":0.276,"r":0.356},{"b":0.243,"r":0.342},{"b":0.096,"r":0.223},{"b":0.1,"r":0.218},{"b":0.177,"r":0.261},{"b":0.163,"r":0.403},{"b":0.204,"r":0.361},{"b":0.229,"r":0.405},{"b":0.24,"r":0.527},{"b":0.237,"r":0.507},{"b":0.25,"r":0.414},{"b":0.233,"r":0.332},{"b":0.264,"r":0.504},{"b":0.246,"r":0.484},{"b":0.212,"r":0.391},{"b":0.235,"r":0.363},{"b":0.277,"r":0.534},{"b":0.097,"r":0.456},{"b":0.081,"r":0.445},{"b":0.125,"r":0.412},{"b":0.163,"r":0.373},{"b":0.215,"r":0.324},{"b":0.209,"r":0.298},{"b":0.258,"r":0.432},{"b":0.22,"r":0.544},{"b":0.248,"r":0.42},{"b":0.238,"r":0.421},{"b":0.282,"r":0.467},{"b":0.217,"r":0.476},{"b":0.25,"r":0.453},{"b":0.265,"r":0.442},{"b":0.264,"r":0.521},{"b":0.085,"r":0.404},{"b":0.106,"r":0.289},{"b":0.143,"r":0.27},{"b":0.169,"r":0.363},{"b":0.194,"r":0.342},{"b":0.225,"r":0.337},{"b":0.254,"r":0.403},{"b":0.242,"r":0.552},{"b":0.196,"r":0.456},{"b":0.227,"r":0.434},{"b":0.225,"r":0.432},{"b":0.226,"r":0.364},{"b":0.231,"r":0.298},{"b":0.271,"r":0.287},{"b":0.279,"r":0.333},{"b":0.045,"r":0.345},{"b":0.016,"r":0.3},{"b":0.01,"r":0.265},{"b":0.011,"r":0.247},{"b":0.006,"r":0.196},{"b":0.003,"r":0.16},{"b":0.007,"r":0.422},{"b":0.011,"r":0.624},{"b":0.007,"r":0.532},{"b":0.002,"r":0.472},{"b":0.007,"r":0.401},{"b":0.009,"r":0.247},{"b":0.007,"r":0.197},{"b":0.008,"r":0.183},{"b":0.006,"r":0.24},{"b":0.003,"r":0.187},{"b":0.003,"r":0.153},{"b":0.004,"r":0.19},{"b":0.005,"r":0.428},{"b":0.001,"r":0.353},{"b":0.001,"r":0.326},{"b":0.003,"r":0.343},{"b":0.005,"r":0.341},{"b":0.003,"r":0.247},{"b":0.004,"r":0.225},{"b":0.004,"r":0.24},{"b":0.005,"r":0.194},{"b":0.002,"r":0.184},{"b":0.005,"r":0.189},{"b":0.017,"r":0.574},{"b":0.004,"r":0.525},{"b":0.001,"r":0.457},{"b":0.004,"r":0.427},{"b":0.007,"r":0.363},{"b":0.003,"r":0.287},{"b":0.002,"r":0.252},{"b":0.004,"r":0.307},{"b":0.004,"r":0.317},{"b":0.003,"r":0.26},{"b":0.005,"r":0.246},{"b":0.011,"r":0.457},{"b":0.007,"r":0.45},{"b":0.004,"r":0.393},{"b":0.006,"r":0.366},{"b":0.003,"r":0.354},{"b":0.008,"r":0.274},{"b":0.01,"r":0.23},{"b":0.005,"r":0.238},{"b":0.003,"r":0.266},{"b":0.005,"r":0.205},{"b":0.011,"r":0.178},{"b":0.014,"r":0.434},{"b":0.009,"r":0.549},{"b":0.005,"r":0.491},{"b":0.004,"r":0.416},{"b":0.003,"r":0.379},{"b":0.002,"r":0.218},{"b":0.003,"r":0.144},{"b":0.003,"r":0.178},{"b":0.004,"r":0.307},{"b":0.007,"r":0.277},{"b":0.003,"r":0.237},{"b":0.002,"r":0.226},{"b":0.002,"r":0.218},{"b":0.004,"r":0.217},{"b":0.003,"r":0.188},{"b":0.016,"r":0.436},{"b":0.01,"r":0.523},{"b":0.002,"r":0.485},{"b":0.004,"r":0.451},{"b":0.001,"r":0.414},{"b":0.001,"r":0.276},{"b":0.001,"r":0.17},{"b":0.004,"r":0.155},{"b":0.004,"r":0.163},{"b":0.002,"r":0.121},{"b":0.003,"r":0.113},{"b":0.013,"r":0.201},{"b":0.011,"r":0.438},{"b":0.0,"r":0.388},{"b":0.001,"r":0.354},{"b":0.002,"r":0.322},{"b":0.004,"r":0.258},{"b":0.002,"r":0.278},{"b":0.001,"r":0.259},{"b":0.005,"r":0.272},{"b":0.009,"r":0.221},{"b":0.004,"r":0.203},{"b":0.003,"r":0.204},{"b":0.009,"r":0.497},{"b":0.001,"r":0.476},{"b":0.001,"r":0.393},{"b":0.002,"r":0.362},{"b":0.004,"r":0.314},{"b":0.003,"r":0.222},{"b":0.003,"r":0.189},{"b":0.005,"r":0.241},{"b":0.007,"r":0.237},{"b":0.004,"r":0.196},{"b":0.003,"r":0.163},{"b":0.014,"r":0.517},{"b":0.005,"r":0.433},{"b":0.004,"r":0.365},{"b":0.004,"r":0.338},{"b":0.006,"r":0.349},{"b":0.008,"r":0.252},{"b":0.006,"r":0.273},{"b":0.01,"r":0.318},{"b":0.006,"r":0.263},{"b":0.005,"r":0.206},{"b":0.004,"r":0.189},{"b":0.006,"r":0.435},{"b":0.004,"r":0.503},{"b":0.001,"r":0.419},{"b":0.002,"r":0.376},{"b":0.002,"r":0.306},{"b":0.002,"r":0.169},{"b":0.002,"r":0.15},{"b":0.006,"r":0.155},{"b":0.012,"r":0.304},{"b":0.011,"r":0.272},{"b":0.004,"r":0.272},{"b":0.006,"r":0.236},{"b":0.006,"r":0.202},{"b":0.004,"r":0.229},{"b":0.008,"r":0.224},{"b":0.016,"r":0.44},{"b":0.009,"r":0.607},{"b":0.005,"r":0.543},{"b":0.004,"r":0.482},{"b":0.005,"r":0.411},{"b":0.005,"r":0.271},{"b":0.004,"r":0.223},{"b":0.009,"r":0.217},{"b":0.018,"r":0.254},{"b":0.006,"r":0.192},{"b":0.008,"r":0.137},{"b":0.008,"r":0.242},{"b":0.006,"r":0.331},{"b":0.003,"r":0.317},{"b":0.004,"r":0.312},{"b":0.007,"r":0.306},{"b":0.01,"r":0.363},{"b":0.012,"r":0.343},{"b":0.011,"r":0.322},{"b":0.009,"r":0.323},{"b":0.006,"r":0.292},{"b":0.004,"r":0.299},{"b":0.019,"r":0.308},{"b":0.037,"r":0.523},{"b":0.011,"r":0.495},{"b":0.002,"r":0.446},{"b":0.007,"r":0.406},{"b":0.004,"r":0.357},{"b":0.004,"r":0.298},{"b":0.006,"r":0.285},{"b":0.011,"r":0.314},{"b":0.005,"r":0.27},{"b":0.003,"r":0.248},{"b":0.01,"r":0.244},{"b":0.021,"r":0.392},{"b":0.008,"r":0.382},{"b":0.006,"r":0.355},{"b":0.005,"r":0.337},{"b":0.011,"r":0.297},{"b":0.007,"r":0.24},{"b":0.013,"r":0.192},{"b":0.007,"r":0.214},{"b":0.007,"r":0.204},{"b":0.003,"r":0.158},{"b":0.003,"r":0.126},{"b":0.01,"r":0.36},{"b":0.007,"r":0.479},{"b":0.011,"r":0.447},{"b":0.004,"r":0.398},{"b":0.003,"r":0.357},{"b":0.004,"r":0.23},{"b":0.003,"r":0.157},{"b":0.014,"r":0.137},{"b":0.029,"r":0.307},{"b":0.01,"r":0.272},{"b":0.011,"r":0.248},{"b":0.01,"r":0.222},{"b":0.01,"r":0.197},{"b":0.005,"r":0.159},{"b":0.003,"r":0.139},{"b":0.01,"r":0.432},{"b":0.007,"r":0.525},{"b":0.005,"r":0.448},{"b":0.006,"r":0.392},{"b":0.006,"r":0.341},{"b":0.005,"r":0.264},{"b":0.005,"r":0.216},{"b":0.008,"r":0.187},{"b":0.009,"r":0.208},{"b":0.007,"r":0.144},{"b":0.009,"r":0.116},{"b":0.006,"r":0.275},{"b":0.006,"r":0.398},{"b":0.002,"r":0.398},{"b":0.003,"r":0.391},{"b":0.003,"r":0.415},{"b":0.004,"r":0.341},{"b":0.012,"r":0.288},{"b":0.01,"r":0.267},{"b":0.01,"r":0.279},{"b":0.004,"r":0.22},{"b":0.003,"r":0.198},{"b":0.009,"r":0.19},{"b":0.009,"r":0.534},{"b":0.004,"r":0.462},{"b":0.003,"r":0.419},{"b":0.003,"r":0.401},{"b":0.004,"r":0.35},{"b":0.004,"r":0.257},{"b":0.002,"r":0.212},{"b":0.003,"r":0.277},{"b":0.011,"r":0.245},{"b":0.006,"r":0.226},{"b":0.01,"r":0.21},{"b":0.022,"r":0.429},{"b":0.007,"r":0.357},{"b":0.004,"r":0.314},{"b":0.005,"r":0.314},{"b":0.007,"r":0.346},{"b":0.01,"r":0.292},{"b":0.013,"r":0.244},{"b":0.009,"r":0.289},{"b":0.006,"r":0.269},{"b":0.004,"r":0.216},{"b":0.007,"r":0.191},{"b":0.014,"r":0.44},{"b":0.008,"r":0.496},{"b":0.003,"r":0.398},{"b":0.002,"r":0.364},{"b":0.004,"r":0.349},{"b":0.004,"r":0.272},{"b":0.002,"r":0.197},{"b":0.032,"r":0.159},{"b":0.045,"r":0.389},{"b":0.021,"r":0.437},{"b":0.017,"r":0.467},{"b":0.018,"r":0.426},{"b":0.015,"r":0.434},{"b":0.017,"r":0.388},{"b":0.023,"r":0.381},{"b":0.047,"r":0.489},{"b":0.034,"r":0.623},{"b":0.017,"r":0.566},{"b":0.009,"r":0.525},{"b":0.017,"r":0.459},{"b":0.011,"r":0.356},{"b":0.013,"r":0.35},{"b":0.028,"r":0.353},{"b":0.037,"r":0.381},{"b":0.017,"r":0.33},{"b":0.009,"r":0.349},{"b":0.028,"r":0.407},{"b":0.029,"r":0.483},{"b":0.008,"r":0.452},{"b":0.015,"r":0.464},{"b":0.015,"r":0.46},{"b":0.017,"r":0.428},{"b":0.005,"r":0.383},{"b":0.02,"r":0.393},{"b":0.01,"r":0.402},{"b":0.01,"r":0.374},{"b":0.007,"r":0.355},{"b":0.023,"r":0.377},{"b":0.042,"r":0.608},{"b":0.01,"r":0.556},{"b":0.011,"r":0.494},{"b":0.009,"r":0.47},{"b":0.014,"r":0.415},{"b":0.011,"r":0.346},{"b":0.031,"r":0.358},{"b":0.03,"r":0.393},{"b":0.018,"r":0.383},{"b":0.016,"r":0.357},{"b":0.021,"r":0.369},{"b":0.018,"r":0.528},{"b":0.009,"r":0.482},{"b":0.006,"r":0.476},{"b":0.02,"r":0.451},{"b":0.009,"r":0.404},{"b":0.004,"r":0.377},{"b":0.008,"r":0.359},{"b":0.01,"r":0.39},{"b":0.015,"r":0.423},{"b":0.018,"r":0.389},{"b":0.028,"r":0.398},{"b":0.041,"r":0.511},{"b":0.033,"r":0.553},{"b":0.011,"r":0.542},{"b":0.018,"r":0.522},{"b":0.02,"r":0.468},{"b":0.017,"r":0.372},{"b":0.018,"r":0.362},{"b":0.039,"r":0.338},{"b":0.251,"r":0.402},{"b":0.394,"r":0.326},{"b":0.435,"r":0.333},{"b":0.502,"r":0.273},{"b":0.503,"r":0.295},{"b":0.573,"r":0.274},{"b":0.578,"r":0.314},{"b":0.647,"r":0.439},{"b":0.635,"r":0.501},{"b":0.598,"r":0.505},{"b":0.559,"r":0.476},{"b":0.637,"r":0.445},{"b":0.638,"r":0.333},{"b":0.589,"r":0.341},{"b":0.603,"r":0.305},{"b":0.557,"r":0.322},{"b":0.424,"r":0.23},{"b":0.42,"r":0.228},{"b":0.484,"r":0.318},{"b":0.519,"r":0.4},{"b":0.542,"r":0.383},{"b":0.594,"r":0.384},{"b":0.624,"r":0.44},{"b":0.62,"r":0.383},{"b":0.602,"r":0.36},{"b":0.638,"r":0.354},{"b":0.607,"r":0.367},{"b":0.625,"r":0.333},{"b":0.652,"r":0.357},{"b":0.653,"r":0.346},{"b":0.63,"r":0.484},{"b":0.464,"r":0.474},{"b":0.458,"r":0.435},{"b":0.453,"r":0.427},{"b":0.519,"r":0.352},{"b":0.567,"r":0.341},{"b":0.566,"r":0.343},{"b":0.637,"r":0.381},{"b":0.601,"r":0.348},{"b":0.601,"r":0.32},{"b":0.62,"r":0.319},{"b":0.654,"r":0.516},{"b":0.561,"r":0.463},{"b":0.612,"r":0.41},{"b":0.577,"r":0.422},{"b":0.521,"r":0.348},{"b":0.449,"r":0.278},{"b":0.415,"r":0.286},{"b":0.51,"r":0.313},{"b":0.566,"r":0.336},{"b":0.554,"r":0.289},{"b":0.583,"r":0.304},{"b":0.622,"r":0.437},{"b":0.606,"r":0.498},{"b":0.611,"r":0.446},{"b":0.589,"r":0.425},{"b":0.607,"r":0.384},{"b":0.62,"r":0.326},{"b":0.592,"r":0.284},{"b":0.675,"r":0.289},{"b":0.773,"r":0.367},{"b":0.174,"r":0.303},{"b":0.048,"r":0.33},{"b":0.033,"r":0.321},{"b":0.059,"r":0.344},{"b":0.038,"r":0.345},{"b":0.038,"r":0.356},{"b":0.035,"r":0.452},{"b":0.049,"r":0.601},{"b":0.043,"r":0.558},{"b":0.043,"r":0.503},{"b":0.029,"r":0.468},{"b":0.037,"r":0.368},{"b":0.029,"r":0.322},{"b":0.029,"r":0.366},{"b":0.044,"r":0.358},{"b":0.05,"r":0.295},{"b":0.017,"r":0.262},{"b":0.081,"r":0.361},{"b":0.047,"r":0.445},{"b":0.016,"r":0.42},{"b":0.041,"r":0.422},{"b":0.038,"r":0.439},{"b":0.056,"r":0.393},{"b":0.028,"r":0.407},{"b":0.043,"r":0.374},{"b":0.031,"r":0.437},{"b":0.048,"r":0.397},{"b":0.031,"r":0.412},{"b":0.068,"r":0.403},{"b":0.067,"r":0.544},{"b":0.047,"r":0.502},{"b":0.042,"r":0.468},{"b":0.018,"r":0.443},{"b":0.026,"r":0.412},{"b":0.041,"r":0.402},{"b":0.028,"r":0.396},{"b":0.04,"r":0.418},{"b":0.028,"r":0.449},{"b":0.036,"r":0.408},{"b":0.019,"r":0.414},{"b":0.061,"r":0.527},{"b":0.033,"r":0.499},{"b":0.031,"r":0.475},{"b":0.012,"r":0.463},{"b":0.027,"r":0.414},{"b":0.042,"r":0.431},{"b":0.047,"r":0.498},{"b":0.048,"r":0.481},{"b":0.06,"r":0.396},{"b":0.028,"r":0.416},{"b":0.026,"r":0.408},{"b":0.095,"r":0.5},{"b":0.069,"r":0.546},{"b":0.052,"r":0.532},{"b":0.021,"r":0.487},{"b":0.063,"r":0.446},{"b":0.016,"r":0.358},{"b":0.047,"r":0.346},{"b":0.095,"r":0.344},{"b":0.395,"r":0.337},{"b":0.203,"r":0.255},{"b":0.067,"r":0.235},{"b":0.132,"r":0.309},{"b":0.137,"r":0.299},{"b":0.195,"r":0.359},{"b":0.193,"r":0.379},{"b":0.244,"r":0.474},{"b":0.192,"r":0.533},{"b":0.191,"r":0.497},{"b":0.212,"r":0.457},{"b":0.22,"r":0.458},{"b":0.214,"r":0.406},{"b":0.212,"r":0.366},{"b":0.201,"r":0.412},{"b":0.22,"r":0.344},{"b":0.106,"r":0.282},{"b":0.155,"r":0.296},{"b":0.158,"r":0.359},{"b":0.218,"r":0.454},{"b":0.193,"r":0.46},{"b":0.192,"r":0.427},{"b":0.24,"r":0.465},{"b":0.231,"r":0.41},{"b":0.197,"r":0.34},{"b":0.184,"r":0.366},{"b":0.247,"r":0.351},{"b":0.202,"r":0.329},{"b":0.195,"r":0.322},{"b":0.253,"r":0.282},{"b":0.248,"r":0.532},{"b":0.088,"r":0.435},{"b":0.011,"r":0.379},{"b":0.007,"r":0.366},{"b":0.008,"r":0.305},{"b":0.005,"r":0.172},{"b":0.004,"r":0.103},{"b":0.005,"r":0.211},{"b":0.005,"r":0.265},{"b":0.003,"r":0.218},{"b":0.002,"r":0.132},{"b":0.01,"r":0.47},{"b":0.005,"r":0.416},{"b":0.002,"r":0.36},{"b":0.003,"r":0.336},{"b":0.007,"r":0.382},{"b":0.003,"r":0.168},{"b":0.003,"r":0.087},{"b":0.003,"r":0.188},{"b":0.003,"r":0.24},{"b":0.002,"r":0.176},{"b":0.001,"r":0.113},{"b":0.002,"r":0.448},{"b":0.003,"r":0.571},{"b":0.001,"r":0.426},{"b":0.001,"r":0.381},{"b":0.002,"r":0.325},{"b":0.001,"r":0.194},{"b":0.001,"r":0.1},{"b":0.06,"r":0.059},{"b":0.173,"r":0.939},{"b":0.365,"r":0.838},{"b":0.483,"r":0.717},{"b":0.564,"r":0.492},{"b":0.166,"r":0.411},{"b":0.021,"r":0.409},{"b":0.047,"r":0.403},{"b":0.019,"r":0.522},{"b":0.024,"r":0.6},{"b":0.012,"r":0.589},{"b":0.013,"r":0.548},{"b":0.004,"r":0.478},{"b":0.01,"r":0.396},{"b":0.016,"r":0.391},{"b":0.066,"r":0.409},{"b":0.195,"r":0.819},{"b":0.416,"r":0.63},{"b":0.481,"r":0.706},{"b":0.59,"r":0.343},{"b":0.212,"r":0.548},{"b":0.016,"r":0.522},{"b":0.017,"r":0.505},{"b":0.035,"r":0.614},{"b":0.025,"r":0.617},{"b":0.026,"r":0.551},{"b":0.016,"r":0.49},{"b":0.035,"r":0.485},{"b":0.018,"r":0.457},{"b":0.016,"r":0.427},{"b":0.048,"r":0.365},{"b":0.152,"r":0.835},{"b":0.373,"r":0.777},{"b":0.489,"r":0.608},{"b":0.476,"r":0.525},{"b":0.161,"r":0.404},{"b":0.013,"r":0.404},{"b":0.01,"r":0.422},{"b":0.021,"r":0.441},{"b":0.011,"r":0.457},{"b":0.008,"r":0.447},{"b":0.022,"r":0.414},{"b":0.029,"r":0.585},{"b":0.016,"r":0.628},{"b":0.013,"r":0.558},{"b":0.051,"r":0.507},{"b":0.207,"r":0.813},{"b":0.281,"r":0.719},{"b":0.424,"r":0.632},{"b":0.506,"r":0.386},{"b":0.193,"r":0.355},{"b":0.023,"r":0.4},{"b":0.035,"r":0.412},{"b":0.032,"r":0.545},{"b":0.042,"r":0.681},{"b":0.018,"r":0.553},{"b":0.011,"r":0.495},{"b":0.024,"r":0.459},{"b":0.015,"r":0.395},{"b":0.013,"r":0.354},{"b":0.065,"r":0.279},{"b":0.302,"r":0.893},{"b":0.584,"r":0.679},{"b":0.672,"r":0.701},{"b":0.769,"r":0.364},{"b":0.635,"r":0.365},{"b":0.612,"r":0.387},{"b":0.6,"r":0.429},{"b":0.614,"r":0.564},{"b":0.607,"r":0.634},{"b":0.613,"r":0.611},{"b":0.593,"r":0.57},{"b":0.612,"r":0.583},{"b":0.597,"r":0.365},{"b":0.616,"r":0.407},{"b":0.596,"r":0.32},{"b":0.606,"r":0.748},{"b":0.417,"r":0.727},{"b":0.561,"r":0.596},{"b":0.657,"r":0.32},{"b":0.405,"r":0.533},{"b":0.487,"r":0.503},{"b":0.535,"r":0.506},{"b":0.589,"r":0.635},{"b":0.568,"r":0.607},{"b":0.589,"r":0.52},{"b":0.621,"r":0.437},{"b":0.67,"r":0.473},{"b":0.637,"r":0.437},{"b":0.679,"r":0.421},{"b":0.657,"r":0.477},{"b":0.533,"r":0.788},{"b":0.261,"r":0.774},{"b":0.346,"r":0.64},{"b":0.269,"r":0.403},{"b":0.201,"r":0.348},{"b":0.476,"r":0.355},{"b":0.543,"r":0.353},{"b":0.564,"r":0.373},{"b":0.628,"r":0.379},{"b":0.606,"r":0.394},{"b":0.683,"r":0.385},{"b":0.706,"r":0.516},{"b":0.611,"r":0.55},{"b":0.689,"r":0.499},{"b":0.624,"r":0.478},{"b":0.32,"r":0.712},{"b":0.117,"r":0.68},{"b":0.242,"r":0.531},{"b":0.228,"r":0.342},{"b":0.299,"r":0.347},{"b":0.45,"r":0.344},{"b":0.56,"r":0.332},{"b":0.63,"r":0.428},{"b":0.557,"r":0.58},{"b":0.527,"r":0.517},{"b":0.533,"r":0.518},{"b":0.48,"r":0.497},{"b":0.493,"r":0.415},{"b":0.461,"r":0.33},{"b":0.398,"r":0.324},{"b":0.422,"r":0.805},{"b":0.429,"r":0.615},{"b":0.558,"r":0.573},{"b":0.48,"r":0.457},{"b":0.148,"r":0.4},{"b":0.072,"r":0.418},{"b":0.064,"r":0.455},{"b":0.046,"r":0.563},{"b":0.046,"r":0.592},{"b":0.062,"r":0.553},{"b":0.028,"r":0.552},{"b":0.051,"r":0.508},{"b":0.037,"r":0.404},{"b":0.05,"r":0.374},{"b":0.05,"r":0.404},{"b":0.178,"r":0.797},{"b":0.323,"r":0.774},{"b":0.421,"r":0.68},{"b":0.484,"r":0.366},{"b":0.219,"r":0.586},{"b":0.029,"r":0.54},{"b":0.049,"r":0.525},{"b":0.025,"r":0.639},{"b":0.051,"r":0.639},{"b":0.019,"r":0.516},{"b":0.027,"r":0.46},{"b":0.028,"r":0.428},{"b":0.031,"r":0.377},{"b":0.043,"r":0.375},{"b":0.027,"r":0.391},{"b":0.191,"r":0.844},{"b":0.34,"r":0.651},{"b":0.545,"r":0.608},{"b":0.501,"r":0.47},{"b":0.161,"r":0.389},{"b":0.046,"r":0.372},{"b":0.038,"r":0.38},{"b":0.044,"r":0.383},{"b":0.017,"r":0.479},{"b":0.035,"r":0.421},{"b":0.021,"r":0.426},{"b":0.06,"r":0.593},{"b":0.054,"r":0.645},{"b":0.041,"r":0.575},{"b":0.109,"r":0.501},{"b":0.274,"r":0.778},{"b":0.285,"r":0.751},{"b":0.401,"r":0.669},{"b":0.505,"r":0.372},{"b":0.17,"r":0.416},{"b":0.028,"r":0.431},{"b":0.029,"r":0.438},{"b":0.031,"r":0.522},{"b":0.057,"r":0.648},{"b":0.035,"r":0.565},{"b":0.014,"r":0.512},{"b":0.021,"r":0.462},{"b":0.026,"r":0.368},{"b":0.021,"r":0.298},{"b":0.111,"r":0.252},{"b":0.29,"r":0.822},{"b":0.433,"r":0.643},{"b":0.451,"r":0.643},{"b":0.343,"r":0.375},{"b":0.085,"r":0.344},{"b":0.232,"r":0.307},{"b":0.234,"r":0.324},{"b":0.354,"r":0.532},{"b":0.186,"r":0.476},{"b":0.229,"r":0.48},{"b":0.228,"r":0.45},{"b":0.242,"r":0.394},{"b":0.253,"r":0.342},{"b":0.259,"r":0.329},{"b":0.335,"r":0.324},{"b":0.232,"r":0.82},{"b":0.233,"r":0.759},{"b":0.556,"r":0.611},{"b":0.648,"r":0.313},{"b":0.384,"r":0.425},{"b":0.202,"r":0.408},{"b":0.222,"r":0.371},{"b":0.288,"r":0.46},{"b":0.205,"r":0.5},{"b":0.221,"r":0.46},{"b":0.264,"r":0.396},{"b":0.288,"r":0.512},{"b":0.261,"r":0.431},{"b":0.264,"r":0.438},{"b":0.267,"r":0.389},{"b":0.382,"r":0.803},{"b":0.427,"r":0.711},{"b":0.386,"r":0.694},{"b":0.349,"r":0.452},{"b":0.063,"r":0.329},{"b":0.217,"r":0.286},{"b":0.266,"r":0.299},{"b":0.277,"r":0.407},{"b":0.243,"r":0.524},{"b":0.272,"r":0.48},{"b":0.257,"r":0.413},{"b":0.307,"r":0.498},{"b":0.249,"r":0.578},{"b":0.256,"r":0.577},{"b":0.347,"r":0.509},{"b":0.218,"r":0.772},{"b":0.275,"r":0.713},{"b":0.485,"r":0.589},{"b":0.569,"r":0.371},{"b":0.361,"r":0.428},{"b":0.262,"r":0.372},{"b":0.225,"r":0.361},{"b":0.285,"r":0.477},{"b":0.236,"r":0.55},{"b":0.216,"r":0.48},{"b":0.254,"r":0.458},{"b":0.301,"r":0.461},{"b":0.282,"r":0.42},{"b":0.304,"r":0.409},{"b":0.293,"r":0.453},{"b":0.358,"r":0.841},{"b":0.411,"r":0.726},{"b":0.459,"r":0.725},{"b":0.51,"r":0.463},{"b":0.181,"r":0.457},{"b":0.02,"r":0.422},{"b":0.009,"r":0.462},{"b":0.024,"r":0.563},{"b":0.03,"r":0.62},{"b":0.008,"r":0.604},{"b":0.015,"r":0.572},{"b":0.018,"r":0.517},{"b":0.016,"r":0.433},{"b":0.022,"r":0.415},{"b":0.052,"r":0.447},{"b":0.226,"r":0.721},{"b":0.348,"r":0.646},{"b":0.452,"r":0.644},{"b":0.519,"r":0.368},{"b":0.186,"r":0.62},{"b":0.025,"r":0.578},{"b":0.022,"r":0.578},{"b":0.033,"r":0.65},{"b":0.013,"r":0.629},{"b":0.01,"r":0.544},{"b":0.007,"r":0.504},{"b":0.023,"r":0.476},{"b":0.015,"r":0.42},{"b":0.007,"r":0.403},{"b":0.044,"r":0.373},{"b":0.184,"r":0.82},{"b":0.353,"r":0.774},{"b":0.495,"r":0.59},{"b":0.431,"r":0.505},{"b":0.179,"r":0.395},{"b":0.015,"r":0.406},{"b":0.015,"r":0.415},{"b":0.044,"r":0.466},{"b":0.024,"r":0.489},{"b":0.007,"r":0.48},{"b":0.009,"r":0.467},{"b":0.029,"r":0.605},{"b":0.019,"r":0.654},{"b":0.009,"r":0.563},{"b":0.06,"r":0.509},{"b":0.177,"r":0.789},{"b":0.247,"r":0.668},{"b":0.464,"r":0.622},{"b":0.492,"r":0.362},{"b":0.129,"r":0.414},{"b":0.039,"r":0.426},{"b":0.04,"r":0.433},{"b":0.067,"r":0.517},{"b":0.047,"r":0.671},{"b":0.015,"r":0.531},{"b":0.011,"r":0.478},{"b":0.016,"r":0.454},{"b":0.015,"r":0.397},{"b":0.025,"r":0.331},{"b":0.093,"r":0.24},{"b":0.262,"r":0.788},{"b":0.495,"r":0.668},{"b":0.599,"r":0.709},{"b":0.776,"r":0.453}]};
+      (function build() {
+        var tl = gsap.timeline({ paused: true }), DUR = 58.08;
+        var S = function (sel, vars, at) { return tl.from(sel, vars, at); };
+
+        /* background: constant drift + state glows */
+        tl.fromTo("#dots", { scale: 1, y: 0 }, { scale: 1.26, y: -70, duration: DUR, ease: "none" }, 0);
+        tl.fromTo("#alarm", { opacity: 0 }, { opacity: 0.30, duration: 2.4, ease: "power2.out" }, 3.0);
+        tl.to("#alarm", { opacity: 0.46, duration: 3.0, ease: "none" }, 6.03);
+        tl.to("#alarm", { opacity: 0.10, duration: 1.2, ease: "power2.out" }, 12.03);
+        tl.to("#alarm", { opacity: 0, duration: 0.6, ease: "power2.out" }, 19.6);
+        tl.fromTo("#warm", { opacity: 0 }, { opacity: 0.26, duration: 1.0, ease: "power2.out" }, 16.04);
+        tl.to("#warm", { opacity: 0.16, duration: 1.0, ease: "none" }, 20.04);
+        tl.to("#warm", { opacity: 0.34, duration: 1.2, ease: "power2.out" }, 50.07);
+
+        /* ── S1 STAKES ── */
+        S("#s1-ne", { opacity: 0, y: 40, filter: "blur(14px)", duration: 0.62, ease: "power3.out" }, 0.10);
+        S("#s1-en", { opacity: 0, y: 20, duration: 0.5, ease: "power2.out" }, 0.75);
+        tl.fromTo("#s1-card", { opacity: 0, y: 70, rotationX: -22, transformPerspective: 900, transformOrigin: "50% 100%" },
+                              { opacity: 1, y: 0, rotationX: 0, duration: 0.62, ease: "back.out(1.5)" }, 2.80);
+        // counting-dynamic-scale: the number grows as it climbs — escalating weight, no font-size tween
+        var days = document.getElementById("s1-days"), dstate = { v: 1 };
+        tl.to(dstate, { v: 23, duration: 2.0, ease: "power2.in",
+          onUpdate: function () { days.textContent = Math.round(dstate.v); } }, 3.02);
+        tl.fromTo("#s1-days", { scale: 0.62 }, { scale: 1, duration: 2.0, ease: "power2.in" }, 3.02);
+        tl.to("#s1-days", { scale: 1.14, duration: 0.13, yoyo: true, repeat: 1, ease: "power2.out" }, 5.05);
+        tl.to("#s1 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 5.78);
+
+        /* ── S2 PAIN ── */
+        S("#s2-ne", { opacity: 0, y: 34, duration: 0.5, ease: "power3.out" }, 6.10);
+        S("#s2-en", { opacity: 0, y: 18, duration: 0.45, ease: "power2.out" }, 6.70);
+        // beat-grid: pain chips on bar lines 8.03 / 10.03 / 11.03 (2.0s, then 1.0s apart — each holds ≥1.0s)
+        // kinetic-beat-slam: scale-slam / side-snap / rise-rotate — three different arrivals, one rhythm
+        tl.fromTo("#p1", { opacity: 0, scale: 1.35, filter: "blur(10px)" },
+                         { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.34, ease: "power4.out" }, 8.03);
+        tl.fromTo("#p2", { opacity: 0, x: -140, skewX: 10 },
+                         { opacity: 1, x: 0, skewX: 0, duration: 0.36, ease: "back.out(1.9)" }, 10.03);
+        tl.fromTo("#p3", { opacity: 0, y: 64, rotation: -3.5, transformOrigin: "0% 50%" },
+                         { opacity: 1, y: 0, rotation: 0, duration: 0.38, ease: "back.out(2.1)" }, 11.03);
+        tl.to("#s2 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 11.78);
+
+        /* ── S3 BIG QUESTION (ends in a silence beat) ── */
+        S("#s3-ne", { opacity: 0, y: 30, duration: 0.5, ease: "power3.out" }, 12.10);
+        S("#s3-en", { opacity: 0, y: 18, duration: 0.45, ease: "power2.out" }, 12.70);
+        tl.to("#bgm", { volume: 0.16, duration: 0.45, ease: "power2.out" }, 15.45);   // duck for the gap
+        tl.to("#s3 .stage", { opacity: 0, duration: 0.3, ease: "power2.in" }, 15.74);
+
+        /* ── S4 HEADFAKE ── */
+        // beat-locked: 17.02s strong cue — the twist lands on the strongest hit
+        tl.fromTo("#s4-stack", { opacity: 0, scale: 1.28, filter: "blur(18px)" },
+                               { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.46, ease: "power4.out" }, 17.02);
+        // chromatic-glitch: quantized hash jitter, snaps to full amplitude then dies fast — deterministic, seek-safe
+        function gh(n) { var x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); }
+        var gcopies = gsap.utils.toArray("#s4-stack .gcopy"), amp = { a: 0 };
+        tl.set(amp, { a: 1 }, 17.02);
+        tl.set(gcopies, { opacity: 0.85 }, 17.02);
+        tl.to(amp, { a: 0, duration: 0.62, ease: "power3.in", onUpdate: function () {
+          var step = Math.floor(tl.time() / 0.045);
+          gcopies.forEach(function (el, layer) {
+            gsap.set(el, { x: (gh(step * 13 + layer * 7) * 2 - 1) * 26 * amp.a,
+                           y: (gh(step * 29 + layer * 11) * 2 - 1) * 9 * amp.a });
+          });
+        } }, 17.02);
+        tl.set(gcopies, { opacity: 0, x: 0, y: 0 }, 17.66);
+        // gradient-text-sweep: the gradient travels through the glyphs while they hold
+        tl.fromTo("#s4-ne", { backgroundPosition: "0% 50%" }, { backgroundPosition: "100% 50%", duration: 1.5, ease: "power1.inOut", immediateRender: false }, 17.7);
+        S("#s4-en", { opacity: 0, y: 26, duration: 0.5, ease: "power2.out" }, 17.72);
+        tl.to("#bgm", { volume: 0.30, duration: 0.6, ease: "power2.out" }, 18.0);
+        tl.to("#s4 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 19.79);
+
+        /* ── S5 CITIZEN ── */
+        S("#s5-l", { opacity: 0, y: -20, duration: 0.4, ease: "power2.out" }, 20.10);
+        S("#s5-ne", { opacity: 0, y: 26, duration: 0.45, ease: "power3.out" }, 20.44);
+        tl.fromTo("#s5-ui", { opacity: 0, y: 72, rotationX: -18, transformPerspective: 1000, transformOrigin: "50% 0%" },
+                            { opacity: 1, y: 0, rotationX: 0, duration: 0.56, ease: "power3.out" }, 21.04);
+        tl.fromTo("#s5-ref", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.42, ease: "back.out(2)" }, 21.54);
+        tl.fromTo("#s5-chip", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.34, ease: "back.out(2.4)" }, 22.54);
+        S("#s5-sla", { opacity: 0, x: 60, duration: 0.42, ease: "power3.out" }, 23.55);
+        tl.to("#s5 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 25.80);
+
+        /* ── S6 TOURIST ── */
+        S("#s6-l", { opacity: 0, y: -20, duration: 0.4, ease: "power2.out" }, 26.10);
+        S("#s6-ne", { opacity: 0, y: 26, duration: 0.45, ease: "power3.out" }, 26.45);
+        tl.fromTo("#s6-ui", { opacity: 0, y: 72, rotationX: -18, transformPerspective: 1000, transformOrigin: "50% 0%" },
+                            { opacity: 1, y: 0, rotationX: 0, duration: 0.56, ease: "power3.out" }, 27.05);
+        var Q = "When is Bisket Jatra?", typed = document.getElementById("s6-typed");
+        for (var c = 0; c <= Q.length; c++) {
+          tl.call((function (n) { return function () { typed.textContent = Q.slice(0, n); }; })(c), [], 27.55 + c * (0.95 / Q.length));
+        }
+        tl.fromTo("#s6-card", { opacity: 0, y: 44 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 28.56);
+        tl.fromTo("#s6-flip", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 30.06);
+        tl.to("#s6 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 31.80);
+
+        /* ── S7 WARD OFFICIAL ── */
+        S("#s7-l", { opacity: 0, y: -20, duration: 0.4, ease: "power2.out" }, 32.10);
+        S("#s7-ne", { opacity: 0, y: 26, duration: 0.45, ease: "power3.out" }, 32.45);
+        tl.fromTo("#q1", { opacity: 0, x: -60, rotationY: 12, transformPerspective: 900 },
+                          { opacity: 1, x: 0, rotationY: 0, duration: 0.4, ease: "power3.out" }, 33.05);
+        tl.fromTo("#q2", { opacity: 0, x: -60, rotationY: 12, transformPerspective: 900 },
+                          { opacity: 1, x: 0, rotationY: 0, duration: 0.4, ease: "power3.out" }, 33.55);
+        tl.fromTo("#q3", { opacity: 0, x: -60, rotationY: 12, transformPerspective: 900 },
+                          { opacity: 1, x: 0, rotationY: 0, duration: 0.4, ease: "power3.out" }, 34.06);
+        // the flip: one row goes OVERDUE and escalates
+        tl.call(function () {
+          var el = document.getElementById("q3-chip");
+          el.textContent = "Overdue"; el.className = "chip chip-bad";
+          el.style.fontSize = "23px"; el.style.padding = "11px 24px";
+        }, [], 35.06);
+        tl.fromTo("#q3-chip", { scale: 0.62 }, { scale: 1, duration: 0.38, ease: "back.out(3)" }, 35.06);
+        tl.fromTo("#q3", { x: 0 }, { x: 9, duration: 0.055, yoyo: true, repeat: 5, ease: "none", immediateRender: false }, 35.06);
+        tl.fromTo("#q3", { borderColor: "rgba(255,255,255,0.10)" }, { borderColor: "rgba(239,68,68,0.62)", duration: 0.3, ease: "power2.out", immediateRender: false }, 35.06);
+        S("#s7-esc", { opacity: 0, y: 20, duration: 0.4, ease: "power2.out" }, 35.56);
+        tl.to("#s7 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 37.81);
+
+        /* ── S8 MAYOR ── */
+        S("#s8-l", { opacity: 0, y: -20, duration: 0.4, ease: "power2.out" }, 38.12);
+        S("#s8-ne", { opacity: 0, y: 26, duration: 0.45, ease: "power3.out" }, 38.46);
+        // beat-grid: SLA rows on consecutive half-bars 39.56 / 40.06 / 40.56 / 41.06
+        tl.fromTo("#r1", { opacity: 0, x: -52, scaleX: 0.9, transformOrigin: "0% 50%" },
+                          { opacity: 1, x: 0, scaleX: 1, duration: 0.36, ease: "back.out(1.8)" }, 39.56);
+        tl.fromTo("#r2", { opacity: 0, x: -52, scaleX: 0.9, transformOrigin: "0% 50%" },
+                          { opacity: 1, x: 0, scaleX: 1, duration: 0.36, ease: "back.out(1.8)" }, 40.06);
+        tl.fromTo("#r3", { opacity: 0, x: -52, scaleX: 0.9, transformOrigin: "0% 50%" },
+                          { opacity: 1, x: 0, scaleX: 1, duration: 0.36, ease: "back.out(1.8)" }, 40.56);
+        tl.fromTo("#r4", { opacity: 0, x: -52, scaleX: 0.9, transformOrigin: "0% 50%" },
+                          { opacity: 1, x: 0, scaleX: 1, duration: 0.36, ease: "back.out(1.8)" }, 41.06);
+        S("#s8-note", { opacity: 0, y: 18, duration: 0.4, ease: "power2.out" }, 41.87);
+        tl.to("#s8 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 43.81);
+
+        /* ── S9 VALUE CASE ── */
+        S("#s9-ne", { opacity: 0, y: 32, duration: 0.5, ease: "power3.out" }, 44.12);
+        S("#pl1", { opacity: 0, y: 26, duration: 0.3, ease: "back.out(2)" }, 44.82);
+        S("#pl2", { opacity: 0, y: 26, duration: 0.3, ease: "back.out(2)" }, 45.07);
+        S("#pl3", { opacity: 0, y: 26, duration: 0.3, ease: "back.out(2)" }, 45.32);
+        S("#pl4", { opacity: 0, y: 26, duration: 0.3, ease: "back.out(2)" }, 45.57);
+        S("#s9-c1", { opacity: 0, y: 24, duration: 0.45, ease: "power2.out" }, 46.57);
+        S("#s9-c2", { opacity: 0, y: 24, duration: 0.45, ease: "power2.out" }, 47.58);
+        S("#s9-brand", { opacity: 0, y: 18, duration: 0.45, ease: "power2.out" }, 48.58);
+        tl.to("#s9 .stage", { opacity: 0, duration: 0.25, ease: "power2.in" }, 49.82);
+
+        /* ── S10 REHOOK + CTA ── */
+        S("#s10-ne", { opacity: 0, y: 34, duration: 0.55, ease: "power3.out" }, 50.14);
+        S("#s10-en", { opacity: 0, y: 20, duration: 0.5, ease: "power2.out" }, 51.58);
+        tl.fromTo("#s10-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.inOut" }, 53.08);
+        tl.fromTo("#s10-prod", { opacity: 0, y: 40, scale: 1.12, filter: "blur(12px)" },
+                               { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 0.6, ease: "power4.out" }, 53.58);
+        tl.fromTo("#s10-prod", { backgroundPosition: "0% 50%" }, { backgroundPosition: "100% 50%", duration: 2.0, ease: "power1.inOut", immediateRender: false }, 54.2);
+        S("#s10-by", { opacity: 0, y: 16, duration: 0.4, ease: "power2.out" }, 54.58);
+        tl.fromTo("#s10-co2", { opacity: 0, y: 28, scale: 1.06 },
+                              { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.7)" }, 55.08);
+        tl.to("#bgm", { volume: 0, duration: 1.2, ease: "power2.in" }, 56.7);
+        tl.to(["#s10 .stage", "#bg"], { opacity: 0, duration: 0.5, ease: "power2.in" }, 57.5);
+
+        /* audio-reactive (sampled at 10fps, only while each glow is on screen) */
+        if (AUDIO_PLACEHOLDER && AUDIO_PLACEHOLDER.frames) {
+          var al = document.getElementById("alarm"), wm = document.getElementById("warm");
+          var fps = AUDIO_PLACEHOLDER.fps, FR = AUDIO_PLACEHOLDER.frames, STEP = 3;
+          function sample(from, to, el, key, amt) {
+            var i0 = Math.floor(from * fps), i1 = Math.min(Math.floor(to * fps), FR.length - 1);
+            for (var f = i0; f <= i1; f += STEP) {
+              tl.call((function (fr) {
+                return function () { el.style.filter = "brightness(" + (1 + fr[key] * amt).toFixed(3) + ")"; };
+              })(FR[f]), [], f / fps);
+            }
+          }
+          sample(3.0, 19.8, al, "b", 0.34);      // alarm breathes on bass through the pain block
+          sample(50.07, 57.9, wm, "r", 0.22);    // warm glow breathes on RMS under the CTA
+        }
+        window.__timelines["main"] = tl;
+        if (window.__hfForceTimelineRebind) window.__hfForceTimelineRebind();
+      })();
+    </script>
+  </body>
+</html>

@@ -156,6 +156,22 @@ BEHIND_PROXY = os.environ.get('BEHIND_PROXY', 'False') == 'True'
 USE_X_FORWARDED_HOST = BEHIND_PROXY
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if BEHIND_PROXY else None
 
+# Redirecting to HTTPS while unable to recognise an already-HTTPS request is
+# an infinite loop, not a hardening measure: Django redirects to https, the
+# proxy forwards it on as http, and Django redirects again. The site is
+# simply unreachable. Warn loudly rather than raise, because terminating TLS
+# in Django itself is a legitimate deployment that needs no proxy header.
+if SECURE_SSL_REDIRECT and SECURE_PROXY_SSL_HEADER is None:
+    import warnings as _warnings
+
+    _warnings.warn(
+        'SECURE_SSL_REDIRECT is on but SECURE_PROXY_SSL_HEADER is unset. If '
+        'TLS is terminated by nginx, ngrok or a load balancer, every request '
+        'will redirect forever. Set BEHIND_PROXY=True. Ignore this only if '
+        'Django itself terminates TLS.',
+        RuntimeWarning,
+    )
+
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -183,14 +199,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-SECURE_SSL_REDIRECT = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_HSTS_SECONDS = 0 if DEBUG else 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_BROWSER_XSS_FILTER = True
+# These are set once, above, from _IS_PROD. A second copy used to live here
+# and silently won, which meant editing the first had no effect at all.
 
 # Cache-Control for static assets via Django's cache middleware
 CACHE_MIDDLEWARE_ALIAS = 'default'

@@ -41,17 +41,17 @@
       {% if is_tourist_pass %}
       <button class="scan-nav-btn" onclick="openScan()" title="AI Camera Scanner" aria-label="Scan with AI">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Scan
+        <span class="scan-label">Scan</span>
       </button>
-      <a href="{% url 'accounts:tourist_pass_clear' %}" class="btn-nav" style="background:linear-gradient(135deg,rgba(201,162,39,.15),rgba(245,158,11,.1));border:1px solid rgba(201,162,39,.35);color:#F59E0B;font-size:.78rem;gap:5px;" title="Exit Tourist Mode">
-        🧳 {{ tourist_name }}
+      <a href="{% url 'accounts:tourist_pass_clear' %}" class="btn-nav tourist-chip" style="background:linear-gradient(135deg,rgba(201,162,39,.15),rgba(245,158,11,.1));border:1px solid rgba(201,162,39,.35);color:#F59E0B;font-size:.78rem;gap:5px;" title="Exit Tourist Mode">
+        🧳 <span class="tourist-chip-name">{{ tourist_name }}</span>
         <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
       </a>
       <a href="{% url 'accounts:login' %}" class="btn-nav btn-nav-primary" style="font-size:.8rem;">Create Account</a>
       {% elif not user.is_authenticated %}
       <button class="scan-nav-btn" onclick="openScan()" title="AI Camera Scanner" aria-label="Scan with AI">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Scan
+        <span class="scan-label">Scan</span>
       </button>
       <form class="nav-search-form" action="{% url 'core:search' %}" method="get" id="navSearchForm">
         <input type="text" name="q" placeholder="Search city…" autocomplete="off" id="navSearchInput">
@@ -63,7 +63,7 @@
       {% if user.is_authenticated %}
         <button class="scan-nav-btn" onclick="openScan()" title="AI Camera Scanner" aria-label="Scan with AI">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Scan
+          <span class="scan-label">Scan</span>
         </button>
         <a href="/marketplace/cart/" class="cart-badge btn-nav" title="Cart">
           🛒{% if cart_count > 0 %}<span class="badge">{{ cart_count }}</span>{% endif %}

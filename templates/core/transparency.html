@@ -24,6 +24,8 @@ body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index
 .leaflet-popup-tip { background:#1C1C1C; }
 .leaflet-popup-content { font-family:'DM Sans',sans-serif; font-size:.82rem; }
 @media(max-width:680px) { .chart-grid { grid-template-columns:1fr; } .tr-hero h1 { font-size:2rem; } }
+@media(max-width:480px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; } .kpi-card { padding: 1rem; } .kpi-num { font-size: 2rem; } .chart-card { padding: 1rem; } }
+@media(max-width:380px) { .kpi-grid { grid-template-columns: 1fr; } .tr-hero h1 { font-size: 1.6rem; } .kpi-num { font-size: 1.8rem; } }
 </style>
 {% endblock %}
 
@@ -128,8 +130,8 @@ body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index
       </div>
       {% endif %}
     </div>
-    <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:.84rem;">
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table style="width:100%;border-collapse:collapse;font-size:.84rem;min-width:500px;">
         <thead>
           <tr style="color:var(--stone);text-align:left;border-bottom:1px solid rgba(255,255,255,.1);">
             <th style="padding:.5rem .75rem;font-weight:600;">Priority</th>

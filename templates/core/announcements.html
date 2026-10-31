@@ -1,36 +1,36 @@
 {% extends "base/base.html" %}
 {% block title %}Announcements — Bhaktapur Municipality{% endblock %}
 {% block content %}
-<div style="max-width:900px;margin:0 auto;padding:40px 24px;">
+<div style="max-width:900px;margin:0 auto;padding:40px 24px;box-sizing:border-box;">
   <div style="margin-bottom:32px;">
-    <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--ink);margin:0 0 8px;">
+    <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--ink);margin:0 0 8px;word-wrap:break-word;overflow-wrap:break-word;">
       📢 Municipal Announcements
     </h1>
     <p style="color:#666;margin:0;">Official announcements from Bhaktapur Municipality, Mayor's Office, and Ward Offices.</p>
   </div>
 
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;">
-    <span style="font-size:0.85rem;color:#666;font-weight:600;">Filter:</span>
-    <a href="/announcements/" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">
+    <span style="font-size:0.85rem;color:#666;font-weight:600;flex-shrink:0;white-space:nowrap;">Filter:</span>
+    <a href="/announcements/" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;flex-shrink:0;white-space:nowrap;
       {% if not ward_f %}background:var(--ink);color:#fff;{% else %}background:#f0f0f0;color:#555;{% endif %}">All</a>
     {% for w in wards %}
-    <a href="/announcements/?ward={{ w }}" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;
+    <a href="/announcements/?ward={{ w }}" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;flex-shrink:0;white-space:nowrap;
       {% if ward_f == w|stringformat:'s' %}background:var(--ink);color:#fff;{% else %}background:#f0f0f0;color:#555;{% endif %}">Ward {{ w }}</a>
     {% endfor %}
   </div>
 
   {% for ann in announcements %}
-  <div id="ann-{{ ann.pk }}" style="background:#fff;border:1px solid #eee;border-radius:14px;padding:24px;margin-bottom:16px;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+  <div id="ann-{{ ann.pk }}" style="background:#fff;border:1px solid #eee;border-radius:14px;padding:24px;margin-bottom:16px;box-sizing:border-box;word-wrap:break-word;overflow-wrap:break-word;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
       {% if ann.ward_number %}
-        <span style="background:#e3f0ff;color:#4A7AB5;padding:3px 10px;border-radius:4px;font-size:0.72rem;font-weight:700;">Ward {{ ann.ward_number }} Office</span>
+        <span style="background:#e3f0ff;color:#4A7AB5;padding:3px 10px;border-radius:4px;font-size:0.72rem;font-weight:700;flex-shrink:0;">Ward {{ ann.ward_number }} Office</span>
       {% else %}
-        <span style="background:#fef3c7;color:#C9A227;padding:3px 10px;border-radius:4px;font-size:0.72rem;font-weight:700;">Mayor's Office</span>
+        <span style="background:#fef3c7;color:#C9A227;padding:3px 10px;border-radius:4px;font-size:0.72rem;font-weight:700;flex-shrink:0;">Mayor's Office</span>
       {% endif %}
-      <span style="font-size:0.78rem;color:#aaa;">{{ ann.created_at|date:"F j, Y" }}</span>
+      <span style="font-size:0.78rem;color:#aaa;flex-shrink:0;">{{ ann.created_at|date:"F j, Y" }}</span>
     </div>
-    <h2 style="font-family:var(--font-head);font-size:1.15rem;font-weight:700;margin:0 0 8px;color:var(--ink);">{{ ann.title }}</h2>
-    <p style="margin:0 0 16px;font-size:0.9rem;color:#444;line-height:1.6;">{{ ann.body }}</p>
+    <h2 style="font-family:var(--font-head);font-size:1.15rem;font-weight:700;margin:0 0 8px;color:var(--ink);word-wrap:break-word;overflow-wrap:break-word;">{{ ann.title }}</h2>
+    <p style="margin:0 0 16px;font-size:0.9rem;color:#444;line-height:1.6;word-wrap:break-word;overflow-wrap:break-word;">{{ ann.body }}</p>
 
     <!-- Comments section -->
     {% with comments=ann.comments.all %}
@@ -39,11 +39,11 @@
       <div style="font-size:0.78rem;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">{{ comments.count }} Comment{{ comments.count|pluralize }}</div>
       {% for comment in comments %}
       {% if comment.is_approved %}
-      <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
         <div style="width:30px;height:30px;border-radius:50%;background:#e0e0e0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#555;flex-shrink:0;">{{ comment.user.first_name|first|upper }}</div>
-        <div style="flex:1;">
-          <div style="font-size:0.78rem;font-weight:600;color:#333;">{{ comment.user.get_full_name|default:comment.user.email }} <span style="font-weight:400;color:#aaa;">· {{ comment.created_at|date:"M d" }}</span></div>
-          <div style="font-size:0.85rem;color:#555;margin-top:2px;">{{ comment.body }}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.78rem;font-weight:600;color:#333;word-wrap:break-word;overflow-wrap:break-word;">{{ comment.user.get_full_name|default:comment.user.email }} <span style="font-weight:400;color:#aaa;">· {{ comment.created_at|date:"M d" }}</span></div>
+          <div style="font-size:0.85rem;color:#555;margin-top:2px;word-wrap:break-word;overflow-wrap:break-word;">{{ comment.body }}</div>
         </div>
       </div>
       {% endif %}
@@ -53,12 +53,12 @@
     {% endwith %}
 
     {% if user.is_authenticated %}
-    <form method="post" action="/announcements/{{ ann.pk }}/comment/" style="margin-top:12px;display:flex;gap:8px;">
+    <form method="post" action="/announcements/{{ ann.pk }}/comment/" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
       {% csrf_token %}
       <input name="body" type="text" maxlength="1000" placeholder="Leave a comment..." required
-        style="flex:1;background:#f8f8f8;border:1.5px solid #e0e0e0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#333;outline:none;font-family:inherit;"
+        style="flex:1;min-width:200px;background:#f8f8f8;border:1.5px solid #e0e0e0;border-radius:6px;padding:8px 12px;font-size:0.85rem;color:#333;outline:none;font-family:inherit;"
         onfocus="this.style.borderColor='var(--red,#C13B2A)'" onblur="this.style.borderColor='#e0e0e0'">
-      <button type="submit" style="padding:8px 16px;background:var(--red,#C13B2A);color:#fff;border:none;border-radius:6px;font-size:0.82rem;font-weight:700;cursor:pointer;">Post</button>
+      <button type="submit" style="padding:8px 16px;background:var(--red,#C13B2A);color:#fff;border:none;border-radius:6px;font-size:0.82rem;font-weight:700;cursor:pointer;flex-shrink:0;">Post</button>
     </form>
     {% else %}
     <div style="margin-top:12px;font-size:0.8rem;color:#aaa;">

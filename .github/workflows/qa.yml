@@ -1,0 +1,85 @@
+name: municipal_ai QA
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    - cron: '0 3 * * *'  # nightly regression sweep
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      MUNICIPAL_AI_BASE_URL: http://127.0.0.1:8000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python deps
+        run: |
+          pip install -r requirements.txt
+          pip install pytest requests
+
+      - name: Install Node deps
+        # package-lock.json is committed, so ci gives the same tree every run.
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start the app
+        run: |
+          mkdir -p log
+          python manage.py migrate --noinput
+          nohup python manage.py runserver 127.0.0.1:8000 > log/ci_server.log 2>&1 &
+          # Poll instead of sleeping — a fixed sleep either wastes time or races
+          # the server and reports a healthy app as unreachable.
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://127.0.0.1:8000/; then
+              echo "app is up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "app did not come up within 30s"; cat log/ci_server.log; exit 1
+
+      - name: QA pass (Django, API smoke, UI flows, knowledge-base gaps)
+        # One definition of "a QA pass", shared with local runs, so CI and a
+        # developer's terminal cannot drift apart. Exits non-zero on any new
+        # failure, any new knowledge gap, or any layer that did not run.
+        run: ./run_tests.sh
+
+      - name: Report
+        if: always()
+        run: cat log/test_report.md
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failures
+          path: |
+            test-results/
+            log/

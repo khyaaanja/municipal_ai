@@ -1,49 +1,49 @@
 {% extends "base/base.html" %}
 {% block title %}Ward Projects — Bhaktapur Municipality{% endblock %}
 {% block content %}
-<div style="max-width:1100px;margin:0 auto;padding:40px 24px;">
+<div style="max-width:1100px;margin:0 auto;padding:40px 24px;box-sizing:border-box;">
   <div style="margin-bottom:32px;">
-    <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--ink);margin:0 0 8px;">
+    <h1 style="font-family:var(--font-head);font-size:2rem;font-weight:800;color:var(--ink);margin:0 0 8px;word-wrap:break-word;overflow-wrap:break-word;">
       🏗 Ward Projects & Progress
     </h1>
     <p style="color:#666;margin:0;">Live progress tracker for infrastructure and development projects across all 17 wards of Bhaktapur Municipality.</p>
   </div>
 
-  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px;">
-    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:16px 24px;text-align:center;min-width:140px;">
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:16px 24px;text-align:center;min-width:140px;flex-shrink:0;">
       <div style="font-size:1.8rem;font-weight:800;color:var(--ink);">{{ total }}</div>
       <div style="font-size:0.78rem;color:#666;margin-top:2px;">Total Projects</div>
     </div>
-    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:16px 24px;text-align:center;min-width:140px;">
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:16px 24px;text-align:center;min-width:140px;flex-shrink:0;">
       <div style="font-size:1.8rem;font-weight:800;color:#D4620A;">{{ in_progress }}</div>
       <div style="font-size:0.78rem;color:#666;margin-top:2px;">In Progress</div>
     </div>
-    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:16px 24px;text-align:center;min-width:140px;">
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:16px 24px;text-align:center;min-width:140px;flex-shrink:0;">
       <div style="font-size:1.8rem;font-weight:800;color:#4ade80;">{{ completed }}</div>
       <div style="font-size:0.78rem;color:#666;margin-top:2px;">Completed</div>
     </div>
   </div>
 
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;">
-    <span style="font-size:0.85rem;color:#666;font-weight:600;">Filter by ward:</span>
-    <a href="/ward-projects/" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">
+    <span style="font-size:0.85rem;color:#666;font-weight:600;flex-shrink:0;white-space:nowrap;">Filter by ward:</span>
+    <a href="/ward-projects/" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;flex-shrink:0;white-space:nowrap;
       {% if not ward_f %}background:var(--ink);color:#fff;{% else %}background:#f0f0f0;color:#555;{% endif %}">All Wards</a>
     {% for w in wards %}
-    <a href="/ward-projects/?ward={{ w }}" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;
+    <a href="/ward-projects/?ward={{ w }}" style="padding:6px 14px;border-radius:20px;font-size:0.82rem;text-decoration:none;flex-shrink:0;white-space:nowrap;
       {% if ward_f == w|stringformat:'s' %}background:var(--ink);color:#fff;{% else %}background:#f0f0f0;color:#555;{% endif %}">Ward {{ w }}</a>
     {% endfor %}
   </div>
 
   {% if projects %}
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
     {% for p in projects %}
-    <div style="background:#fff;border:1px solid #eee;border-radius:14px;padding:22px;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-        <div>
-          <span style="font-size:0.72rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;">Ward {{ p.ward_number }}</span>
-          <h3 style="font-family:var(--font-head);font-size:1.05rem;font-weight:700;margin:4px 0 0;">{{ p.title }}</h3>
+    <div style="background:#fff;border:1px solid #eee;border-radius:14px;padding:22px;transition:box-shadow 0.2s;min-width:0;box-sizing:border-box;" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <span style="font-size:0.72rem;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.05em;display:block;">Ward {{ p.ward_number }}</span>
+          <h3 style="font-family:var(--font-head);font-size:1.05rem;font-weight:700;margin:4px 0 0;word-wrap:break-word;overflow-wrap:break-word;">{{ p.title }}</h3>
         </div>
-        <span style="white-space:nowrap;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;
+        <span style="white-space:nowrap;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;flex-shrink:0;
           {% if p.status == 'COMPLETED' %}background:#e6f9ef;color:#16a34a;
           {% elif p.status == 'IN_PROGRESS' %}background:#fef3c7;color:#C9A227;
           {% elif p.status == 'ON_HOLD' %}background:#fee2e2;color:#C13B2A;
@@ -53,13 +53,13 @@
       </div>
 
       {% if p.description %}
-      <p style="font-size:0.85rem;color:#666;margin:0 0 14px;line-height:1.5;">{{ p.description|truncatechars:100 }}</p>
+      <p style="font-size:0.85rem;color:#666;margin:0 0 14px;line-height:1.5;word-wrap:break-word;overflow-wrap:break-word;">{{ p.description|truncatechars:100 }}</p>
       {% endif %}
 
       <div style="background:#f5f5f5;border-radius:6px;height:8px;overflow:hidden;margin-bottom:6px;">
         <div style="background:{% if p.progress_pct == 100 %}#4ade80{% elif p.progress_pct >= 50 %}#C9A227{% else %}#4A7AB5{% endif %};height:100%;width:{{ p.progress_pct }}%;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#aaa;">
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#aaa;flex-wrap:wrap;gap:8px;">
         <span>{{ p.progress_pct }}% complete</span>
         {% if p.end_date %}<span>Due {{ p.end_date|date:"M Y" }}</span>{% endif %}
       </div>

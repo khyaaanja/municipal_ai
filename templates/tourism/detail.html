@@ -2,11 +2,11 @@
 {% block title %}{{ attraction.name }} — {{ CITY_NAME }} AI{% endblock %}
 {% block content %}
 <style>
-.detail-hero{position:relative;height:420px;overflow:hidden;background:#111;}
-.detail-hero img{width:100%;height:100%;object-fit:cover;opacity:.7;}
+.detail-hero{position:relative;height:auto;overflow:hidden;background:#111;}
+.detail-hero img{width:100%;height:auto;max-height:300px;object-fit:cover;opacity:.7;}
 .detail-hero-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:40px;background:linear-gradient(transparent 30%,rgba(0,0,0,.85));}
 .detail-hero-overlay h1{color:#fff;font-size:2.4rem;margin:0 0 8px;}
-.detail-hero-overlay .badges{display:flex;gap:10px;flex-wrap:wrap;}
+.detail-hero-overlay .badges{display:flex;gap:10px;flex-wrap:wrap;min-width:0;}
 .badge{padding:4px 14px;border-radius:20px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
 .badge-cat{background:var(--accent);color:#fff;}
 .badge-open{background:#22c55e;color:#fff;}
@@ -16,8 +16,8 @@
 .detail-main section{margin-bottom:40px;}
 .detail-main h2{font-size:1.2rem;text-transform:uppercase;letter-spacing:.08em;border-left:4px solid var(--accent);padding-left:12px;margin-bottom:16px;}
 .detail-main p{color:var(--ink-light);line-height:1.8;font-size:.97rem;}
-.image-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
-.image-gallery img{width:100%;height:140px;object-fit:cover;border-radius:4px;cursor:pointer;}
+.image-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;min-width:max-content;}
+.image-gallery img{width:100%;height:140px;object-fit:cover;border-radius:4px;cursor:pointer;flex-shrink:0;min-width:0;}
 .info-card{background:var(--paper);border:1.5px solid var(--border);border-radius:8px;padding:24px;position:sticky;top:80px;}
 .info-card h3{font-size:1rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;border-bottom:1.5px solid var(--border);padding-bottom:10px;}
 .info-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;font-size:.9rem;}

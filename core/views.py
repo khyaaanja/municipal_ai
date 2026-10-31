@@ -946,11 +946,15 @@ def ward_chairperson_profile(request, ward_number):
     resolved = ward_qs.filter(status='RESOLVED').count()
 
     projects = WardProject.objects.filter(ward_number=ward_number).order_by('-created_at')[:6]
-    announcements = Announcement.objects.filter(
+    # Narrow to the chairperson's own posts before slicing: filtering a sliced
+    # queryset raises TypeError, so this view 500'd on every ward that has a
+    # chairperson.
+    announcements_qs = Announcement.objects.filter(
         ward_number=ward_number, is_active=True
-    ).order_by('-created_at')[:5]
+    )
     if chairperson:
-        announcements = list(announcements.filter(posted_by=chairperson))
+        announcements_qs = announcements_qs.filter(posted_by=chairperson)
+    announcements = list(announcements_qs.order_by('-created_at')[:5])
 
     return render(request, 'core/ward_chairperson.html', {
         'ward_number':   ward_number,

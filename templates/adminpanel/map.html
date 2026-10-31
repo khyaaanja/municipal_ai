@@ -13,11 +13,17 @@
   overflow: hidden;
 }
 @media (max-width: 900px) {
-  .map-cms-shell { grid-template-columns: 1fr; height: calc(100vh - 64px); margin: -36px -16px; }
+  .map-cms-shell { grid-template-columns: 1fr; height: calc(100vh - 64px); margin: -20px -16px; min-width: 0; }
   .map-panel { height: 45%; overflow-y: auto; transition: height .3s ease; }
   .map-panel.mob-collapsed { height: 0; overflow: hidden; }
   .map-area  { flex: 1; }
   .panel-header { position: sticky; top: 0; z-index: 10; }
+}
+
+/* .cms-main drops to 12px side padding below 480px, so the negative bleed has
+   to shrink with it or the shell hangs 4px off each edge. */
+@media (max-width: 480px) {
+  .map-cms-shell { margin: -16px -12px; }
 }
 
 /* ── PANEL ── */

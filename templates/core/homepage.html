@@ -26,6 +26,11 @@
   pointer-events: none;
   animation: orbFloat 8s ease-in-out infinite;
   will-change: transform;
+  /* Prevent overflow on small screens */
+  max-width: 100vw;
+  max-height: 100vh;
+  /* Ensure orbs don't cause horizontal scroll */
+  overflow: hidden;
 }
 .hero-orb-1 {
   width: 520px; height: 520px;
@@ -39,6 +44,19 @@
   background: radial-gradient(circle, rgba(217,119,6,0.08) 0%, transparent 65%);
   animation-duration: 12s;
   animation-delay: -3s;
+}
+
+/* Hide orbs on small screens to prevent overflow */
+@media (max-width: 768px) {
+  .hero-orb-1, .hero-orb-2 {
+    display: none;
+  }
+}
+
+/* Ensure hero section never overflows horizontally */
+.hero {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 @keyframes orbFloat {
   0%,100% { transform: translate(0,0) scale(1); }
@@ -106,6 +124,9 @@
   margin-bottom: 18px;
   transition: border-color .22s, box-shadow .22s, background .22s;
   backdrop-filter: blur(12px);
+  /* Prevent overflow on mobile */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .ai-bar:focus-within {
   border-color: rgba(220,38,38,0.45);
@@ -117,6 +138,7 @@
   flex: 1; background: none; border: none; outline: none;
   font-family: var(--font-body); font-size: 1rem; color: var(--paper);
   caret-color: var(--red-soft);
+  min-width: 0; /* Prevents flex item from overflowing */
 }
 .ai-bar input::placeholder { color: rgba(255,255,255,0.25); }
 .ai-bar-btn {
@@ -125,6 +147,7 @@
   padding: 12px 24px; font-family: var(--font-head); font-weight: 700;
   font-size: 0.9rem; cursor: pointer; transition: all .18s; white-space: nowrap;
   box-shadow: 0 2px 10px rgba(220,38,38,0.3);
+  flex-shrink: 0;
 }
 .ai-bar-btn:hover { background: linear-gradient(135deg,var(--red-dark),var(--red)); box-shadow: 0 4px 18px rgba(220,38,38,0.5); transform: translateY(-1px); }
 .ai-bar-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
@@ -135,10 +158,18 @@
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
   border-radius: 50px; padding: 7px 16px; font-size: 0.81rem;
   color: rgba(245,241,233,0.55); cursor: pointer; transition: all .18s;
+  white-space: nowrap;
 }
 .ai-suggestion:hover {
   background: rgba(220,38,38,0.14); border-color: rgba(220,38,38,0.3);
   color: var(--paper); transform: translateY(-1px);
+}
+
+/* Prevent pills from causing overflow on very small screens */
+@media (max-width: 380px) {
+  .ai-suggestion {
+    padding: 6px 10px; font-size: 0.7rem;
+  }
 }
 
 /* AI Response bubble */
@@ -173,6 +204,7 @@
   font-size: .95rem; font-weight: 700; font-family: var(--font-head);
   text-decoration: none; box-shadow: 0 4px 18px rgba(220,38,38,.35);
   transition: all .2s;
+  flex-shrink: 0;
 }
 .hero-cta-primary:hover { box-shadow: 0 8px 28px rgba(220,38,38,.5); transform: translateY(-2px); color: white; }
 .hero-cta-secondary {
@@ -180,6 +212,7 @@
   background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.18);
   color: var(--paper); border-radius: 10px; padding: .78rem 1.5rem;
   font-size: .95rem; font-weight: 600; text-decoration: none; transition: all .2s;
+  flex-shrink: 0;
 }
 .hero-cta-secondary:hover { background: rgba(255,255,255,.13); color: var(--paper); border-color: rgba(255,255,255,.3); }
 
@@ -190,6 +223,7 @@
   padding: 0 18px;
   border-right: 1px solid rgba(255,255,255,.1);
   flex: 0 0 auto;
+  min-width: 0;
 }
 .hero-stat:last-child { border-right: none; }
 .hero-stat-num {
@@ -232,6 +266,7 @@
   gap: 32px; position: relative; overflow: hidden;
   border: 1px solid rgba(255,255,255,.07);
   box-shadow: var(--shadow-lg);
+  max-width: 100%;
 }
 .map-cta::before {
   content: '🗺️'; position: absolute; right: 180px; top: 50%;
@@ -242,6 +277,8 @@
   width: 400px; height: 400px; border-radius: 50%;
   background: radial-gradient(circle, rgba(217,119,6,.08) 0%, transparent 65%);
   pointer-events: none;
+  max-width: 150vw;
+  max-height: 150vh;
 }
 .map-cta-content h2 { color: var(--paper); margin-bottom: 8px; }
 .map-cta-content p  { color: rgba(255,255,255,.45); max-width: 480px; }
@@ -267,8 +304,10 @@
 .announcement-bar {
   background: linear-gradient(90deg, rgba(217,119,6,.08), rgba(220,38,38,.05));
   border-bottom: 1px solid rgba(217,119,6,.2); padding: 10px 0;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
-.announcement-inner { display: flex; align-items: center; gap: 12px; max-width: 1200px; margin: 0 auto; padding: 0 20px; font-size: .85rem; }
+.announcement-inner { display: flex; align-items: center; gap: 12px; max-width: 1200px; margin: 0 auto; padding: 0 20px; font-size: .85rem; flex-wrap: wrap; }
 .announcement-badge { background: linear-gradient(135deg,var(--gold),var(--gold-light)); color: var(--ink); font-size: .69rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; padding: 3px 10px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; }
 
 /* ═══ REGISTER CTA ═══ */
@@ -276,12 +315,14 @@
   background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 50%, var(--ink) 100%);
   padding: 56px 0; border-top: 1px solid rgba(255,255,255,.05);
   position: relative; overflow: hidden;
+  max-width: 100vw;
 }
 .register-cta::before {
   content: ''; position: absolute; left: 50%; top: -200px; transform: translateX(-50%);
   width: 800px; height: 400px; border-radius: 50%;
   background: radial-gradient(ellipse, rgba(220,38,38,.06) 0%, transparent 70%);
   pointer-events: none;
+  max-width: 200vw;
 }
 .benefit-card {
   background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07);

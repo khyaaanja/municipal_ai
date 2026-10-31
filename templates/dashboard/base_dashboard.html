@@ -35,6 +35,14 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--ink); color: var(--paper); font-family: var(--font-b); min-height: 100vh; }
 
+    /* This template does not extend base/base.html, so it needs its own media
+       scaling: a Chart.js <canvas> keeps its intrinsic 300px and overflowed a
+       320px phone, and wide tables had nothing to scroll inside. */
+    img, video, svg { max-width: 100%; height: auto; }
+    canvas { max-width: 100%; }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .main, .main-inner { min-width: 0; }
+
     /* ── sidebar ── */
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar);
@@ -115,6 +123,12 @@
       .hamburger { display: flex; }
       .collapse-btn { display: none; }
     }
+    @media (max-width: 768px) {
+      .main-inner { padding: 1.25rem 1rem; }
+      .page-title { font-size: 1.4rem; }
+    }
+    /* This has to come after the 768px block: equal specificity, so source
+       order decides, and it was previously never winning below 480px. */
     @media (max-width: 480px) { .main-inner { padding: 1rem .75rem; } }
   </style>
   {% block extra_css %}{% endblock %}

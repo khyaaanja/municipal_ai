@@ -12,15 +12,18 @@
   position: sticky;
   top: 64px;
   z-index: 100;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .filter-inner {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  min-width: max-content;
 }
 .filter-pill {
   padding: 6px 16px;
@@ -34,6 +37,8 @@
   transition: all 0.15s;
   text-decoration: none;
   color: var(--stone);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .filter-pill:hover, .filter-pill.active {
   background: var(--red);
@@ -46,10 +51,15 @@
   gap: 8px;
   flex-shrink: 0;
 }
+@media(max-width:768px){
+  .filter-inner { padding: 0 16px; }
+  .filter-pill { padding: 6px 12px; font-size: 0.75rem; }
+}
 @media(max-width:480px){
-  .filter-search { margin-left: 0; width: 100%; }
+  .filter-search { margin-left: 0; width: 100%; order: 2; }
   .filter-search form { width: 100%; }
-  .filter-search input { flex: 1; width: auto !important; }
+  .filter-search input { flex: 1; width: auto !important; min-width: 0; }
+  .filter-inner { gap: 8px; }
 }
 .card-img {
   width: 100%;

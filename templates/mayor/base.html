@@ -98,6 +98,11 @@
   background: #f5f1eb;
   padding: 32px 36px;
   min-height: calc(100vh - 60px);
+  /* Grid items default to min-width:auto, which floors the 1fr column at the
+     content's min-content width (a 560px table). That made the column wider
+     than the viewport on phones. min-width:0 lets the column shrink so the
+     table scrolls inside its own wrapper instead. */
+  min-width: 0;
 }
 
 /* ── PAGE HEADER ── */
@@ -117,6 +122,20 @@
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -.02em;
+}
+
+/* ── CONTENT + FORM RAIL ──
+   The rail is a fixed width on desktop and stacks under the content on narrow
+   screens. minmax(0,1fr) keeps the content column from being floored at its
+   min-content width. */
+.split-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .split-form-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── STAT GRID ── */
@@ -294,7 +313,7 @@
   .mayor-layout { grid-template-columns: 1fr; }
   .mayor-sidebar {
     display: block; position: fixed; top: 0; left: 0; height: 100vh;
-    width: 260px; z-index: 999; transform: translateX(-100%);
+    width: 260px; max-width: 85vw; z-index: 999; transform: translateX(-100%);
     transition: transform .28s cubic-bezier(.4,0,.2,1); overflow-y: auto; padding-top: 16px;
   }
   .mayor-sidebar.open { transform: translateX(0); }
@@ -306,12 +325,19 @@
   .mayor-main { padding: 14px 12px; }
   .mayor-page-title { font-size: 1.2rem; }
   .stat-num { font-size: 1.6rem; }
+  .mayor-sidebar { width: 100vw; max-width: 100vw; }
+  .stat-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
   .mayor-card { overflow-x: auto; }
   .mayor-table { min-width: 600px; }
   .mayor-btn { min-height: 44px; padding: 10px 14px; }
   .filter-bar input, .filter-bar select { min-height: 44px; }
+}
+@media (max-width: 380px) {
+  .mayor-table { min-width: 480px; font-size: .75rem; }
+  .mayor-page-title { font-size: 1.1rem; }
+  .stat-num { font-size: 1.4rem; }
 }
 </style>
 {% block mayor_extra_css %}{% endblock %}

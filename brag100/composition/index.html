@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en" data-layout-allow-overflow="true" data-composition-id="root" data-width="1080" data-height="1920" data-duration="72.0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1080, initial-scale=1.0, user-scalable=no">
+  <title>Bhaktapur AI — Character Animation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/gsap@3.12.2/dist/gsap.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@800&family=DM+Sans:ital,wght@0,400;0,700;1,400&display=swap">
+  <style>
+    :root {
+      --bg: #0c0c14;
+      --bg-subtle: #1a1a24;
+      --fg: #e8e8f0;
+      --muted: #71718a;
+      --accent: #ffd60a;
+      --accent-glow: rgba(255, 214, 10, 0.4);
+      --red: #ef4444;
+      --gold: #ffd60a;
+      --stone: #8686a1;
+      --cream: #faf9f5;
+      --bd: #3f3f4f;
+      --font: "Syne", sans-serif;
+      --font-base: "DM Sans", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html,body { height:100%; margin:0; background:var(--bg); color:var(--fg); font-family:var(--font-base); }
+    .world { min-height:100%; perspective: 1400px; transform-style: preserve-3d; }
+    .clip { position:relative; }
+    .scene { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .card { background:var(--bg-subtle); border:1px solid var(--bd); border-radius:16px; padding:24px; max-width:360px; width:100%; backdrop-filter:blur(10px); }
+    .portrait { border-radius:12px; overflow:hidden; margin:0 0 24px 0; position:relative; }
+    .portrait img { width:100%; height:auto; display:block; }
+    .glow { filter:drop-shadow(0 0 20px var(--accent-glow)); }
+    .btn { margin-top:12px; padding:10px 20px; background:var(--accent); color:var(--bg); font-family:var(--font); font-weight:800; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+    .btn:hover { opacity:0.9; }
+    .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px; display:block; }
+    .input { width:100%; padding:10px; margin:8px 0 16px 0; background:#16161f; border:1px solid var(--bd); border-radius:8px; color:var(--fg); font-size:14px; }
+    .chip { display:inline-block; padding:4px 8px; background:var(--bg); color:var(--accent); font-size:12px; border-radius:4px; margin:2px; }
+    .secret { -webkit-text-fill-color: transparent; -webkit-text-stroke: 1px var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="world">
+    <!-- Scene 1: Citizen has a problem -->
+    <div class="scene clip" id="s1" data-duration="8.0">
+      <div class="card">
+        <div class="portrait"><img src="assets/ai.png" alt="Citizen character" class="glow"></div>
+        <h3 style="margin:8px 0 0 0; font-family:var(--font); font-size:28px; color:var(--accent);">एक नेपाली नागरिक</h3>
+        <p style="margin:12px 0 0 0; color:var(--muted); line-height:1.5;">
+          भक्तपुर नगरीको सडकको बत्ती बिग्रिएको छ।
+        </p>
+        <button class="btn" style="margin-top:16px;">एआईमा पठाउन</button>
+      </div>
+    </div>
+
+    <!-- Scene 2: AI appears and listens -->
+    <div class="scene clip" id="s2" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card">
+        <div class="portrait"><img src="assets/ai1.png" alt="AI character" class="glow"></div>
+        <h3 style="margin:8px 0 0 0; font-family:var(--font); font-size:28px; color:var(--accent);">AI सहायक</h3>
+        <p style="margin:12px 0 0 0; color:var(--muted); line-height:1.5;">
+          तपाईंलाई कसरी मद्दत गर्दछु?
+        </p>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button class="btn" style="flex:1;">समस्या रिपोर्ट</button>
+          <button class="btn" style="flex:1;">सेवा लागू गर्न</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 3: AI understands the voice -->
+    <div class="scene clip" id="s3" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card">
+        <p style="margin:0 0 12px 0; color:var(--muted);" aria-live="polite"><strong>नागरिक:</strong> "यो सडकको बत्ती बिग्रिएको छ। म यो समस्या कसरी रिपोर्ट गरूँ?"</p>
+        <p style="margin:0 0 12px 0; color:var(--muted);" aria-live="polite"><strong>AI:</strong> "चिन्ता नगर्नुहोस्। म तपाईंको लागि यो समस्या रिपोर्ट गरिदिन्छु।"</p>
+        <p style="margin:0 0 12px 0; color:var(--muted);" aria-live="polite">AI स्वतः स्थान पहचान्छ र रिपोर्ट तयार गर्दछ।</p>
+        <button class="btn" style="margin-top:12px;">रिपोर्ट बन्छ</button>
+      </div>
+    </div>
+
+    <!-- Scene 4: Report created -->
+    <div class="scene clip" id="s4" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card">
+        <p style="margin:0 0 12px 0; color:var(--muted);" aria-live="polite"><strong>AI:</strong> "तपाईंको समस्या सफलतापूर्वक रिपोर्ट भयो।"</p>
+        <p style="margin:0 0 12px 0; color:var(--muted);">रिपोर्ट नं.: <span style="color:var(--accent); font-family:var(--font); font-weight:800;">BK-76BRFO</span></p>
+        <p style="margin:0 0 12px 0; color:var(--muted);">स्थिति: <span style="color:var(--accent);">प्रक्रियामा</span></p>
+        <p style="margin:0 0 12px 0; color:var(--muted);">समाधानको समय: 7 दिन</p>
+        <button class="btn" style="margin-top:12px;">ट्रेकिंग पृष्ठ</button>
+      </div>
+    </div>
+
+    <!-- Scene 5: Applying for a service -->
+    <div class="scene clip" id="s5" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card">
+        <h4 style="margin:0 0 8px 0; font-family:var(--font); color:var(--accent);">सेवा लागू गर्नुहोस</h4>
+        <p style="margin:4px 0 0 0; color:var(--muted);">जनमदर्ता लागि आवेदन</p>
+        <div class="label">नाम</div><input class="input" type="text" placeholder="त्यो लक्ष्मी श्रेष्ठ">
+        <div class="label">जन्म मिति</div><input class="input" type="date">
+        <div class="label">आवश्यक कागजात</div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn" style="flex:1;">कागजात अपलोड</button>
+          <button class="btn" style="flex:1;">आवेदन बन्छ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 6: Application submitted -->
+    <div class="scene clip" id="s6" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card">
+        <p style="margin:0 0 12px 0; color:var(--muted);" aria-live="polite"><strong>AI:</strong> "तपाईंको आवेदन सफलतापूर्वक पेश भयो।"</p>
+        <p style="margin:0 0 12px 0; color:var(--muted);">आवेदन नं.: <span style="color:var(--accent); font-family:var(--font); font-weight:800;">BC-2026-00456</span></p>
+        <p style="margin:0 0 12px 0; color:var(--muted);">स्थिति: <span style="color:var(--accent);">प्रक्रियामा</span></p>
+        <button class="btn" style="margin-top:12px;">नोटिफिकेशन देखे</button>
+      </div>
+    </div>
+
+    <!-- Scene 7: Bigger vision -->
+    <div class="scene clip" id="s7" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card">
+        <h4 style="margin:0 0 8px 0; font-family:var(--font); color:var(--accent);">एक जुड़ा हुआ शहर</h4>
+        <p style="margin:4px 0 0 0; color:var(--muted);">एक नागरिकको शिकायत — एआईमा रिपोर्ट<br>
+        एक टूरिस्टको सवाल — एआईमा उत्तर<br>
+        एक व्यवसायिको प्रश्न — एआईमा सेवा</p>
+        <button class="btn" style="margin-top:12px;">सब समझे</button>
+      </div>
+    </div>
+
+    <!-- Scene 8: Hero capabilities -->
+    <div class="scene clip" id="s8" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card">
+        <h3 style="margin:0 0 12px 0; font-family:var(--font); color:var(--accent);">चार महत्त्वपूर्ण काम</h3>
+        <div style="display:flex; gap:20px; justify-content:center; flex-wrap:wrap;">
+          <div><div style="font-size:32px; margin-bottom:4px;">📋</div><span>समस्या रिपोर्ट गर</span></span></div>
+          <div><div style="font-size:32px; margin-bottom:4px;">📄</div><span>सेवा लागि आवेदन गर</span></span></div>
+          <div><div style="font-size:32px; margin-bottom:4px;">📍</div><span>आवेदन ट्रेक गर</span></span></div>
+          <div><div style="font-size:32px; margin-bottom:4px;">🔍</div><span>तुर्रन्त जानकारी पाउ</span></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 9: Hero reveal -->
+    <div class="scene clip" id="s9" data-duration="8.0" style="margin-top:-8px;">
+      <div class="card" style="max-width:none; text-align:center; padding:40px 20px;">
+        <div style="font-size:96px; margin:0 0 12px; filter:drop-shadow(0 0 30px var(--accent-glow));">#BHAKTAPUR AI</div>
+        <div style="margin:0 0 8px; color:var(--stone); font-family:var(--font);">नेपालको आफ्नै AI सिटी असिस्टेन्ट</div>
+        <div style="margin:4px 0 0; color:var(--muted); font-size:14;">"भन्नुहोस्। AI ले गरिदिन्छ।"</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+    window.__timelines["root"] = tl;
+
+    // Timeline
+    const tl = gsap.timeline({ paused: true, onComplete: () => tl.play() });
+
+    // S1: Citizen card tilts in with 3D
+    tl.fromTo("#s1 .card", { opacity: 0, rotationX: -30, y: 40, scale: 0.9 },
+      { opacity: 1, rotationX: 0, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 0.2);
+
+    // S2: AI card slides in from left
+    tl.fromTo("#s2 .card", { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, 1.2);
+
+    // S3: Voice exchange - AI fades in
+    tl.fromTo("#s3 .card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 2.2);
+    // Add pulse to AI text
+    tl.to("#s3 .card p:nth-child(3)", { opacity: 0.8, duration: 0.4, yoyo: true, repeat: 1, ease: "power2.inOut" }, 3.0);
+
+    // S4: Report created - badge appears
+    tl.fromTo("#s4 .card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 3.4);
+    tl.fromTo("#s4 .card p:nth-child(4)", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 3.6);
+
+    // S5: Service application slides in
+    tl.fromTo("#s5 .card", { opacity: 0, x: 80 }, { opacity: 1, x: 0, duration: 0.6, ease: "power3.out" }, 4.6);
+
+    // S6: Application submitted
+    tl.fromTo("#s6 .card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 5.8);
+    tl.fromTo("#s6 .card p:nth-child(4)", { opacity: 0, x: 10 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, 6.0);
+
+    // S7: Bigger vision
+    tl.fromTo("#s7 .card", { opacity: 0, y: -40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 7.0);
+
+    // S8: Hero capabilities - scale up
+    tl.fromTo("#s8 .card", { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }, 8.0);
+
+    // S9: Final hero reveal
+    tl.fromTo("#s9 .card", { opacity: 0, y: -60, scale: 1.2 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 9.0);
+
+    // Start the timeline
+    tl.play();
+  </script>
+</body>
+</html>

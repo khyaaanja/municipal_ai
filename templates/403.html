@@ -19,8 +19,12 @@
       --font-b: 'DM Sans', sans-serif;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
+    html { height: 100%; }
+    /* Only body centres its contents. Making <html> the flex container too
+       turned <body> into a shrink-to-fit item that grew past the viewport
+       on narrow phones and scrolled the page sideways. */
+    body {
+      min-height: 100%; width: 100%;
       background: var(--ink); color: var(--paper);
       font-family: var(--font-b);
       display: flex; align-items: center; justify-content: center;
@@ -30,7 +34,8 @@
       background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(193,59,42,.08) 0%, transparent 65%);
     }
     .container {
-      text-align: center; padding: 2rem; max-width: 440px;
+      text-align: center; padding: 2rem 1.25rem; max-width: 440px;
+      width: 100%; min-width: 0;
       position: relative; z-index: 1;
       animation: cardIn .45s cubic-bezier(.22,1,.36,1) both;
     }
@@ -38,7 +43,7 @@
     @media (prefers-reduced-motion: reduce) { .container { animation: none; } }
     .icon { font-size: 4rem; margin-bottom: 1.5rem; display: block; }
     h1 {
-      font-family: var(--font-h); font-size: 2.2rem; font-weight: 800;
+      font-family: var(--font-h); font-size: clamp(1.5rem, 8vw, 2.2rem); font-weight: 800;
       color: var(--paper); margin-bottom: .75rem; letter-spacing: -.02em;
     }
     .divider { width: 40px; height: 3px; background: var(--red); margin: 1.25rem auto; }

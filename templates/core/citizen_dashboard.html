@@ -49,11 +49,14 @@ body { background: var(--ink) !important; color: var(--paper) !important; }
 .welcome-dismiss:hover { color: var(--paper); }
 .welcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: .85rem 0 1.1rem; }
 @media(max-width:480px){ .welcome-grid { grid-template-columns: 1fr; } }
+@media(max-width:380px){ .welcome-grid { gap: .35rem; } }
 .welcome-feature { display: flex; gap: .55rem; align-items: flex-start; font-size: .8rem; color: rgba(245,241,233,.75); }
 
 /* ── QUICK ACTIONS ── */
 .qa-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .55rem; }
+@media(max-width:640px){ .qa-grid { grid-template-columns: repeat(2,1fr); } }
 @media(max-width:480px){ .qa-grid { grid-template-columns: 1fr 1fr; } }
+@media(max-width:380px){ .qa-grid { grid-template-columns: 1fr; } }
 .qa-btn {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 6px; padding: .9rem .5rem; border-radius: 10px;
@@ -81,6 +84,7 @@ body { background: var(--ink) !important; color: var(--paper) !important; }
 
 /* ── STAT CARDS ── */
 .stat-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: .65rem; margin-bottom: 1rem; }
+@media(max-width:640px){ .stat-cards { grid-template-columns: repeat(2,1fr); gap: .4rem; } }
 @media(max-width:480px){ .stat-cards { grid-template-columns: 1fr 1fr; gap: .4rem; } }
 @media(max-width:360px){ .stat-cards { grid-template-columns: 1fr; } }
 .stat-card {
@@ -164,17 +168,20 @@ body { background: var(--ink) !important; color: var(--paper) !important; }
 
 /* ── WARD SECTION ── */
 .ward-mini-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: .45rem; }
-.ward-mini-stat { background: rgba(255,255,255,.04); border-radius: 8px; padding: .65rem .5rem; text-align: center; }
+@media(max-width:480px){ .ward-mini-stats { grid-template-columns: 1fr 1fr; gap: .35rem; } }
+@media(max-width:360px){ .ward-mini-stats { grid-template-columns: 1fr; } }
+.ward-mini-stat { background: rgba(255,255,255,.04); border-radius: 8px; padding: .65rem .5rem; text-align: center; min-width: 0; }
 .ward-mini-num { font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; }
 .ward-mini-lbl { font-size: .62rem; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
 
 /* ── LINK CHIPS ── */
-.chip-row { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip-row { display: flex; flex-wrap: wrap; gap: .45rem; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .5rem; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 5px 11px; border-radius: 6px; font-size: .74rem; font-weight: 600;
   background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
   color: rgba(255,255,255,.5); text-decoration: none; transition: all .15s;
+  white-space: nowrap; flex-shrink: 0;
 }
 .chip:hover { background: rgba(255,255,255,.1); color: var(--paper); }
 
@@ -200,6 +207,7 @@ body { background: var(--ink) !important; color: var(--paper) !important; }
 /* ── GRID LAYOUT ── */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 @media(max-width:640px){ .two-col { grid-template-columns: 1fr; } }
+@media(max-width:480px){ .two-col { grid-template-columns: 1fr; } }
 
 /* ── CIVIC CARD MODAL ── */
 .modal-backdrop {

@@ -626,6 +626,13 @@
       .btn-nav{padding:6px 10px;font-size:.75rem;}
       .scan-nav-btn{display:inline-flex;padding:4px 8px;font-size:.7rem;gap:4px;}
       .scan-nav-btn svg{width:12px;height:12px;}
+      .tourist-chip-name{display:none;}
+      .nav-right .cart-badge{display:none;}
+    }
+    /* 430px – no room left in the nav for text labels; scan goes icon-only. */
+    @media(max-width:430px){
+      .scan-label{display:none;}
+      .scan-nav-btn{padding:6px 10px;gap:0;}
     }
     @media(max-width:480px){
       .nav-logo{font-size:.88rem;}
@@ -638,6 +645,13 @@
       .nav-inner{gap:4px;padding:0 8px;}
       .nav-logo{font-size:.8rem;}
       .hamburger span{width:18px;}
+    }
+    /* Mirrors base/base.html — this template carries its own copy of the nav
+       CSS and the two had drifted apart. */
+    @media(max-width:360px){
+      .nav-logo{font-size:.72rem;letter-spacing:-0.03em;}
+      .hamburger{gap:4px;}
+      .hamburger span{width:16px;height:1.5px;}
     }
     @media(prefers-reduced-motion:reduce){
       *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}

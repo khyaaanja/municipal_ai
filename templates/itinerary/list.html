@@ -33,8 +33,10 @@
 .gen-spinner { width:2.5rem; height:2.5rem; border:3px solid var(--cream); border-top-color:var(--ink); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 1rem; }
 @keyframes spin { to { transform:rotate(360deg); } }
 /* Itinerary cards */
-.itin-grid { display:grid; gap:1.5rem; }
-.itin-card { border:2px solid var(--ink); background:var(--paper); }
+.itin-grid { display:grid; gap:1.5rem; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:1rem; }
+.itin-card { border:2px solid var(--ink); background:var(--paper); min-width:300px; }
+@media(max-width:768px){ .itin-card { min-width:100%; } }
+@media(max-width:480px){ .itin-card { min-width:100%; } }
 .itin-card-head { background:var(--ink); color:var(--paper); padding:1.25rem 1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
 .itin-card-title { font-family:var(--font-head); font-size:1.1rem; font-weight:800; }
 .itin-card-meta { font-size:.8rem; opacity:.6; margin-top:.2rem; }

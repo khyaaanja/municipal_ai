@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -c \"from adminpanel.urls import urlpatterns; print\\(len\\(urlpatterns\\), 'URLs registered'\\)\")",
-      "Bash(python -c ' *)",
-      "Bash(pip freeze *)"
-    ]
-  }
-}
